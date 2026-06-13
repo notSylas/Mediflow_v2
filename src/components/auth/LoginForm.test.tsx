@@ -19,9 +19,8 @@ vi.mock("@/lib/auth-client", () => ({
   },
 }));
 
-/** Password is the default method; switch to the email-code tab for OTP tests. */
-async function useEmailCode() {
-  await userEvent.click(screen.getByRole("button", { name: "Email code" }));
+async function usePassword() {
+  await userEvent.click(screen.getByRole("button", { name: "Password" }));
 }
 
 describe("LoginForm", () => {
@@ -34,8 +33,9 @@ describe("LoginForm", () => {
 
     render(<LoginForm googleEnabled={false} />);
 
+    await usePassword();
     await userEvent.type(screen.getByLabelText("Email"), "patient@example.com");
-    await userEvent.type(screen.getByLabelText("Password"), "supersecret");
+    await userEvent.type(screen.getByPlaceholderText("Your password"), "supersecret");
     await userEvent.click(screen.getByRole("button", { name: /^sign in$/i }));
 
     expect(authClient.signIn.email).toHaveBeenCalledWith({
@@ -52,7 +52,6 @@ describe("LoginForm", () => {
 
     render(<LoginForm googleEnabled={false} />);
 
-    await useEmailCode();
     await userEvent.type(screen.getByLabelText("Email"), "patient@example.com");
     await userEvent.click(screen.getByRole("button", { name: /send code/i }));
 
@@ -70,7 +69,6 @@ describe("LoginForm", () => {
 
     render(<LoginForm googleEnabled={false} />);
 
-    await useEmailCode();
     await userEvent.type(screen.getByLabelText("Email"), "patient@example.com");
     await userEvent.click(screen.getByRole("button", { name: /send code/i }));
 
@@ -88,7 +86,6 @@ describe("LoginForm", () => {
 
     render(<LoginForm googleEnabled={false} />);
 
-    await useEmailCode();
     await userEvent.type(screen.getByLabelText("Email"), "patient@example.com");
     await userEvent.click(screen.getByRole("button", { name: /send code/i }));
 
@@ -110,7 +107,6 @@ describe("LoginForm", () => {
 
     render(<LoginForm googleEnabled={false} />);
 
-    await useEmailCode();
     await userEvent.type(screen.getByLabelText("Email"), "patient@example.com");
     await userEvent.click(screen.getByRole("button", { name: /send code/i }));
 
@@ -128,6 +124,8 @@ describe("LoginForm", () => {
   });
 
   it("signs in with Google when the button is clicked", async () => {
+    vi.mocked(authClient.signIn.social).mockResolvedValue({ error: null } as never);
+
     render(<LoginForm googleEnabled={true} />);
 
     await userEvent.click(screen.getByRole("button", { name: /continue with google/i }));
@@ -136,5 +134,21 @@ describe("LoginForm", () => {
       provider: "google",
       callbackURL: "/patient",
     });
+  });
+
+  it("shows a retryable error when sending the OTP throws", async () => {
+    vi.mocked(authClient.emailOtp.sendVerificationOtp).mockRejectedValue(
+      new Error("Network failure")
+    );
+
+    render(<LoginForm googleEnabled={false} />);
+
+    await userEvent.type(screen.getByLabelText("Email"), "patient@example.com");
+    await userEvent.click(screen.getByRole("button", { name: /send code/i }));
+
+    expect(
+      await screen.findByText("Couldn't reach the server. Please try again.")
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /send code/i })).toBeEnabled();
   });
 });

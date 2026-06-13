@@ -17,9 +17,13 @@ type Method = "password" | "otp";
 export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectTo = searchParams.get("redirectTo") || "/";
+  const requestedRedirect = searchParams.get("redirectTo");
+  const redirectTo =
+    requestedRedirect?.startsWith("/") && !requestedRedirect.startsWith("//")
+      ? requestedRedirect
+      : "/";
 
-  const [method, setMethod] = useState<Method>("password");
+  const [method, setMethod] = useState<Method>("otp");
   const [step, setStep] = useState<"email" | "otp">("email");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -36,46 +40,81 @@ export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
     e.preventDefault();
     setError(null);
     setIsLoading(true);
-    const { error } = await authClient.signIn.email({ email, password });
-    setIsLoading(false);
-    if (error) {
-      setError(error.message ?? "Wrong email or password.");
-      return;
+    try {
+      const { error } = await authClient.signIn.email({
+        email: email.trim(),
+        password,
+      });
+      if (error) {
+        setError(error.message ?? "Wrong email or password.");
+        return;
+      }
+      succeed();
+    } catch {
+      setError("Couldn't reach the server. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
-    succeed();
   };
 
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setIsLoading(true);
-    const { error } = await authClient.emailOtp.sendVerificationOtp({
-      email,
-      type: "sign-in",
-    });
-    setIsLoading(false);
-    if (error) {
-      setError(error.message ?? "Failed to send code.");
-      return;
+    try {
+      const { error } = await authClient.emailOtp.sendVerificationOtp({
+        email: email.trim(),
+        type: "sign-in",
+      });
+      if (error) {
+        setError(error.message ?? "Failed to send code.");
+        return;
+      }
+      setStep("otp");
+    } catch {
+      setError("Couldn't reach the server. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
-    setStep("otp");
   };
 
   const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setIsLoading(true);
-    const { error } = await authClient.signIn.emailOtp({ email, otp });
-    setIsLoading(false);
-    if (error) {
-      setError(error.message ?? "Invalid code.");
-      return;
+    try {
+      const { error } = await authClient.signIn.emailOtp({
+        email: email.trim(),
+        otp: otp.trim(),
+      });
+      if (error) {
+        setError(error.message ?? "Invalid code.");
+        return;
+      }
+      succeed();
+    } catch {
+      setError("Couldn't reach the server. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
-    succeed();
   };
 
-  const handleGoogleSignIn = () => {
-    void authClient.signIn.social({ provider: "google", callbackURL: redirectTo });
+  const handleGoogleSignIn = async () => {
+    setError(null);
+    setIsLoading(true);
+    try {
+      const { error } = await authClient.signIn.social({
+        provider: "google",
+        callbackURL: redirectTo,
+      });
+      if (error) {
+        setError(error.message ?? "Google sign-in failed.");
+      }
+    } catch {
+      setError("Couldn't reach the server. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const switchMethod = (next: Method) => {
@@ -216,7 +255,13 @@ export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
             or
             <Separator className="flex-1" />
           </div>
-          <Button type="button" variant="outline" onClick={handleGoogleSignIn} className="h-11">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleGoogleSignIn}
+            disabled={isLoading}
+            className="h-11"
+          >
             Continue with Google
           </Button>
         </>

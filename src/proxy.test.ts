@@ -32,12 +32,10 @@ describe("proxy", () => {
     expect(response.headers.get("location")).toBeNull();
   });
 
-  it("redirects authenticated users away from /login", () => {
+  it("allows login access when a stale session cookie is present", () => {
     const response = proxy(makeRequest("/login", { sessionCookie: true }));
 
-    expect(response.status).toBe(307);
-    const location = new URL(response.headers.get("location")!);
-    expect(location.pathname).toBe("/");
+    expect(response.headers.get("location")).toBeNull();
   });
 
   it("allows authenticated users to access protected paths", () => {

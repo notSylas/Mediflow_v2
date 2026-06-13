@@ -11,12 +11,10 @@ import { user, verification } from "@/db/schema";
 export const DOCTOR_EMAIL = "e2e-doctor@example.com";
 
 /**
- * Email-OTP sign-in. Password is the default method, so switch to the
- * "Email code" tab first. Returns once the role-based redirect has landed.
+ * Email-OTP sign-in. Returns once the role-based redirect has landed.
  */
 export async function signIn(page: Page, email: string): Promise<void> {
   await page.goto("/login");
-  await page.getByRole("button", { name: "Email code" }).click();
   await page.getByLabel("Email").fill(email);
   await page.getByRole("button", { name: /send code/i }).click();
   await page.getByLabel("Verification code").waitFor();

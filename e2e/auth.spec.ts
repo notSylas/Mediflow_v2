@@ -17,8 +17,6 @@ test("login, land on patient home, then logout", async ({ page }) => {
   await page.getByRole("link", { name: /^sign in$/i }).click();
   await expect(page).toHaveURL(/\/login/);
 
-  // Password is the default method; switch to the one-time-code tab.
-  await page.getByRole("button", { name: "Email code" }).click();
   await page.getByLabel("Email").fill(email);
   await page.getByRole("button", { name: /send code/i }).click();
 
@@ -45,16 +43,16 @@ test("new user signs up with a password, then signs back in with it", async ({
   await page.goto("/signup");
   await page.getByLabel("Full name").fill("Test Patient");
   await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Password").fill(password);
+  await page.getByLabel("Password", { exact: true }).fill(password);
   await page.getByRole("button", { name: /create account/i }).click();
   await expect(page).toHaveURL(/\/patient/);
 
   await page.getByRole("button", { name: /log out/i }).click();
   await expect(page).toHaveURL(/\/login/);
 
-  // Password is the default method — sign in directly.
+  await page.getByRole("button", { name: "Password" }).click();
   await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Password").fill(password);
+  await page.getByLabel("Password", { exact: true }).fill(password);
   await page.getByRole("button", { name: /^sign in$/i }).click();
   await expect(page).toHaveURL(/\/patient/);
 });
@@ -63,7 +61,6 @@ test("authenticated users are redirected away from /login", async ({ page }) => 
   const email = `e2e+${Date.now()}-2@example.com`;
 
   await page.goto("/login");
-  await page.getByRole("button", { name: "Email code" }).click();
   await page.getByLabel("Email").fill(email);
   await page.getByRole("button", { name: /send code/i }).click();
   await expect(page.getByLabel("Verification code")).toBeVisible();

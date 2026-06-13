@@ -1,7 +1,10 @@
 import { Suspense } from "react";
 import Link from "next/link";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 import { CalendarCheck2, FileText, HeartPulse, ShieldCheck, Video } from "lucide-react";
 import { SignupForm } from "@/components/auth/SignupForm";
+import { auth } from "@/lib/auth";
 import { Reveal } from "@/components/Reveal";
 import { HeroBackground } from "@/components/landing/HeroBackground";
 
@@ -11,7 +14,13 @@ const POINTS = [
   { icon: FileText, text: "Every prescription saved to your account" },
 ];
 
-export default function SignupPage() {
+export default async function SignupPage() {
+  const session = await auth.api.getSession({ headers: await headers() });
+
+  if (session) {
+    redirect(session.user.role === "doctor" ? "/doctor" : "/patient");
+  }
+
   const googleEnabled = Boolean(
     process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
   );
