@@ -149,6 +149,16 @@ export const appointments = pgTable(
     endsAt: timestamp("ends_at", { withTimezone: true }).notNull(),
     status: appointmentStatus("status").notNull().default("pending_payment"),
     intakeNote: text("intake_note"),
+    // Structured intake (kept alongside intakeNote for display compatibility).
+    visitReason: text("visit_reason"),
+    // Auditable telemedicine consent captured at booking. Version + source +
+    // timestamp are recorded server-side so the exact terms accepted are known.
+    consentVersion: text("consent_version"),
+    consentedAt: timestamp("consented_at", { withTimezone: true }),
+    consentSource: text("consent_source"), // web | ios | android
+    // Set when the server's deterministic red-flag check matched at booking.
+    // Not a diagnosis — an audit signal that an emergency warning was warranted.
+    triageFlaggedAt: timestamp("triage_flagged_at", { withTimezone: true }),
     videoRoom: text("video_room"),
     // pending_payment rows hold the slot only until this expires; the slot
     // query and booking flow treat expired holds as free.
@@ -280,6 +290,68 @@ export const medicalReports = pgTable("medical_reports", {
   appointmentId: uuid("appointment_id").references(() => appointments.id, {
     onDelete: "set null",
   }),
+  filename: text("filename").notNull(),
+  mimeType: text("mime_type").notNull(),
+  data: bytea("data").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// ---------------------------------------------------------------------------
+// Messaging — one conversation per patient↔doctor pair. Chat is gated to
+// patients who have a booking (enforced in the API). Messages are medical
+// data: access-controlled, never logged.
+// ---------------------------------------------------------------------------
+
+export const conversations = pgTable(
+  "conversations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    patientId: text("patient_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    doctorId: uuid("doctor_id")
+      .notNull()
+      .references(() => doctorProfiles.id, { onDelete: "cascade" }),
+    lastMessageAt: timestamp("last_message_at", { withTimezone: true }),
+    lastMessagePreview: text("last_message_preview"),
+    // Unread counts per side, kept denormalized so list views are cheap.
+    patientUnread: integer("patient_unread").notNull().default(0),
+    doctorUnread: integer("doctor_unread").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("uq_conversation_pair").on(t.patientId, t.doctorId)]
+);
+
+export const messageSenderRole = pgEnum("message_sender_role", [
+  "patient",
+  "doctor",
+]);
+
+export const messages = pgTable("messages", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  conversationId: uuid("conversation_id")
+    .notNull()
+    .references(() => conversations.id, { onDelete: "cascade" }),
+  senderId: text("sender_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  senderRole: messageSenderRole("sender_role").notNull(),
+  body: text("body"),
+  // Optional inline attachment (image/pdf) stored like medical reports.
+  attachmentId: uuid("attachment_id").references(() => chatAttachments.id, {
+    onDelete: "set null",
+  }),
+  readAt: timestamp("read_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// Files sent inside a chat. Stored inline as bytea (small images/pdfs), same
+// approach as medical_reports; swap to object storage before real scale.
+export const chatAttachments = pgTable("chat_attachments", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  uploaderId: text("uploader_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
   filename: text("filename").notNull(),
   mimeType: text("mime_type").notNull(),
   data: bytea("data").notNull(),
