@@ -20,22 +20,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-
-const STATUS_LABELS: Record<string, string> = {
-  pending_payment: "Awaiting payment",
-  confirmed: "Confirmed",
-  completed: "Completed",
-  cancelled: "Cancelled",
-  no_show: "No-show",
-};
-
-const STATUS_VARIANTS: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-  pending_payment: "outline",
-  confirmed: "default",
-  completed: "secondary",
-  cancelled: "destructive",
-  no_show: "destructive",
-};
+import { statusLabel, statusVariant } from "@/lib/appointment-status";
 
 export interface AppointmentCardProps {
   id: string;
@@ -95,8 +80,8 @@ export function AppointmentCard({
           <Link href={`/patient/appointments/${id}`} className="font-medium hover:underline">
             {formatInTimeZone(new Date(startsAt), timezone, "EEEE, MMM d 'at' h:mm a")}
           </Link>
-          <Badge variant={STATUS_VARIANTS[status] ?? "outline"}>
-            {STATUS_LABELS[status] ?? status}
+          <Badge variant={statusVariant(status)}>
+            {statusLabel(status, "patient")}
           </Badge>
         </div>
 

@@ -9,6 +9,31 @@ const monFrom = new Date(`${MONDAY}T00:00:00Z`);
 const monTo = new Date("2026-06-16T00:00:00Z");
 
 describe("computeAvailableSlots", () => {
+  it("does not produce duplicate slots when rules overlap", () => {
+    const slots = computeAvailableSlots({
+      // Two overlapping Monday rules: 09:00–10:00 and 09:30–10:30. The
+      // 09:30 slot is in both and must appear exactly once.
+      rules: [
+        { weekday: 1, startTime: "09:00", endTime: "10:00" },
+        { weekday: 1, startTime: "09:30", endTime: "10:30" },
+      ],
+      overrides: [],
+      busy: [],
+      slotMinutes: 30,
+      timezone: TZ,
+      from: monFrom,
+      to: monTo,
+    });
+
+    const iso = slots.map((d) => d.toISOString());
+    expect(new Set(iso).size).toBe(iso.length); // no duplicates
+    expect(iso).toEqual([
+      "2026-06-15T03:30:00.000Z", // 09:00
+      "2026-06-15T04:00:00.000Z", // 09:30
+      "2026-06-15T04:30:00.000Z", // 10:00
+    ]);
+  });
+
   it("returns slots for a plain weekly rule", () => {
     const slots = computeAvailableSlots({
       rules: [{ weekday: 1, startTime: "09:00", endTime: "10:00" }],

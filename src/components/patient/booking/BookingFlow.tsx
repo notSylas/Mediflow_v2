@@ -51,6 +51,7 @@ export function BookingFlow({
   const [visitReason, setVisitReason] = useState<VisitReason>("general-consultation");
   const [symptoms, setSymptoms] = useState("");
   const [report, setReport] = useState<ReportRef | null>(null);
+  const [consented, setConsented] = useState(false);
 
   useEffect(() => {
     if (!appointmentId) return;
@@ -104,6 +105,8 @@ export function BookingFlow({
           visitReason,
           symptoms,
           reportId: report?.id,
+          consent: consented,
+          consentSource: "web",
         }),
       });
 
@@ -119,7 +122,7 @@ export function BookingFlow({
       router.replace(`/patient/book?appointment=${body.id}`);
       setStep("payment");
     },
-    [visitReason, symptoms, report, feeInPaise, router]
+    [visitReason, symptoms, report, consented, feeInPaise, router]
   );
 
   const handleConfirmPayment = useCallback(async () => {
@@ -201,6 +204,8 @@ export function BookingFlow({
             onSymptomsChange={setSymptoms}
             report={report}
             onReportChange={setReport}
+            consented={consented}
+            onConsentedChange={setConsented}
             onContinue={() => setStep("slot")}
           />
         )}

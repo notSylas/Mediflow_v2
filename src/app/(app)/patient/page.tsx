@@ -25,6 +25,10 @@ import { JoinCallButton } from "@/components/JoinCallButton";
 import { Reveal } from "@/components/Reveal";
 import { CountUp } from "@/components/CountUp";
 import { ProgressBar } from "@/components/ProgressBar";
+import { SpotlightCard } from "@/components/wow/SpotlightCard";
+import { MagneticButton } from "@/components/wow/MagneticButton";
+import { ShineBorder } from "@/components/wow/ShineBorder";
+import { CountdownRing } from "@/components/wow/CountdownRing";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -107,19 +111,21 @@ export default async function PatientHomePage() {
             {formatInTimeZone(now, timezone, "EEEE, MMMM d")}
           </p>
         </div>
-        <Button asChild size="lg">
-          <Link href="/patient/book">
-            <CalendarPlus className="mr-2 h-4 w-4" />
-            Book a visit
-          </Link>
-        </Button>
+        <MagneticButton>
+          <Button asChild size="lg">
+            <Link href="/patient/book">
+              <CalendarPlus className="mr-2 h-4 w-4" />
+              Book a visit
+            </Link>
+          </Button>
+        </MagneticButton>
       </Reveal>
 
       {/* Stat tiles */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {stats.map((stat, i) => (
           <Reveal key={stat.label} delay={i * 70}>
-            <div className={cn("hover-lift rounded-xl p-4", TONES[stat.tone].tile)}>
+            <SpotlightCard className={cn("hover-lift rounded-xl p-4", TONES[stat.tone].tile)}>
               <span
                 className={cn(
                   "flex h-9 w-9 items-center justify-center rounded-lg",
@@ -132,7 +138,7 @@ export default async function PatientHomePage() {
                 <CountUp value={stat.value} suffix={stat.suffix ?? ""} />
               </p>
               <p className="text-sm text-muted-foreground">{stat.label}</p>
-            </div>
+            </SpotlightCard>
           </Reveal>
         ))}
       </div>
@@ -142,7 +148,8 @@ export default async function PatientHomePage() {
         {/* Main column */}
         <div className="space-y-6 lg:col-span-2">
           <Reveal>
-            <Card className="glass overflow-hidden border-primary/20">
+            <ShineBorder>
+            <Card className="glass overflow-hidden rounded-2xl border-0">
               <div className="h-1 bg-primary" />
               <CardHeader>
                 <CardTitle>Next appointment</CardTitle>
@@ -167,13 +174,18 @@ export default async function PatientHomePage() {
                           </p>
                         </div>
                       </div>
-                      <Badge
-                        variant={next.appointment.status === "confirmed" ? "default" : "outline"}
-                      >
-                        {next.appointment.status === "pending_payment"
-                          ? "Awaiting payment"
-                          : "Confirmed"}
-                      </Badge>
+                      <div className="flex items-center gap-3">
+                        <Badge
+                          variant={next.appointment.status === "confirmed" ? "default" : "outline"}
+                        >
+                          {next.appointment.status === "pending_payment"
+                            ? "Awaiting payment"
+                            : "Confirmed"}
+                        </Badge>
+                        <CountdownRing
+                          startsAt={next.appointment.startsAt.toISOString()}
+                        />
+                      </div>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
                       {next.appointment.status === "confirmed" && (
@@ -209,6 +221,7 @@ export default async function PatientHomePage() {
                 )}
               </CardContent>
             </Card>
+            </ShineBorder>
           </Reveal>
 
           <Reveal delay={100}>

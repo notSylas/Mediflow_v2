@@ -54,13 +54,21 @@ test("consultation, prescription, and returning-patient history", async ({ page 
   await page.getByLabel("Medicine 1 duration in days").fill("3");
   await page.getByLabel("Advice").fill("Warm fluids. Rest your voice.");
 
-  page.once("dialog", (dialog) => dialog.accept());
+  // Issue is confirmed in a dialog before locking.
   await page.getByRole("button", { name: /issue prescription/i }).click();
+  await page
+    .getByRole("alertdialog")
+    .getByRole("button", { name: /issue prescription/i })
+    .click();
   await expect(page.getByText("Issued", { exact: true })).toBeVisible();
   await expect(page.getByText(/locked and can('|’)t be edited/i)).toBeVisible();
 
-  // Outcome.
+  // Outcome — also confirmed in a dialog.
   await page.getByRole("button", { name: /mark completed/i }).click();
+  await page
+    .getByRole("alertdialog")
+    .getByRole("button", { name: /mark completed/i })
+    .click();
   await expect(page.getByText("Completed", { exact: true })).toBeVisible();
   await signOut(page);
 

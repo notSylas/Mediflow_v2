@@ -246,6 +246,16 @@
     transform: translate(-40px, -20px) scale(1.1);
   }
 }
+/* Rotating "shine" border for premium accent cards. */
+@keyframes shine-spin {
+  to {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+.animate-shine-spin {
+  animation: shine-spin 5s linear infinite;
+}
+
 .animate-aurora-1 {
   animation: aurora-1 20s ease-in-out infinite;
 }

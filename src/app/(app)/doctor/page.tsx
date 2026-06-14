@@ -21,6 +21,9 @@ import { listDoctorAppointments } from "@/lib/appointments";
 import { getDoctorRevenueInPaise, getOrCreateDoctorProfile } from "@/lib/doctor";
 import { JoinCallButton } from "@/components/JoinCallButton";
 import { PresenceBadge } from "@/components/PresenceBadge";
+import { SpotlightCard } from "@/components/wow/SpotlightCard";
+import { ShineBorder } from "@/components/wow/ShineBorder";
+import { CountdownRing } from "@/components/wow/CountdownRing";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -178,7 +181,10 @@ export default async function DoctorDashboardPage() {
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {stats.map((stat) => (
-          <div key={stat.label} className={cn("hover-lift rounded-xl p-4", TONES[stat.tone].tile)}>
+          <SpotlightCard
+            key={stat.label}
+            className={cn("hover-lift rounded-xl p-4", TONES[stat.tone].tile)}
+          >
             <span
               className={cn(
                 "flex h-9 w-9 items-center justify-center rounded-lg",
@@ -189,11 +195,12 @@ export default async function DoctorDashboardPage() {
             </span>
             <p className="mt-3 text-2xl font-semibold tracking-tight tabular-nums">{stat.value}</p>
             <p className="text-sm text-muted-foreground">{stat.label}</p>
-          </div>
+          </SpotlightCard>
         ))}
       </div>
 
-      <Card className="glass overflow-hidden border-primary/20">
+      <ShineBorder>
+      <Card className="glass overflow-hidden rounded-2xl border-0">
         <div className="h-1 bg-primary" />
         <CardHeader>
           <CardTitle>Next patient</CardTitle>
@@ -233,23 +240,27 @@ export default async function DoctorDashboardPage() {
                 )}
               </div>
             </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <JoinCallButton
-                appointmentId={nextUp.appointment.id}
-                status={nextUp.appointment.status}
-                startsAt={nextUp.appointment.startsAt.toISOString()}
-                endsAt={nextUp.appointment.endsAt.toISOString()}
-              />
-              <Button asChild variant="outline">
-                <Link href={`/doctor/encounter/${nextUp.appointment.id}`}>
-                  <Stethoscope className="mr-2 h-4 w-4" />
-                  Open encounter
-                </Link>
-              </Button>
+            <div className="flex items-center gap-4">
+              <CountdownRing startsAt={nextUp.appointment.startsAt.toISOString()} />
+              <div className="flex flex-wrap items-center gap-2">
+                <JoinCallButton
+                  appointmentId={nextUp.appointment.id}
+                  status={nextUp.appointment.status}
+                  startsAt={nextUp.appointment.startsAt.toISOString()}
+                  endsAt={nextUp.appointment.endsAt.toISOString()}
+                />
+                <Button asChild variant="outline">
+                  <Link href={`/doctor/encounter/${nextUp.appointment.id}`}>
+                    <Stethoscope className="mr-2 h-4 w-4" />
+                    Open encounter
+                  </Link>
+                </Button>
+              </div>
             </div>
           </CardContent>
         )}
       </Card>
+      </ShineBorder>
 
       <Card className="glass">
         <CardHeader className="flex flex-row items-center justify-between space-y-0">

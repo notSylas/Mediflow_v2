@@ -21,6 +21,8 @@ interface IntakeStepProps {
   onSymptomsChange: (symptoms: string) => void;
   report: ReportRef | null;
   onReportChange: (report: ReportRef | null) => void;
+  consented: boolean;
+  onConsentedChange: (consented: boolean) => void;
   onContinue: () => void;
 }
 
@@ -31,11 +33,12 @@ export function IntakeStep({
   onSymptomsChange,
   report,
   onReportChange,
+  consented,
+  onConsentedChange,
   onContinue,
 }: IntakeStepProps) {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
-  const [consented, setConsented] = useState(false);
   const emergency = hasEmergencyRedFlag(symptoms);
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -159,7 +162,7 @@ export function IntakeStep({
         <input
           type="checkbox"
           checked={consented}
-          onChange={(e) => setConsented(e.target.checked)}
+          onChange={(e) => onConsentedChange(e.target.checked)}
           className="mt-0.5 h-4 w-4 shrink-0"
         />
         <span>

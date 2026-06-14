@@ -10,22 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-
-const STATUS_LABELS: Record<string, string> = {
-  pending_payment: "Awaiting payment",
-  confirmed: "Confirmed",
-  completed: "Completed",
-  cancelled: "Cancelled",
-  no_show: "No-show",
-};
-
-const STATUS_VARIANTS: Record<string, "default" | "secondary" | "outline" | "destructive"> = {
-  confirmed: "default",
-  completed: "secondary",
-  cancelled: "outline",
-  no_show: "destructive",
-  pending_payment: "outline",
-};
+import { statusLabel, statusVariant } from "@/lib/appointment-status";
 
 export default async function DoctorAppointmentsPage({
   searchParams,
@@ -102,8 +87,8 @@ export default async function DoctorAppointmentsPage({
           )}
         </div>
       </div>
-      <Badge variant={STATUS_VARIANTS[appointment.status] ?? "outline"}>
-        {STATUS_LABELS[appointment.status] ?? appointment.status}
+      <Badge variant={statusVariant(appointment.status)}>
+        {statusLabel(appointment.status, "doctor")}
       </Badge>
     </Link>
   );

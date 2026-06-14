@@ -25,14 +25,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-
-const STATUS_LABELS: Record<string, string> = {
-  pending_payment: "Awaiting payment",
-  confirmed: "Confirmed",
-  completed: "Completed",
-  cancelled: "Cancelled",
-  no_show: "No-show",
-};
+import { statusLabel } from "@/lib/appointment-status";
 
 export default async function EncounterPage({
   params,
@@ -76,7 +69,7 @@ export default async function EncounterPage({
         <div className="mt-2 flex flex-wrap items-center gap-3">
           <h1 className="text-2xl font-semibold">{data.patient.name}</h1>
           <Badge variant={appointment.status === "confirmed" ? "default" : "secondary"}>
-            {STATUS_LABELS[appointment.status] ?? appointment.status}
+            {statusLabel(appointment.status, "doctor")}
           </Badge>
           {isReturning && <Badge variant="outline">Returning patient</Badge>}
           {appointment.status === "confirmed" && (
@@ -164,7 +157,16 @@ export default async function EncounterPage({
               endsAt={appointment.endsAt.toISOString()}
             />
             {appointment.status === "confirmed" && (
-              <OutcomeButtons appointmentId={appointment.id} />
+              <OutcomeButtons
+                appointmentId={appointment.id}
+                hasNote={Boolean(
+                  data.note?.subjective ||
+                    data.note?.objective ||
+                    data.note?.assessment ||
+                    data.note?.plan
+                )}
+                prescriptionDraft={data.prescription?.status === "draft"}
+              />
             )}
           </div>
         </CardContent>

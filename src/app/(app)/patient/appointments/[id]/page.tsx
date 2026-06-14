@@ -8,8 +8,11 @@ import { getAppointmentForPatient } from "@/lib/appointments";
 import { getPrescriptionWithMedicines } from "@/lib/consult";
 import { describeMedicineSchedule } from "@/lib/medicines";
 import { getDoctorProfile } from "@/lib/doctor";
+import { statusLabel } from "@/lib/appointment-status";
 import { JoinCallButton } from "@/components/JoinCallButton";
 import { RescheduleDialog } from "@/components/patient/RescheduleDialog";
+import { ShineBorder } from "@/components/wow/ShineBorder";
+import { CountdownRing } from "@/components/wow/CountdownRing";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -18,14 +21,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-
-const STATUS_LABELS: Record<string, string> = {
-  pending_payment: "Awaiting payment",
-  confirmed: "Confirmed",
-  completed: "Completed",
-  cancelled: "Cancelled",
-  no_show: "Missed",
-};
 
 export default async function PatientAppointmentDetailPage({
   params,
@@ -64,7 +59,7 @@ export default async function PatientAppointmentDetailPage({
             {formatInTimeZone(appointment.startsAt, timezone, "EEEE, MMM d")}
           </h1>
           <Badge variant={appointment.status === "confirmed" ? "default" : "secondary"}>
-            {STATUS_LABELS[appointment.status] ?? appointment.status}
+            {statusLabel(appointment.status, "patient")}
           </Badge>
         </div>
         <p className="mt-1 text-muted-foreground">
@@ -75,24 +70,30 @@ export default async function PatientAppointmentDetailPage({
       </div>
 
       {appointment.status === "confirmed" && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Your video consultation</CardTitle>
-            <CardDescription>
-              The room opens 10 minutes before your slot. Make sure your camera and
-              microphone are working — you&apos;ll get a preview screen before joining.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-wrap items-center gap-3">
-            <JoinCallButton
-              appointmentId={appointment.id}
-              status={appointment.status}
-              startsAt={appointment.startsAt.toISOString()}
-              endsAt={appointment.endsAt.toISOString()}
-            />
-            <RescheduleDialog appointmentId={appointment.id} timezone={timezone} />
-          </CardContent>
-        </Card>
+        <ShineBorder>
+          <Card className="rounded-2xl border-0">
+            <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
+              <div>
+                <CardTitle>Your video consultation</CardTitle>
+                <CardDescription>
+                  The room opens 10 minutes before your slot. Make sure your camera
+                  and microphone are working — you&apos;ll get a preview screen before
+                  joining.
+                </CardDescription>
+              </div>
+              <CountdownRing startsAt={appointment.startsAt.toISOString()} />
+            </CardHeader>
+            <CardContent className="flex flex-wrap items-center gap-3">
+              <JoinCallButton
+                appointmentId={appointment.id}
+                status={appointment.status}
+                startsAt={appointment.startsAt.toISOString()}
+                endsAt={appointment.endsAt.toISOString()}
+              />
+              <RescheduleDialog appointmentId={appointment.id} timezone={timezone} />
+            </CardContent>
+          </Card>
+        </ShineBorder>
       )}
 
       <Card>

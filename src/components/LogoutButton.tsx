@@ -13,8 +13,8 @@ export function LogoutButton() {
       await signOut({
         fetchOptions: {
           onSuccess: () => {
-            // Redirect to home or login page
-            window.location.href = "/";
+            // Land on the login page so it's unambiguous you're signed out.
+            window.location.href = "/login";
           },
         },
       });

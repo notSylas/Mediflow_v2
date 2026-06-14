@@ -170,6 +170,19 @@ export function computeAvailableSlots(
     dayStart = fromZonedTime(`${dateStr}T00:00:00`, timezone);
   }
 
-  slots.sort((a, b) => a.getTime() - b.getTime());
-  return slots;
+  // Overlapping availability rules (or a rule overlapping an "extra" override)
+  // can generate the same instant more than once — dedupe so each slot is
+  // offered exactly once.
+  const seen = new Set<number>();
+  const unique: Date[] = [];
+  for (const slot of slots) {
+    const t = slot.getTime();
+    if (!seen.has(t)) {
+      seen.add(t);
+      unique.push(slot);
+    }
+  }
+
+  unique.sort((a, b) => a.getTime() - b.getTime());
+  return unique;
 }

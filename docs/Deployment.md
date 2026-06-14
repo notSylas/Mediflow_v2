@@ -49,14 +49,27 @@ Target setup: **Vercel** (app) + **Neon** (Postgres) + **LiveKit Cloud** (video)
 
 ## 5. Seed the doctor
 
-The first account to sign in becomes a patient by default. Promote the doctor once:
+The first account to sign in becomes a patient by default. Promote the doctor once,
+either with the script (after they've signed in once):
+
+```bash
+DATABASE_URL='<url>' npm run promote-doctor doctor@example.com
+```
+
+or directly in the Neon SQL editor:
 
 ```sql
--- Neon SQL editor, after the doctor signs in with their email:
 UPDATE "user" SET role = 'doctor' WHERE email = '<doctor-email>';
 ```
 
 Then the doctor visits `/doctor` (profile auto-provisions), sets fee/slot length/timezone and availability. Done — patients can book.
+
+## 5b. Reminders cron
+
+`vercel.json` already declares a cron that calls `/api/cron/reminders` every 10 minutes.
+Set `CRON_SECRET` in Vercel; the cron job sends `Authorization: Bearer <CRON_SECRET>`,
+which the endpoint verifies. No other setup needed — pre-consult reminder emails go out
+automatically once email (Resend) is configured.
 
 ## 6. Post-deploy checklist
 

@@ -43,6 +43,16 @@ export const VISIT_REASONS: {
 /** How long a pending_payment hold reserves a slot before it's released. */
 export const HOLD_MINUTES = 10;
 
+/**
+ * Current telemedicine-consent version. Bump when the consent wording changes
+ * so the exact terms each patient accepted remain auditable. The server, not
+ * the client, decides the version recorded.
+ */
+export const CONSENT_VERSION = "2026-06-13";
+
+export const CONSENT_SOURCES = ["web", "ios", "android"] as const;
+export type ConsentSource = (typeof CONSENT_SOURCES)[number];
+
 /** How close to the appointment time a confirmed booking may still be cancelled. */
 export const CANCELLATION_WINDOW_HOURS = 2;
 

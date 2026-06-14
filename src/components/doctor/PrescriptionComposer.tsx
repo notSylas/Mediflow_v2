@@ -3,6 +3,17 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { Plus, Trash2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -143,9 +154,6 @@ export function PrescriptionComposer({ appointmentId, initial }: PrescriptionCom
   };
 
   const issue = async () => {
-    if (!window.confirm("Issue this prescription? It can't be edited afterwards.")) {
-      return;
-    }
     if (!(await saveDraft())) return;
 
     setState("issuing");
@@ -365,9 +373,38 @@ export function PrescriptionComposer({ appointmentId, initial }: PrescriptionCom
           <Button variant="outline" onClick={saveDraft} disabled={state !== "idle" && state !== "saved"}>
             {state === "saving" ? "Saving…" : "Save draft"}
           </Button>
-          <Button onClick={issue} disabled={state === "saving" || state === "issuing"}>
-            {state === "issuing" ? "Issuing…" : "Issue prescription"}
-          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button disabled={state === "saving" || state === "issuing"}>
+                {state === "issuing" ? "Issuing…" : "Issue prescription"}
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Issue this prescription?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Once issued it is locked and visible to the patient — it cannot be
+                  edited. Corrections require a new consultation.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <div className="rounded-lg border bg-muted/40 p-3 text-sm">
+                {diagnosis.trim() && (
+                  <p>
+                    <span className="text-muted-foreground">Diagnosis: </span>
+                    {diagnosis.trim()}
+                  </p>
+                )}
+                <p>
+                  <span className="text-muted-foreground">Medicines: </span>
+                  {medicines.filter((m) => m.name.trim()).length}
+                </p>
+              </div>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Keep as draft</AlertDialogCancel>
+                <AlertDialogAction onClick={issue}>Issue prescription</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
           {state === "saved" && <span className="text-sm text-muted-foreground">Draft saved</span>}
         </div>
       </CardContent>

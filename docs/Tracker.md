@@ -74,6 +74,8 @@ Legend: ✅ done · 🔨 in progress · 🔜 planned (v1) · 🧊 v1.5 · ❌ cu
 | Unit tests (slots, booking rules, call window, payment signatures) | ✅ | Vitest, 36 tests |
 | E2E: auth + booking | ✅ | Playwright, production build, DB truncated per run |
 | E2E: consult + prescription + returning patient | ✅ | Full clinic loop in one spec |
+| E2E: full suite green after UI overhaul | ✅ | 6/6 — caught a real logout regression (2026-06-13) |
+| Vercel cron config + doctor-promote script | ✅ | `vercel.json`, `npm run promote-doctor` |
 | Emails (OTP, confirmation, reminder) | 🔜 | Resend — last 🔜 before launch |
 | Deployment guide | ✅ | `docs/Deployment.md` |
 | Production deploy | 🔜 | Follow `docs/Deployment.md` |
@@ -93,6 +95,42 @@ Legend: ✅ done · 🔨 in progress · 🔜 planned (v1) · 🧊 v1.5 · ❌ cu
 | Telemedicine consent at booking | ✅ | Required checkbox |
 | Terms + Privacy pages | ✅ | `/terms`, `/privacy` |
 | Patient receipt (print/PDF) | ✅ | Per paid appointment |
+
+## Redesign P0 — safety & workflow clarity (2026-06-13)
+
+| Item | Status | Notes |
+|---|---|---|
+| Auditable consent persisted + server-enforced | ✅ | version/timestamp/source on appointment; server sets version |
+| Server-side triage recheck | ✅ | re-runs red-flag check; records triageFlaggedAt; warns (block undecided) |
+| Irreversible-action safety (issue / complete / no-show) | ✅ | confirm dialogs + completion warnings; no-show separated |
+| Consolidated status labels | ✅ | `src/lib/appointment-status.ts` — patient 'Missed' vs doctor 'No-show' |
+| Loading skeletons on every route | ✅ | all (app) routes now have loading.tsx |
+| Nav-feedback audit | ✅ | no feedback-less async actions found |
+
+Verified: 40 unit tests + 6 e2e specs green (e2e run before this doc edit). Caught a
+real stale-closure booking bug during P0.1.
+
+## Mobile app (Expo) — kickoff (2026-06-13)
+
+| Item | Status | Notes |
+|---|---|---|
+| Expo project scaffolded (`mobile/`, SDK 54, Expo Router, TS) | ✅ | Expo Go 54.0.8 compatible; scheme `mediflow`, bundle `com.mediflow.app` |
+| Backend trustedOrigins for mobile | ✅ | `mediflow://` + dev `exp://`; server `expo()` plugin deferred (no social login) |
+| Better Auth Expo client + SecureStore | ✅ | `mobile/src/lib/auth.ts` |
+| Typed API client (cookie-attached fetch) | ✅ | `mobile/src/lib/api.ts` |
+| Login (OTP) + verify + role routing | ✅ | runs in Expo Go |
+| Native design system + patient/doctor tab navigation | ✅ | loading, error, empty, forms, badges, cards, accessibility labels |
+| Patient pages | ✅ | home, booking, appointments/detail, reschedule/cancel, prescriptions, profile, receipt, settings |
+| Doctor pages | ✅ | dashboard, appointments, encounter, SOAP, Rx, outcomes, patients/history, schedule, settings |
+| `/api/v1` mobile read layer | ✅ | aggregated patient/doctor home, encounters, roster, schedule, prescriptions |
+| Report upload + participant-aware report authorization | ✅ | PDF/JPEG/PNG picker; patient or appointment doctor |
+| Shared pages | ✅ | call pre-join, terms, privacy, not-found |
+| Mock payment flow + real-payment recovery UX | ✅ | mock confirms in Expo Go; real checkout requires native build |
+| LiveKit token authorization + pre-join UX | ✅ | media rendering still requires native LiveKit modules |
+| Native LiveKit media + Razorpay Checkout | 🔜 | EAS development build milestone; not available in Expo Go |
+
+Run: `cd mobile && npx expo start` — scan QR with Expo Go. Set `EXPO_PUBLIC_API_URL`
+in `mobile/.env` to the dev machine's LAN URL (phone can't reach localhost).
 
 ## v1.5 / deferred
 

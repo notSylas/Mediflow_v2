@@ -6,14 +6,24 @@ import { appointments, medicalReports, payments } from "@/db/schema";
 import { getAvailableSlots } from "@/lib/availability";
 import { requireSession } from "@/lib/api-auth";
 import { listPatientAppointments } from "@/lib/appointments";
-import { formatIntakeNote, HOLD_MINUTES, VISIT_REASON_VALUES } from "@/lib/booking";
+import {
+  CONSENT_SOURCES,
+  CONSENT_VERSION,
+  formatIntakeNote,
+  HOLD_MINUTES,
+  VISIT_REASON_VALUES,
+} from "@/lib/booking";
 import { getDoctorProfile } from "@/lib/doctor";
+import { hasEmergencyRedFlag } from "@/lib/triage";
 
 const createAppointmentSchema = z.object({
   startsAt: z.string().datetime(),
   visitReason: z.enum(VISIT_REASON_VALUES),
   symptoms: z.string().trim().min(1).max(2000),
   reportId: z.string().uuid().optional(),
+  // Auditable telemedicine consent — the patient must explicitly accept.
+  consent: z.literal(true),
+  consentSource: z.enum(CONSENT_SOURCES).default("web"),
 });
 
 export async function GET() {
@@ -74,6 +84,10 @@ export async function POST(request: Request) {
 
   const holdExpiresAt = new Date(now.getTime() + HOLD_MINUTES * 60 * 1000);
   const intakeNote = formatIntakeNote(parsed.data.visitReason, parsed.data.symptoms);
+  // Re-run the deterministic red-flag check server-side; the client check is
+  // only a UX hint and can't be trusted. This is an audit signal, not a
+  // diagnosis, and (per current product policy) warns without blocking.
+  const triageFlagged = hasEmergencyRedFlag(parsed.data.symptoms);
 
   try {
     const created = await db.transaction(async (tx) => {
@@ -99,6 +113,11 @@ export async function POST(request: Request) {
           endsAt,
           status: "pending_payment",
           intakeNote,
+          visitReason: parsed.data.visitReason,
+          consentVersion: CONSENT_VERSION,
+          consentedAt: now,
+          consentSource: parsed.data.consentSource,
+          triageFlaggedAt: triageFlagged ? now : null,
           holdExpiresAt,
         })
         .returning();
@@ -124,7 +143,9 @@ export async function POST(request: Request) {
       return appointment;
     });
 
-    return NextResponse.json(created, { status: 201 });
+    // Surface the server triage result so the client can reinforce the
+    // emergency warning even if its own check missed it.
+    return NextResponse.json({ ...created, triageFlagged }, { status: 201 });
   } catch (error) {
     if (error && typeof error === "object" && "code" in error && error.code === "23505") {
       return NextResponse.json({ error: "Slot is no longer available" }, { status: 409 });

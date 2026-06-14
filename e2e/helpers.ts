@@ -42,7 +42,9 @@ export async function signInDoctorWithAvailability(page: Page): Promise<void> {
   await page.goto("/doctor/settings");
   await page.waitForURL(/\/doctor\/settings/);
 
-  const existing = page.getByText("00:00 – 23:40");
+  // The range can render in more than one place (list + summary), so scope to
+  // the first match to stay out of strict-mode trouble.
+  const existing = page.getByText("00:00 – 23:40").first();
   if (await existing.isVisible().catch(() => false)) return;
 
   await page.getByLabel("Start").fill("00:00");

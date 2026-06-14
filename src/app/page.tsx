@@ -25,6 +25,7 @@ import { Button } from "@/components/ui/button";
 import { Reveal } from "@/components/Reveal";
 import { HeroBackground } from "@/components/landing/HeroBackground";
 import { TiltCard } from "@/components/landing/TiltCard";
+import { MagneticButton } from "@/components/wow/MagneticButton";
 
 const STATS = [
   { value: "2 min", label: "to book a visit" },
@@ -139,16 +140,18 @@ export default async function HomePage() {
               every prescription in one place.
             </p>
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row lg:justify-start">
-              <Button
-                asChild
-                size="lg"
-                className="bg-white text-[#0c3a3a] shadow-lg shadow-black/20 hover:bg-emerald-50"
-              >
-                <Link href="/patient/book">
-                  Book a consultation
-                  <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover/button:translate-x-0.5" />
-                </Link>
-              </Button>
+              <MagneticButton>
+                <Button
+                  asChild
+                  size="lg"
+                  className="bg-white text-[#0c3a3a] shadow-lg shadow-black/20 hover:bg-emerald-50"
+                >
+                  <Link href="/patient/book">
+                    Book a consultation
+                    <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover/button:translate-x-0.5" />
+                  </Link>
+                </Button>
+              </MagneticButton>
               <Button
                 asChild
                 size="lg"

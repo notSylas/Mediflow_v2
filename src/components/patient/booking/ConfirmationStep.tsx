@@ -2,6 +2,7 @@ import Link from "next/link";
 import { formatInTimeZone } from "date-fns-tz";
 import { CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { MagneticButton } from "@/components/wow/MagneticButton";
 
 interface ConfirmationStepProps {
   startsAt: string;
@@ -33,9 +34,11 @@ export function ConfirmationStep({
       </div>
 
       <div className="flex flex-col gap-3 sm:flex-row">
-        <Button asChild className="flex-1">
-          <Link href="/patient/appointments">View my appointments</Link>
-        </Button>
+        <MagneticButton className="flex-1">
+          <Button asChild className="w-full">
+            <Link href="/patient/appointments">View my appointments</Link>
+          </Button>
+        </MagneticButton>
         <Button asChild variant="outline" className="flex-1">
           <Link href="/patient/book">Book another</Link>
         </Button>

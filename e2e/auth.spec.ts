@@ -27,8 +27,9 @@ test("login, land on patient home, then logout", async ({ page }) => {
   await page.getByRole("button", { name: /verify & sign in/i }).click();
 
   await expect(page).toHaveURL(/\/patient/);
-  await expect(page.getByText(email)).toBeVisible();
-  await expect(page.getByText("patient", { exact: false })).toBeVisible();
+  // The sidebar shows the email in both the name line and the sub-line.
+  await expect(page.getByText(email).first()).toBeVisible();
+  await expect(page.getByText("patient", { exact: false }).first()).toBeVisible();
 
   await page.getByRole("button", { name: /log out/i }).click();
   await expect(page).toHaveURL(/\/login/);
@@ -88,6 +89,7 @@ test("doctor sets weekly availability and patient sees a matching slot", async (
   await expect(page).toHaveURL(/\/patient\/book/);
 
   await page.getByLabel("Tell us more").fill("Just a checkup.");
+  await page.getByRole("checkbox").check();
   await page.getByRole("button", { name: /continue to pick a time/i }).click();
 
   await expect(
