@@ -1,5 +1,6 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { expo } from "@better-auth/expo";
 import { emailOTP } from "better-auth/plugins";
 import { db } from "@/db";
 import * as schema from "@/db/schema";
@@ -10,6 +11,12 @@ export const auth = betterAuth({
     provider: "pg",
     schema,
   }),
+  // The mobile app authenticates against this same server. Its custom scheme
+  // and (in dev) Expo's exp:// origin must be trusted for cross-origin auth.
+  trustedOrigins: [
+    "mediflow://",
+    ...(process.env.NODE_ENV !== "production" ? ["exp://"] : []),
+  ],
   // Defaults to enabled in production. The Playwright suite runs against a
   // production build and signs in multiple users in quick succession, so it
   // opts out via DISABLE_RATE_LIMIT (set in playwright.config.ts).
@@ -50,6 +57,7 @@ export const auth = betterAuth({
         }
       : undefined,
   plugins: [
+    expo(),
     emailOTP({
       async sendVerificationOTP({ email, otp }) {
         await sendEmail({

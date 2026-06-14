@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
-import { medicalReports } from "@/db/schema";
+import { appointments, doctorProfiles, medicalReports } from "@/db/schema";
 import { requireSession } from "@/lib/api-auth";
 
 export async function GET(
@@ -22,7 +22,20 @@ export async function GET(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  if (report.patientId !== access.id) {
+  const isPatient = report.patientId === access.id;
+  let isAppointmentDoctor = false;
+
+  if (!isPatient && access.role === "doctor" && report.appointmentId) {
+    const [ownedAppointment] = await db
+      .select({ doctorUserId: doctorProfiles.userId })
+      .from(appointments)
+      .innerJoin(doctorProfiles, eq(doctorProfiles.id, appointments.doctorId))
+      .where(eq(appointments.id, report.appointmentId));
+
+    isAppointmentDoctor = ownedAppointment?.doctorUserId === access.id;
+  }
+
+  if (!isPatient && !isAppointmentDoctor) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

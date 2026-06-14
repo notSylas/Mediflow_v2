@@ -1,6 +1,17 @@
 import { NextResponse } from "next/server";
 import { requireSession } from "@/lib/api-auth";
-import { patientProfileSchema, upsertPatientProfile } from "@/lib/patient";
+import {
+  getPatientProfile,
+  patientProfileSchema,
+  upsertPatientProfile,
+} from "@/lib/patient";
+
+export async function GET() {
+  const access = await requireSession();
+  if (access instanceof NextResponse) return access;
+
+  return NextResponse.json(await getPatientProfile(access.id));
+}
 
 export async function PUT(request: Request) {
   const access = await requireSession();
