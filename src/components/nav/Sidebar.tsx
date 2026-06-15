@@ -68,6 +68,15 @@ export function Sidebar({ user }: { user: Session["user"] }) {
         <div className="px-3 pt-2">
           <LogoutButton />
         </div>
+        <div className="flex items-center gap-2 px-3 pt-3 text-xs text-muted-foreground">
+          <Link href="/terms" className="hover:text-foreground hover:underline">
+            Terms
+          </Link>
+          <span aria-hidden>·</span>
+          <Link href="/privacy" className="hover:text-foreground hover:underline">
+            Privacy
+          </Link>
+        </div>
       </div>
     </aside>
   );

@@ -349,6 +349,11 @@ export const messages = pgTable("messages", {
 // approach as medical_reports; swap to object storage before real scale.
 export const chatAttachments = pgTable("chat_attachments", {
   id: uuid("id").primaryKey().defaultRandom(),
+  // The conversation this file was uploaded into. An attachment can only be
+  // sent in this conversation, by its uploader — enforced at message send.
+  conversationId: uuid("conversation_id").references(() => conversations.id, {
+    onDelete: "cascade",
+  }),
   uploaderId: text("uploader_id")
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),

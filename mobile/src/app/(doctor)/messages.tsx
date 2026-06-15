@@ -1,18 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
-import {
-  Avatar,
-  EmptyState,
-  ErrorState,
-  Loading,
-  PageHeader,
-  Screen,
-} from "@/components/ui";
+import { StyleSheet, Text, View } from "react-native";
+import { Avatar, EmptyState, ErrorState, Loading } from "@/components/ui";
+import { AuroraScreen } from "@/components/aurora-screen";
+import { FadeInView, PressableScale } from "@/components/motion";
 import { apiFetch } from "@/lib/api";
 import { formatRelativeDay } from "@/lib/format-chat";
-import { colors, radius, space } from "@/lib/theme";
+import { colors, fonts, radius, space } from "@/lib/theme";
 import type { DoctorConversationRow } from "@/lib/chat-types";
 
 export default function DoctorMessages() {
@@ -34,8 +29,13 @@ export default function DoctorMessages() {
   const rows = query.data?.conversations ?? [];
 
   return (
-    <Screen refreshing={query.isRefetching} onRefresh={() => query.refetch()}>
-      <PageHeader title="Messages" subtitle="Patient conversations" />
+    <AuroraScreen
+      variant="doctor"
+      title="Messages"
+      subtitle="Patient conversations"
+      refreshing={query.isRefetching}
+      onRefresh={() => query.refetch()}
+    >
       {query.error ? (
         <ErrorState message={query.error.message} onRetry={() => query.refetch()} />
       ) : rows.length === 0 ? (
@@ -46,43 +46,44 @@ export default function DoctorMessages() {
         />
       ) : (
         <View style={styles.list}>
-          {rows.map(({ conversation, patient }) => (
-            <Pressable
-              key={conversation.id}
-              onPress={() =>
-                router.push({
-                  pathname: "/(doctor)/messages/[id]",
-                  params: { id: conversation.id, name: patient.name },
-                })
-              }
-              style={({ pressed }) => [styles.rowCard, pressed && { opacity: 0.7 }]}
-            >
-              <Avatar name={patient.name} doctor />
-              <View style={{ flex: 1, gap: 2 }}>
-                <View style={styles.rowTop}>
-                  <Text style={styles.name} numberOfLines={1}>
-                    {patient.name}
-                  </Text>
-                  {conversation.lastMessageAt ? (
-                    <Text style={styles.when}>
-                      {formatRelativeDay(conversation.lastMessageAt)}
+          {rows.map(({ conversation, patient }, i) => (
+            <FadeInView key={conversation.id} index={i}>
+              <PressableScale
+                onPress={() =>
+                  router.push({
+                    pathname: "/(doctor)/messages/[id]",
+                    params: { id: conversation.id, name: patient.name },
+                  })
+                }
+                style={styles.rowCard}
+              >
+                <Avatar name={patient.name} doctor />
+                <View style={{ flex: 1, gap: 2 }}>
+                  <View style={styles.rowTop}>
+                    <Text style={styles.name} numberOfLines={1}>
+                      {patient.name}
                     </Text>
-                  ) : null}
+                    {conversation.lastMessageAt ? (
+                      <Text style={styles.when}>
+                        {formatRelativeDay(conversation.lastMessageAt)}
+                      </Text>
+                    ) : null}
+                  </View>
+                  <Text style={styles.preview} numberOfLines={1}>
+                    {conversation.lastMessagePreview || "No messages yet"}
+                  </Text>
                 </View>
-                <Text style={styles.preview} numberOfLines={1}>
-                  {conversation.lastMessagePreview || "No messages yet"}
-                </Text>
-              </View>
-              {conversation.doctorUnread > 0 ? (
-                <View style={styles.unread}>
-                  <Text style={styles.unreadText}>{conversation.doctorUnread}</Text>
-                </View>
-              ) : null}
-            </Pressable>
+                {conversation.doctorUnread > 0 ? (
+                  <View style={styles.unread}>
+                    <Text style={styles.unreadText}>{conversation.doctorUnread}</Text>
+                  </View>
+                ) : null}
+              </PressableScale>
+            </FadeInView>
           ))}
         </View>
       )}
-    </Screen>
+    </AuroraScreen>
   );
 }
 
@@ -99,9 +100,9 @@ const styles = StyleSheet.create({
     padding: space.md,
   },
   rowTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
-  name: { flex: 1, fontSize: 15, fontWeight: "700", color: colors.text },
-  when: { fontSize: 11, color: colors.textMuted },
-  preview: { fontSize: 13, color: colors.textMuted },
+  name: { flex: 1, fontSize: 15, fontFamily: fonts.heading, color: colors.text },
+  when: { fontSize: 11, fontFamily: fonts.body, color: colors.textMuted },
+  preview: { fontSize: 13, fontFamily: fonts.body, color: colors.textMuted },
   unread: {
     minWidth: 22,
     height: 22,
@@ -111,5 +112,5 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  unreadText: { color: colors.primaryFg, fontSize: 11, fontWeight: "800" },
+  unreadText: { color: colors.primaryFg, fontSize: 11, fontFamily: fonts.bodySemibold },
 });

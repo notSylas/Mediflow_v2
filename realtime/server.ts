@@ -13,6 +13,17 @@ import { verifyRealtimeToken } from "../src/lib/realtime-token";
 
 const PORT = Number(process.env.REALTIME_PORT ?? 4000);
 
+// Browser clients must come from an allowlisted origin. Native apps send no
+// Origin header and authenticate by token, so they are unaffected. Configure
+// via REALTIME_ALLOWED_ORIGINS (comma-separated); defaults cover local dev.
+const ALLOWED_ORIGINS = (
+  process.env.REALTIME_ALLOWED_ORIGINS ??
+  "http://localhost:3000,http://127.0.0.1:3000"
+)
+  .split(",")
+  .map((o) => o.trim())
+  .filter(Boolean);
+
 const httpServer = createServer((_req, res) => {
   // Tiny health endpoint.
   res.writeHead(200, { "content-type": "text/plain" });
@@ -20,7 +31,9 @@ const httpServer = createServer((_req, res) => {
 });
 
 const io = new Server(httpServer, {
-  cors: { origin: true, credentials: true },
+  // Auth is via the handshake token, not cookies — so credentials stay off and
+  // the origin check is a defense-in-depth allowlist for browser clients.
+  cors: { origin: ALLOWED_ORIGINS },
   // Path stays default (/socket.io).
 });
 
@@ -58,13 +71,11 @@ async function start() {
   });
 
   httpServer.listen(PORT, () => {
-    // eslint-disable-next-line no-console
     console.log(`[realtime] socket.io listening on :${PORT}`);
   });
 }
 
 start().catch((err) => {
-  // eslint-disable-next-line no-console
   console.error("[realtime] failed to start", err);
   process.exit(1);
 });

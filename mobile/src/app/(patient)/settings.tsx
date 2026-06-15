@@ -11,6 +11,7 @@ import {
   Screen,
   SectionHeader,
 } from "@/components/ui";
+import { LegalLinks } from "@/components/legal-links";
 import { authClient, useSession } from "@/lib/auth";
 
 export default function PatientSettings() {
@@ -60,6 +61,8 @@ export default function PatientSettings() {
           MediFlow support from your registered email.
         </Muted>
       </Card>
+      <SectionHeader title="Legal" />
+      <LegalLinks />
       <Button label="Sign out" tone="danger" icon="logout" onPress={signOut} />
     </Screen>
   );

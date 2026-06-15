@@ -9,10 +9,10 @@ import {
   ErrorState,
   Field,
   Loading,
-  PageHeader,
-  Screen,
   SectionHeader,
 } from "@/components/ui";
+import { AuroraScreen } from "@/components/aurora-screen";
+import { FadeInView } from "@/components/motion";
 import { apiFetch } from "@/lib/api";
 import type { DoctorAppointmentRow } from "@/lib/types";
 
@@ -56,8 +56,13 @@ export default function DoctorAppointments() {
     router.push({ pathname: "/(doctor)/encounter/[id]", params: { id } });
 
   return (
-    <Screen refreshing={query.isRefetching} onRefresh={() => query.refetch()}>
-      <PageHeader title="Appointments" subtitle="Search and run every consultation." />
+    <AuroraScreen
+      variant="doctor"
+      title="Appointments"
+      subtitle="Search and run every consultation"
+      refreshing={query.isRefetching}
+      onRefresh={() => query.refetch()}
+    >
       <Field
         label="Search"
         value={search}
@@ -83,10 +88,10 @@ export default function DoctorAppointments() {
           message="Adjust the search or status filter."
         />
       ) : null}
-      <AppointmentSection title="Today" rows={today} onOpen={open} />
-      <AppointmentSection title="Upcoming" rows={upcoming} onOpen={open} />
-      <AppointmentSection title="Past" rows={past} onOpen={open} />
-    </Screen>
+      <AppointmentSection title="Today" rows={today} onOpen={open} index={0} />
+      <AppointmentSection title="Upcoming" rows={upcoming} onOpen={open} index={1} />
+      <AppointmentSection title="Past" rows={past} onOpen={open} index={2} />
+    </AuroraScreen>
   );
 }
 
@@ -94,14 +99,16 @@ function AppointmentSection({
   title,
   rows,
   onOpen,
+  index,
 }: {
   title: string;
   rows: DoctorAppointmentRow[];
   onOpen: (id: string) => void;
+  index: number;
 }) {
   if (rows.length === 0) return null;
   return (
-    <>
+    <FadeInView index={index}>
       <SectionHeader title={title} />
       <View style={{ gap: 11 }}>
         {rows.map((row) => (
@@ -112,6 +119,6 @@ function AppointmentSection({
           />
         ))}
       </View>
-    </>
+    </FadeInView>
   );
 }

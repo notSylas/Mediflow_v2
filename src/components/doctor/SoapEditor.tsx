@@ -35,7 +35,10 @@ export function SoapEditor({ appointmentId, initialNote }: SoapEditorProps) {
   );
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const latest = useRef(values);
-  latest.current = values;
+  // Keep the ref in sync after render (assigning during render is disallowed).
+  useEffect(() => {
+    latest.current = values;
+  });
 
   const save = useCallback(async () => {
     setStatus("saving");

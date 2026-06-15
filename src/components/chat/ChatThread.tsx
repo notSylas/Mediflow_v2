@@ -2,7 +2,15 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { formatInTimeZone } from "date-fns-tz";
-import { FileText, Paperclip, SendHorizontal, ShieldAlert, X } from "lucide-react";
+import {
+  ChevronUp,
+  FileText,
+  Loader2,
+  Paperclip,
+  SendHorizontal,
+  ShieldAlert,
+  X,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -21,10 +29,15 @@ export function ChatThread({ conversationId, currentRole, peerName }: ChatThread
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [cursor, setCursor] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [pendingFile, setPendingFile] = useState<ChatAttachment | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const lastIdRef = useRef<string | null>(null);
 
   const append = useCallback((incoming: ChatMessage) => {
     setMessages((prev) =>
@@ -32,14 +45,21 @@ export function ChatThread({ conversationId, currentRole, peerName }: ChatThread
     );
   }, []);
 
-  // Load history when the conversation changes.
+  const markRead = useCallback(() => {
+    void fetch(`/api/v1/conversations/${conversationId}/read`, { method: "POST" });
+  }, [conversationId]);
+
+  // Load the latest page when the conversation changes. (Parent remounts this
+  // via `key`, so `loading` starts true and we only ever clear it here.)
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
     fetch(`/api/v1/conversations/${conversationId}/messages`)
       .then((r) => r.json())
       .then((page: MessagesPage) => {
-        if (!cancelled) setMessages(page.messages);
+        if (cancelled) return;
+        setMessages(page.messages);
+        setCursor(page.nextCursor);
+        setHasMore(page.hasMore);
       })
       .finally(() => !cancelled && setLoading(false));
     return () => {
@@ -47,23 +67,53 @@ export function ChatThread({ conversationId, currentRole, peerName }: ChatThread
     };
   }, [conversationId]);
 
-  // Live messages for this conversation.
+  // Live messages for this conversation. A message from the other side that
+  // lands while the thread is open should be marked read immediately.
   useChatSocket(
     useCallback(
       ({ conversationId: cid, message }) => {
-        if (cid === conversationId) append(message);
+        if (cid !== conversationId) return;
+        append(message);
+        if (message.senderRole !== currentRole) markRead();
       },
-      [conversationId, append]
+      [conversationId, currentRole, append, markRead]
     )
   );
 
-  // Keep pinned to the latest message.
+  // Stick to the latest message only when one is appended at the bottom — not
+  // when older history is prepended.
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
+    const lastId = messages[messages.length - 1]?.id ?? null;
+    if (lastId !== lastIdRef.current) {
+      lastIdRef.current = lastId;
+      scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
+    }
   }, [messages]);
+
+  const loadOlder = async () => {
+    if (!cursor || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const res = await fetch(
+        `/api/v1/conversations/${conversationId}/messages?before=${cursor}`
+      );
+      if (res.ok) {
+        const page: MessagesPage = await res.json();
+        setMessages((prev) => {
+          const seen = new Set(prev.map((m) => m.id));
+          return [...page.messages.filter((m) => !seen.has(m.id)), ...prev];
+        });
+        setCursor(page.nextCursor);
+        setHasMore(page.hasMore);
+      }
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   const uploadFile = async (file: File) => {
     setUploading(true);
+    setUploadError(null);
     try {
       const form = new FormData();
       form.append("file", file);
@@ -71,7 +121,14 @@ export function ChatThread({ conversationId, currentRole, peerName }: ChatThread
         `/api/v1/conversations/${conversationId}/attachments`,
         { method: "POST", body: form }
       );
-      if (res.ok) setPendingFile(await res.json());
+      if (res.ok) {
+        setPendingFile(await res.json());
+      } else {
+        const body = await res.json().catch(() => null);
+        setUploadError(body?.error ?? "Upload failed. Please try again.");
+      }
+    } catch {
+      setUploadError("Upload failed. Check your connection and try again.");
     } finally {
       setUploading(false);
       if (fileRef.current) fileRef.current.value = "";
@@ -118,6 +175,24 @@ export function ChatThread({ conversationId, currentRole, peerName }: ChatThread
 
       <div ref={scrollRef} className="flex-1 space-y-2 overflow-y-auto px-4 py-4">
         {loading && <p className="text-sm text-muted-foreground">Loading…</p>}
+        {!loading && hasMore && (
+          <div className="flex justify-center pb-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={loadOlder}
+              disabled={loadingMore}
+              className="text-xs text-muted-foreground"
+            >
+              {loadingMore ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <ChevronUp className="h-3.5 w-3.5" />
+              )}
+              Load earlier messages
+            </Button>
+          </div>
+        )}
         {!loading && messages.length === 0 && (
           <p className="py-8 text-center text-sm text-muted-foreground">
             No messages yet. Say hello.
@@ -176,6 +251,9 @@ export function ChatThread({ conversationId, currentRole, peerName }: ChatThread
       </div>
 
       <div className="border-t p-3">
+        {uploadError && (
+          <p className="mb-2 text-xs text-destructive">{uploadError}</p>
+        )}
         {pendingFile && (
           <div className="mb-2 flex items-center gap-2 rounded-lg bg-muted px-3 py-1.5 text-sm">
             <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
@@ -205,7 +283,11 @@ export function ChatThread({ conversationId, currentRole, peerName }: ChatThread
             className="h-[42px] w-[42px] shrink-0"
             aria-label="Attach a file"
           >
-            <Paperclip className="h-4 w-4" />
+            {uploading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Paperclip className="h-4 w-4" />
+            )}
           </Button>
           <Textarea
             value={draft}
@@ -216,7 +298,7 @@ export function ChatThread({ conversationId, currentRole, peerName }: ChatThread
                 void send();
               }
             }}
-            placeholder={uploading ? "Uploading…" : "Write a message…"}
+            placeholder="Write a message…"
             rows={1}
             className="max-h-32 min-h-[42px] resize-none"
           />

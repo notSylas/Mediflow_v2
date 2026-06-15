@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Generated Expo type output (regenerated on every mobile build).
+    "mobile/.expo/**",
   ]),
 ]);
 

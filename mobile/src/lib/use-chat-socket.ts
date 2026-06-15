@@ -21,38 +21,45 @@ function realtimeUrl(explicit: string | null): string {
   return API_URL.replace(/:\d+$/, `:${REALTIME_PORT}`);
 }
 
+async function fetchToken(): Promise<TokenResponse | null> {
+  try {
+    return await apiFetch<TokenResponse>("/api/v1/realtime/token");
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Subscribes to live chat messages over socket.io. The handler is called for
- * every delivered message; callers filter by conversation. Reconnects are
- * handled by socket.io. The handler ref keeps the latest closure without
- * tearing down the socket on every render.
+ * every delivered message; callers filter by conversation. The short-lived
+ * token is refreshed on disconnect so a backgrounded app reconnects cleanly.
  */
 export function useChatSocket(onMessage: (event: ChatSocketEvent) => void) {
+  // Latest handler without tearing down the socket. Assigned in an effect (not
+  // during render) to satisfy the rules of hooks.
   const handlerRef = useRef(onMessage);
-  handlerRef.current = onMessage;
+  useEffect(() => {
+    handlerRef.current = onMessage;
+  }, [onMessage]);
 
   useEffect(() => {
     let socket: Socket | null = null;
     let cancelled = false;
 
     (async () => {
-      try {
-        const { token, url } = await apiFetch<TokenResponse>(
-          "/api/v1/realtime/token"
-        );
-        if (cancelled) return;
+      const first = await fetchToken();
+      if (!first || cancelled) return;
 
-        socket = io(realtimeUrl(url), {
-          auth: { token },
-          transports: ["websocket"],
+      socket = io(realtimeUrl(first.url), {
+        auth: { token: first.token },
+        transports: ["websocket"],
+      });
+      socket.on("message", (event: ChatSocketEvent) => handlerRef.current(event));
+      socket.on("disconnect", () => {
+        void fetchToken().then((next) => {
+          if (next && socket) socket.auth = { token: next.token };
         });
-        socket.on("message", (event: ChatSocketEvent) =>
-          handlerRef.current(event)
-        );
-      } catch {
-        // No live transport (server down / no token). Messages still load and
-        // send over REST; the thread just won't update without a refresh.
-      }
+      });
     })();
 
     return () => {

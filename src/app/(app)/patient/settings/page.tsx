@@ -2,6 +2,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { AccountSettings } from "@/components/account/AccountSettings";
+import { LegalLinks } from "@/components/account/LegalLinks";
 
 export default async function PatientSettingsPage() {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -16,6 +17,7 @@ export default async function PatientSettingsPage() {
         </p>
       </div>
       <AccountSettings initialName={session.user.name ?? ""} />
+      <LegalLinks />
     </div>
   );
 }

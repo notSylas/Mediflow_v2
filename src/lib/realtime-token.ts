@@ -6,7 +6,10 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 // Same idea as an Ably token — swap-friendly.
 
 const SECRET = process.env.REALTIME_SECRET ?? process.env.BETTER_AUTH_SECRET ?? "dev-realtime-secret";
-const TTL_SECONDS = 60 * 60;
+// Short-lived: a token only (re)establishes a socket connection, and the client
+// refreshes it on reconnect. A leaked token is usable for at most this window
+// after the session ends.
+const TTL_SECONDS = 15 * 60;
 
 export interface RealtimeClaims {
   userId: string;

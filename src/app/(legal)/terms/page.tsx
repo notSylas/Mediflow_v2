@@ -4,7 +4,7 @@ export default function TermsPage() {
   return (
     <>
       <h1>Terms of Service</h1>
-      <p>Last updated: 13 June 2026</p>
+      <p>Last updated: 14 June 2026</p>
 
       <h2>1. What MediFlow is</h2>
       <p>
@@ -33,7 +33,8 @@ export default function TermsPage() {
       <p>
         Provide accurate information in your intake and medical profile. Incomplete or
         inaccurate information can affect the care you receive. Join consultations from a
-        private, well-connected location.
+        private, well-connected location. Keep your sign-in codes confidential and do not
+        share access to your account.
       </p>
 
       <h2>5. Prescriptions</h2>
@@ -43,10 +44,29 @@ export default function TermsPage() {
         follow-up consultation.
       </p>
 
-      <h2>6. Changes</h2>
+      <h2>6. Messaging</h2>
+      <p>
+        Messaging with your doctor becomes available after you have a paid consultation.
+        It is for non-urgent follow-up only and is not monitored around the clock — never
+        use it for emergencies (see section 2).
+      </p>
+
+      <h2>7. Governing law</h2>
+      <p>
+        These terms are governed by the laws of India. Any disputes are subject to the
+        exclusive jurisdiction of the courts at [your city], India.
+      </p>
+
+      <h2>8. Changes</h2>
       <p>
         We may update these terms; material changes will be reflected by the date above.
         Continued use after an update constitutes acceptance.
+      </p>
+
+      <h2>9. Contact</h2>
+      <p>
+        Questions about these terms? Email us at{" "}
+        <a href="mailto:support@mediflow.app">support@mediflow.app</a>.
       </p>
     </>
   );

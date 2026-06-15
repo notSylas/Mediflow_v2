@@ -8,6 +8,7 @@ import { getOrCreateDoctorProfile } from "@/lib/doctor";
 import { ProfileForm } from "@/components/doctor/ProfileForm";
 import { AvailabilityRulesEditor } from "@/components/doctor/AvailabilityRulesEditor";
 import { OverridesEditor } from "@/components/doctor/OverridesEditor";
+import { LegalLinks } from "@/components/account/LegalLinks";
 
 export default async function DoctorSettingsPage() {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -57,6 +58,8 @@ export default async function DoctorSettingsPage() {
       <AvailabilityRulesEditor initialRules={rules} />
 
       <OverridesEditor initialOverrides={overrides} />
+
+      <LegalLinks />
     </div>
   );
 }

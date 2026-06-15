@@ -12,7 +12,8 @@ import {
   type TextInputProps,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { colors, radius, shadow, space } from "@/lib/theme";
+import { colors, fonts, radius, shadow, space } from "@/lib/theme";
+import { PressableScale } from "@/components/motion";
 
 export function Screen({
   children,
@@ -129,7 +130,11 @@ export function Body({
   children: React.ReactNode;
   strong?: boolean;
 }) {
-  return <Text style={[styles.body, strong && { fontWeight: "600" }]}>{children}</Text>;
+  return (
+    <Text style={[styles.body, strong && { fontFamily: fonts.bodySemibold }]}>
+      {children}
+    </Text>
+  );
 }
 
 export function Muted({ children }: { children: React.ReactNode }) {
@@ -215,16 +220,16 @@ export function Button({
     tone === "primary" || tone === "danger" ? colors.primaryFg : colors.text;
 
   return (
-    <Pressable
+    <PressableScale
       accessibilityRole="button"
       onPress={onPress}
       disabled={disabled || loading}
-      style={({ pressed }) => [
+      haptic={tone === "ghost" ? false : "light"}
+      style={[
         styles.button,
         toneStyle,
         compact && styles.buttonCompact,
         (disabled || loading) && { opacity: 0.5 },
-        pressed && { opacity: 0.8 },
       ]}
     >
       {loading ? (
@@ -235,7 +240,7 @@ export function Button({
           <Text style={[styles.buttonText, { color: foreground }]}>{label}</Text>
         </>
       )}
-    </Pressable>
+    </PressableScale>
   );
 }
 
@@ -447,8 +452,20 @@ const styles = StyleSheet.create({
   screen: { padding: space.md, paddingBottom: 110, gap: space.md },
   pageHeader: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 2 },
   backHeader: { flexDirection: "row", alignItems: "center", gap: 10 },
-  title: { fontSize: 27, lineHeight: 34, fontWeight: "700", color: colors.text },
-  headerTitle: { fontSize: 20, lineHeight: 26, fontWeight: "700", color: colors.text },
+  title: {
+    fontSize: 27,
+    lineHeight: 34,
+    fontFamily: fonts.display,
+    letterSpacing: -0.4,
+    color: colors.text,
+  },
+  headerTitle: {
+    fontSize: 20,
+    lineHeight: 26,
+    fontFamily: fonts.heading,
+    letterSpacing: -0.2,
+    color: colors.text,
+  },
   sectionHeader: {
     flexDirection: "row",
     alignItems: "center",
@@ -456,10 +473,15 @@ const styles = StyleSheet.create({
     gap: 12,
     marginTop: 2,
   },
-  sectionTitle: { fontSize: 18, fontWeight: "700", color: colors.text },
-  body: { fontSize: 15, lineHeight: 22, color: colors.text },
-  muted: { fontSize: 14, color: colors.textMuted, lineHeight: 20 },
-  caption: { fontSize: 12, color: colors.textMuted, lineHeight: 17 },
+  sectionTitle: {
+    fontSize: 18,
+    fontFamily: fonts.heading,
+    letterSpacing: -0.2,
+    color: colors.text,
+  },
+  body: { fontSize: 15, lineHeight: 22, fontFamily: fonts.body, color: colors.text },
+  muted: { fontSize: 14, fontFamily: fonts.body, color: colors.textMuted, lineHeight: 20 },
+  caption: { fontSize: 12, fontFamily: fonts.body, color: colors.textMuted, lineHeight: 17 },
   card: {
     backgroundColor: colors.card,
     borderRadius: radius.lg,
@@ -471,7 +493,7 @@ const styles = StyleSheet.create({
   },
   divider: { height: 1, backgroundColor: colors.border, marginVertical: 3 },
   fieldWrap: { gap: 7 },
-  label: { fontSize: 13, fontWeight: "600", color: colors.text },
+  label: { fontSize: 13, fontFamily: fonts.bodySemibold, color: colors.text },
   input: {
     minHeight: 48,
     borderWidth: 1,
@@ -505,7 +527,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   buttonCompact: { minHeight: 38, alignSelf: "flex-start", paddingHorizontal: 12 },
-  buttonText: { fontSize: 15, fontWeight: "700" },
+  buttonText: { fontSize: 15, fontFamily: fonts.semibold, letterSpacing: 0.1 },
   iconButton: {
     width: 42,
     height: 42,
@@ -526,10 +548,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 13,
   },
   chipActive: { backgroundColor: colors.accent, borderColor: colors.primary },
-  chipText: { fontSize: 13, color: colors.textMuted, fontWeight: "600" },
+  chipText: { fontSize: 13, color: colors.textMuted, fontFamily: fonts.bodySemibold },
   chipTextActive: { color: colors.primaryDark },
   badge: { borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 5 },
-  badgeText: { fontSize: 11, fontWeight: "700" },
+  badgeText: { fontSize: 11, fontFamily: fonts.bodySemibold },
   statCard: {
     width: "48%",
     minHeight: 130,
@@ -547,7 +569,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  statValue: { marginTop: 10, fontSize: 23, fontWeight: "800", color: colors.text },
+  statValue: {
+    marginTop: 10,
+    fontSize: 24,
+    fontFamily: fonts.display,
+    letterSpacing: -0.5,
+    color: colors.text,
+  },
   avatar: {
     width: 46,
     height: 46,
@@ -556,7 +584,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: colors.primary,
   },
-  avatarText: { color: colors.primaryFg, fontSize: 15, fontWeight: "800" },
+  avatarText: { color: colors.primaryFg, fontSize: 15, fontFamily: fonts.heading },
   empty: { alignItems: "center", gap: 8, paddingVertical: 18 },
   emptyIcon: {
     width: 52,
@@ -566,7 +594,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  emptyTitle: { fontSize: 17, fontWeight: "700", color: colors.text },
+  emptyTitle: { fontSize: 17, fontFamily: fonts.heading, color: colors.text },
   errorRow: { flexDirection: "row", gap: 10, alignItems: "flex-start" },
   loading: {
     flex: 1,

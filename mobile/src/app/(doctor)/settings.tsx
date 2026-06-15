@@ -11,10 +11,10 @@ import {
   Field,
   Loading,
   Muted,
-  PageHeader,
-  Screen,
   SectionHeader,
 } from "@/components/ui";
+import { AuroraScreen } from "@/components/aurora-screen";
+import { LegalLinks } from "@/components/legal-links";
 import { apiFetch } from "@/lib/api";
 import { authClient } from "@/lib/auth";
 import type {
@@ -149,8 +149,11 @@ export default function DoctorSettings() {
   };
 
   return (
-    <Screen>
-      <PageHeader title="Clinic settings" subtitle="Profile, fees, and patient booking hours." />
+    <AuroraScreen
+      variant="doctor"
+      title="Clinic settings"
+      subtitle="Profile, fees, and patient booking hours"
+    >
       <SectionHeader title="Doctor profile" />
       <Card>
         <Field
@@ -322,8 +325,11 @@ export default function DoctorSettings() {
         ))}
       </Card>
 
+      <SectionHeader title="Legal" />
+      <LegalLinks />
+
       <Button label="Sign out" tone="danger" icon="logout" onPress={signOut} />
-    </Screen>
+    </AuroraScreen>
   );
 }
 

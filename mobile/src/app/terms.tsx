@@ -24,6 +24,17 @@ export default function Terms() {
         The treating doctor remains responsible for clinical advice. Patients must
         provide accurate information and seek emergency care when appropriate.
       </Muted>
+      <SectionHeader title="Messaging" />
+      <Muted>
+        Messaging with your doctor unlocks after a paid consultation and is for
+        non-urgent follow-up only. It is not monitored around the clock — never use it
+        for emergencies.
+      </Muted>
+      <SectionHeader title="Governing law and contact" />
+      <Muted>
+        These terms are governed by the laws of India, subject to the courts at [your
+        city]. Questions? Email support@mediflow.app.
+      </Muted>
     </Screen>
   );
 }

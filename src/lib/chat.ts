@@ -9,6 +9,10 @@ import {
   user,
 } from "@/db/schema";
 import { publishChatMessage } from "@/lib/realtime";
+import {
+  attachmentUsableBy,
+  messagingAllowedForStatus,
+} from "@/lib/chat-policy";
 
 export const MESSAGE_PAGE_SIZE = 30;
 
@@ -36,23 +40,46 @@ async function attachmentMeta(attachmentId: string | null) {
   return a ?? null;
 }
 
-/** True if the patient has any non-cancelled appointment with the doctor. */
+/**
+ * Validates that an attachment may be sent in this conversation by this sender.
+ * Returns true only if the attachment exists, was uploaded by the sender, into
+ * this same conversation. Defends against a leaked/guessed attachment id being
+ * attached elsewhere to read another user's file.
+ */
+export async function canSendAttachment(
+  attachmentId: string,
+  conversationId: string,
+  senderId: string
+): Promise<boolean> {
+  const [a] = await db
+    .select({
+      uploaderId: chatAttachments.uploaderId,
+      conversationId: chatAttachments.conversationId,
+    })
+    .from(chatAttachments)
+    .where(eq(chatAttachments.id, attachmentId));
+  if (!a) return false;
+  return attachmentUsableBy(a, { senderId, conversationId });
+}
+
+/**
+ * True if the patient has a *paid* appointment with the doctor — messaging is
+ * unlocked by a real consultation, not an unpaid hold. See chat-policy.ts.
+ */
 export async function patientHasBooking(
   patientId: string,
   doctorId: string
 ): Promise<boolean> {
-  const [row] = await db
-    .select({ id: appointments.id })
+  const rows = await db
+    .select({ status: appointments.status })
     .from(appointments)
     .where(
       and(
         eq(appointments.patientId, patientId),
-        eq(appointments.doctorId, doctorId),
-        dsql`${appointments.status} <> 'cancelled'`
+        eq(appointments.doctorId, doctorId)
       )
-    )
-    .limit(1);
-  return Boolean(row);
+    );
+  return rows.some((r) => messagingAllowedForStatus(r.status));
 }
 
 /**
@@ -68,22 +95,23 @@ export async function getOrCreatePatientConversation(patientId: string) {
 
   if (!(await patientHasBooking(patientId, doctor.id))) return null;
 
-  const [existing] = await db
-    .select()
-    .from(conversations)
-    .where(
-      and(
-        eq(conversations.patientId, patientId),
-        eq(conversations.doctorId, doctor.id)
-      )
-    );
+  const pair = and(
+    eq(conversations.patientId, patientId),
+    eq(conversations.doctorId, doctor.id)
+  );
+
+  const [existing] = await db.select().from(conversations).where(pair);
   if (existing) return { conversation: existing, doctorUserId: doctor.userId };
 
-  const [created] = await db
+  // Insert idempotently: two concurrent first-messages would otherwise race on
+  // the uq_conversation_pair unique index (23505). onConflictDoNothing + a
+  // re-select makes this safe.
+  await db
     .insert(conversations)
     .values({ patientId, doctorId: doctor.id })
-    .returning();
-  return { conversation: created, doctorUserId: doctor.userId };
+    .onConflictDoNothing();
+  const [conversation] = await db.select().from(conversations).where(pair);
+  return { conversation, doctorUserId: doctor.userId };
 }
 
 /** Loads a conversation if the user is one of its two participants. */

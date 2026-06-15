@@ -1,14 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { ChatThread } from "@/components/chat-thread";
-import {
-  BackHeader,
-  EmptyState,
-  ErrorState,
-  Loading,
-  PrimaryButton,
-  Screen,
-} from "@/components/ui";
+import { EmptyState, ErrorState, Loading, PrimaryButton } from "@/components/ui";
+import { AuroraScreen } from "@/components/aurora-screen";
 import { ApiError, apiFetch } from "@/lib/api";
 import type { Conversation } from "@/lib/chat-types";
 
@@ -33,8 +27,7 @@ export default function PatientMessages() {
   // 403 = no booking yet; messaging is gated behind a consultation.
   if (conversation.error instanceof ApiError && conversation.error.status === 403) {
     return (
-      <Screen>
-        <BackHeader title="Messages" onBack={() => router.back()} />
+      <AuroraScreen variant="patient" title="Messages" subtitle="Chat with your doctor">
         <EmptyState
           icon="chat-plus-outline"
           title="Messaging opens after you book"
@@ -47,19 +40,18 @@ export default function PatientMessages() {
             />
           }
         />
-      </Screen>
+      </AuroraScreen>
     );
   }
 
   if (!conversation.data) {
     return (
-      <Screen>
-        <BackHeader title="Messages" onBack={() => router.back()} />
+      <AuroraScreen variant="patient" title="Messages" subtitle="Chat with your doctor">
         <ErrorState
           message={conversation.error?.message}
           onRetry={() => conversation.refetch()}
         />
-      </Screen>
+      </AuroraScreen>
     );
   }
 

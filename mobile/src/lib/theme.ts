@@ -24,6 +24,26 @@ export const colors = {
 
 export const radius = { sm: 8, md: 12, lg: 16, xl: 22, pill: 999 };
 export const space = { xs: 6, sm: 10, md: 16, lg: 24, xl: 32 };
+
+/** Figtree for display/headings (warm, confident); Noto Sans for body. Loaded
+ *  in the root layout; falls back to system if not yet ready. */
+export const fonts = {
+  display: "Figtree_800ExtraBold",
+  heading: "Figtree_700Bold",
+  semibold: "Figtree_600SemiBold",
+  body: "NotoSans_400Regular",
+  bodyMedium: "NotoSans_500Medium",
+  bodySemibold: "NotoSans_600SemiBold",
+};
+
+/** Aurora gradient palettes for hero headers + accents. */
+export const gradients = {
+  patient: ["#0bb1a3", "#07877d", "#045d56"] as const,
+  doctor: ["#7a73f5", "#5b55d6", "#403a9c"] as const,
+  // Soft blob accents painted over the hero for the aurora glow.
+  patientBlobs: ["#5ff0dd", "#0bb1a3"] as const,
+  doctorBlobs: ["#a9a4ff", "#6f68f0"] as const,
+};
 export const shadow = {
   shadowColor: "#172126",
   shadowOffset: { width: 0, height: 4 },

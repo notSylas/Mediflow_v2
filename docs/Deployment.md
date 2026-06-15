@@ -71,6 +71,31 @@ Set `CRON_SECRET` in Vercel; the cron job sends `Authorization: Bearer <CRON_SEC
 which the endpoint verifies. No other setup needed — pre-consult reminder emails go out
 automatically once email (Resend) is configured.
 
+## 5c. Realtime chat server
+
+Patient↔doctor chat is delivered by a **separate long-running process**
+(`realtime/server.ts`, started with `npm run realtime`) — Vercel's serverless
+functions can't hold a websocket open, so this **cannot** run on Vercel. Host it
+on a platform that runs a persistent Node process: Railway, Fly.io, Render, or a
+small VM.
+
+What it needs:
+
+- `DATABASE_URL` — same Postgres as the app (it uses `LISTEN/NOTIFY`, no tables).
+- `REALTIME_SECRET` (or it reuses `BETTER_AUTH_SECRET`) — **must match the app's**
+  value so socket tokens verify.
+- `REALTIME_PORT` — the port to listen on (default 4000); map it to a public
+  HTTPS endpoint (wss://) via your host's TLS termination.
+- `REALTIME_ALLOWED_ORIGINS` — comma-separated browser origins (your app's
+  domain). Native mobile apps send no Origin and are exempt.
+
+Then on the **app** (Vercel) set `NEXT_PUBLIC_REALTIME_URL` to the public socket
+URL (e.g. `https://realtime.yourdomain.com`). If the socket server is down, chat
+still works over REST — messages just don't appear until the thread is refetched.
+
+> Chat data note: attachments are stored inline as Postgres `bytea` (fine for
+> small images/PDFs). Move them to object storage (S3/R2) before real scale.
+
 ## 6. Post-deploy checklist
 
 - [ ] Book a real ₹-test consultation end-to-end (Razorpay test keys on a staging deploy, or a small live payment refunded after).
@@ -78,12 +103,14 @@ automatically once email (Resend) is configured.
 - [ ] Video call works doctor↔patient across two devices/networks.
 - [ ] OTP email delivery (or interim: confirm pino logs in Vercel → Logs).
 - [ ] `e2e` suite green locally against the production build: `npx playwright test`.
+- [ ] Realtime server reachable: `GET https://<realtime-host>/` returns `realtime ok`, and a message sent on one device appears live on another.
 
 ## Local dev (reference)
 
 ```bash
 docker start mediflow-v2-pg   # Postgres 17 on :5433
 npm run dev                    # app on :3000, OTPs in console
+npm run realtime               # chat socket server on :4000 (separate terminal)
 npx vitest run                 # unit tests
 npx playwright test            # e2e (truncates the local DB!)
 ```

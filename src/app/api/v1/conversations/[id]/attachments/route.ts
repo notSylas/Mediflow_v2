@@ -36,6 +36,7 @@ export async function POST(
   const [created] = await db
     .insert(chatAttachments)
     .values({
+      conversationId: id,
       uploaderId: access.id,
       filename: file.name,
       mimeType: file.type,

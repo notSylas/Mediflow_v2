@@ -24,6 +24,9 @@ export function Reveal({ children, className, delay = 0 }: RevealProps) {
     if (!el) return;
 
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      // Show immediately, no scroll animation; can't be done in render (needs
+      // window.matchMedia, which is unavailable during SSR).
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setVisible(true);
       return;
     }

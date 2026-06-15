@@ -1,8 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import * as DocumentPicker from "expo-document-picker";
+import * as FileSystem from "expo-file-system/legacy";
+import * as Sharing from "expo-sharing";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   Image,
   KeyboardAvoidingView,
@@ -15,7 +18,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { IconButton } from "@/components/ui";
-import { apiFetch, apiUpload } from "@/lib/api";
+import { ApiError, apiFetch, apiUpload } from "@/lib/api";
 import { API_URL, authClient } from "@/lib/auth";
 import { useChatSocket } from "@/lib/use-chat-socket";
 import { formatTime } from "@/lib/format";
@@ -37,9 +40,14 @@ export function ChatThread({
   const [draft, setDraft] = useState("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [cursor, setCursor] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [pendingFile, setPendingFile] = useState<ChatAttachment | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const listRef = useRef<FlatList<ChatMessage>>(null);
+  const lastIdRef = useRef<string | null>(null);
 
   const append = useCallback((incoming: ChatMessage) => {
     setMessages((prev) =>
@@ -47,11 +55,23 @@ export function ChatThread({
     );
   }, []);
 
+  const markRead = useCallback(() => {
+    void apiFetch(`/api/v1/conversations/${conversationId}/read`, {
+      method: "POST",
+    }).catch(() => undefined);
+  }, [conversationId]);
+
+  // Load latest page on mount (the screen remounts per conversation, so loading
+  // starts true and is only cleared here).
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
     apiFetch<MessagesPage>(`/api/v1/conversations/${conversationId}/messages`)
-      .then((page) => !cancelled && setMessages(page.messages))
+      .then((page) => {
+        if (cancelled) return;
+        setMessages(page.messages);
+        setCursor(page.nextCursor);
+        setHasMore(page.hasMore);
+      })
       .catch(() => undefined)
       .finally(() => !cancelled && setLoading(false));
     return () => {
@@ -62,11 +82,42 @@ export function ChatThread({
   useChatSocket(
     useCallback(
       ({ conversationId: cid, message }) => {
-        if (cid === conversationId) append(message);
+        if (cid !== conversationId) return;
+        append(message);
+        if (message.senderRole !== currentRole) markRead();
       },
-      [conversationId, append]
+      [conversationId, currentRole, append, markRead]
     )
   );
+
+  // Stick to the newest message only when one is appended at the bottom.
+  useEffect(() => {
+    const lastId = messages[messages.length - 1]?.id ?? null;
+    if (lastId !== lastIdRef.current) {
+      lastIdRef.current = lastId;
+      requestAnimationFrame(() => listRef.current?.scrollToEnd({ animated: false }));
+    }
+  }, [messages]);
+
+  const loadOlder = async () => {
+    if (!cursor || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const page = await apiFetch<MessagesPage>(
+        `/api/v1/conversations/${conversationId}/messages?before=${cursor}`
+      );
+      setMessages((prev) => {
+        const seen = new Set(prev.map((m) => m.id));
+        return [...page.messages.filter((m) => !seen.has(m.id)), ...prev];
+      });
+      setCursor(page.nextCursor);
+      setHasMore(page.hasMore);
+    } catch {
+      // leave the list as-is; the user can retry
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   const pickFile = async () => {
     const result = await DocumentPicker.getDocumentAsync({
@@ -77,6 +128,7 @@ export function ChatThread({
     if (result.canceled) return;
     const asset = result.assets[0];
     setUploading(true);
+    setUploadError(null);
     try {
       const form = new FormData();
       form.append("file", {
@@ -89,10 +141,30 @@ export function ChatThread({
         form
       );
       setPendingFile(uploaded);
-    } catch {
-      // surfaced by leaving the composer unchanged; user can retry
+    } catch (err) {
+      setUploadError(
+        err instanceof ApiError ? err.message : "Upload failed. Please try again."
+      );
     } finally {
       setUploading(false);
+    }
+  };
+
+  const openAttachment = async (att: ChatAttachment) => {
+    try {
+      const cookie = authClient.getCookie();
+      const safeName = `${att.id}-${att.filename.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+      const target = `${FileSystem.cacheDirectory}${safeName}`;
+      const { uri } = await FileSystem.downloadAsync(
+        `${API_URL}/api/v1/attachments/${att.id}`,
+        target,
+        { headers: cookie ? { Cookie: cookie } : undefined }
+      );
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(uri, { mimeType: att.mimeType });
+      }
+    } catch {
+      Alert.alert("Couldn't open file", "Please try again.");
     }
   };
 
@@ -161,14 +233,34 @@ export function ChatThread({
             data={messages}
             keyExtractor={(m) => m.id}
             contentContainerStyle={styles.listContent}
-            onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: false })}
+            maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
+            ListHeaderComponent={
+              hasMore ? (
+                <Pressable
+                  onPress={loadOlder}
+                  disabled={loadingMore}
+                  style={({ pressed }) => [styles.loadMore, pressed && { opacity: 0.6 }]}
+                >
+                  {loadingMore ? (
+                    <ActivityIndicator color={colors.textMuted} size="small" />
+                  ) : (
+                    <Text style={styles.loadMoreText}>Load earlier messages</Text>
+                  )}
+                </Pressable>
+              ) : null
+            }
             renderItem={({ item }) => (
-              <Bubble message={item} mine={item.senderRole === currentRole} />
+              <Bubble
+                message={item}
+                mine={item.senderRole === currentRole}
+                onOpenAttachment={openAttachment}
+              />
             )}
           />
         )}
 
         <View style={styles.composerWrap}>
+          {uploadError ? <Text style={styles.uploadError}>{uploadError}</Text> : null}
           {pendingFile ? (
             <View style={styles.pendingChip}>
               <MaterialCommunityIcons
@@ -231,7 +323,15 @@ export function ChatThread({
   );
 }
 
-function Bubble({ message, mine }: { message: ChatMessage; mine: boolean }) {
+function Bubble({
+  message,
+  mine,
+  onOpenAttachment,
+}: {
+  message: ChatMessage;
+  mine: boolean;
+  onOpenAttachment: (att: ChatAttachment) => void;
+}) {
   const attachment = message.attachment;
   const isImage = attachment?.mimeType.startsWith("image/");
   const cookie = authClient.getCookie();
@@ -241,7 +341,9 @@ function Bubble({ message, mine }: { message: ChatMessage; mine: boolean }) {
       <View style={[styles.bubble, mine ? styles.bubbleMine : styles.bubbleTheirs]}>
         {attachment ? (
           isImage ? (
+            // eslint-disable-next-line jsx-a11y/alt-text
             <Image
+              accessibilityLabel={attachment.filename}
               source={{
                 uri: `${API_URL}/api/v1/attachments/${attachment.id}`,
                 headers: cookie ? { Cookie: cookie } : undefined,
@@ -250,7 +352,10 @@ function Bubble({ message, mine }: { message: ChatMessage; mine: boolean }) {
               resizeMode="cover"
             />
           ) : (
-            <View style={[styles.fileChip, mine && styles.fileChipMine]}>
+            <Pressable
+              onPress={() => onOpenAttachment(attachment)}
+              style={[styles.fileChip, mine && styles.fileChipMine]}
+            >
               <MaterialCommunityIcons
                 name="file-document-outline"
                 size={18}
@@ -262,7 +367,12 @@ function Bubble({ message, mine }: { message: ChatMessage; mine: boolean }) {
               >
                 {attachment.filename}
               </Text>
-            </View>
+              <MaterialCommunityIcons
+                name="open-in-new"
+                size={15}
+                color={mine ? colors.primaryFg : colors.textMuted}
+              />
+            </Pressable>
           )
         ) : null}
         {message.body ? (
@@ -295,6 +405,8 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: "center", justifyContent: "center", gap: 10 },
   empty: { fontSize: 14, color: colors.textMuted },
   listContent: { padding: space.md, gap: 8 },
+  loadMore: { alignItems: "center", paddingVertical: 8, marginBottom: 4 },
+  loadMoreText: { fontSize: 13, color: colors.textMuted, fontWeight: "600" },
   row: { flexDirection: "row" },
   rowMine: { justifyContent: "flex-end" },
   rowTheirs: { justifyContent: "flex-start" },
@@ -335,6 +447,7 @@ const styles = StyleSheet.create({
     paddingBottom: Platform.OS === "ios" ? 8 : 10,
     gap: 8,
   },
+  uploadError: { fontSize: 12, color: colors.danger, paddingHorizontal: 4 },
   pendingChip: {
     flexDirection: "row",
     alignItems: "center",

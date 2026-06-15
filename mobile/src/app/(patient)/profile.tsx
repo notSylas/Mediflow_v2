@@ -9,9 +9,9 @@ import {
   Field,
   Loading,
   Muted,
-  PageHeader,
-  Screen,
 } from "@/components/ui";
+import { AuroraScreen } from "@/components/aurora-screen";
+import { FadeInView } from "@/components/motion";
 import { apiFetch } from "@/lib/api";
 import type { PatientProfile } from "@/lib/types";
 
@@ -57,16 +57,21 @@ export default function MedicalProfile() {
   };
 
   return (
-    <Screen>
-      <PageHeader
-        title="Medical profile"
-        subtitle="Private to you and your doctor. All fields are optional."
-      />
+    <AuroraScreen
+      variant="patient"
+      title="Medical profile"
+      subtitle="Private to you and your doctor. All fields optional."
+      refreshing={query.isRefetching}
+      onRefresh={() => query.refetch()}
+    >
       {query.error ? <ErrorState message={query.error.message} /> : null}
-      <Card tone="accent">
-        <Body strong>Why this matters</Body>
-        <Muted>Your doctor reviews this information before each consultation.</Muted>
-      </Card>
+      <FadeInView index={0}>
+        <Card tone="accent">
+          <Body strong>Why this matters</Body>
+          <Muted>Your doctor reviews this information before each consultation.</Muted>
+        </Card>
+      </FadeInView>
+      <FadeInView index={1}>
       <Card>
         <Field
           label="Date of birth"
@@ -133,6 +138,7 @@ export default function MedicalProfile() {
         {saved ? <Muted>Your medical profile is saved.</Muted> : null}
         <Button label="Save profile" loading={mutation.isPending} onPress={() => mutation.mutate()} />
       </Card>
-    </Screen>
+      </FadeInView>
+    </AuroraScreen>
   );
 }

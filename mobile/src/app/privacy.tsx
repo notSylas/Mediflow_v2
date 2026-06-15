@@ -23,10 +23,18 @@ export default function Privacy() {
         Notification text should remain generic. Do not use shared devices for doctor
         access, and sign out when account access may be exposed.
       </Muted>
+      <SectionHeader title="Service providers" />
+      <Muted>
+        We use a few providers to operate, each processing data only as needed:
+        database and application hosting, Razorpay for payments, LiveKit for video, and
+        an email provider for sign-in codes. Card details are handled by the payment
+        provider and never stored by MediFlow.
+      </Muted>
       <SectionHeader title="Requests" />
       <Muted>
         Access, correction, deletion, and retention requests require identity
-        verification and may be subject to medical-record obligations.
+        verification and may be subject to medical-record obligations. If you are in
+        India, your rights under the DPDP Act, 2023 apply. Email privacy@mediflow.app.
       </Muted>
     </Screen>
   );

@@ -4,7 +4,7 @@ Non-negotiables for anyone (human or AI) working in this repo. `AGENTS.md` is th
 
 ## Architecture (settled — don't re-litigate)
 
-1. Single deployable Next.js app. No separate backend, no websocket server, no Celery/Redis equivalents.
+1. The Next.js app is the system of record and handles all reads/writes. The **one** permitted auxiliary process is the self-hosted socket.io realtime server (`realtime/server.ts`) for chat delivery — it owns no data, only fans out Postgres `NOTIFY` events to connected clients. No other separate backend, no Celery/Redis equivalents. Chat messages are always persisted via REST first; realtime is best-effort and the app stays fully functional if the socket server is down.
 2. Slots are **computed, never materialized**.
 3. Double-booking prevention lives in the **database** (partial unique index), not application logic. Any new booking path must cancel expired holds for the slot, then insert, and map error 23505 → 409.
 4. Issued prescriptions are **immutable**. No edit/delete path, ever — corrections happen on the next consult.

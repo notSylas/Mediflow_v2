@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
-import { Pressable, StyleSheet, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import {
   Avatar,
   Body,
@@ -11,9 +11,9 @@ import {
   Field,
   Loading,
   Muted,
-  PageHeader,
-  Screen,
 } from "@/components/ui";
+import { AuroraScreen } from "@/components/aurora-screen";
+import { FadeInView, PressableScale } from "@/components/motion";
 import { apiFetch } from "@/lib/api";
 import { formatDate } from "@/lib/format";
 import type { PatientIdentity } from "@/lib/types";
@@ -41,8 +41,13 @@ export default function DoctorPatients() {
 
   if (query.isLoading && !query.data) return <Loading />;
   return (
-    <Screen refreshing={query.isRefetching} onRefresh={() => query.refetch()}>
-      <PageHeader title="Patients" subtitle="Your roster and consultation history." />
+    <AuroraScreen
+      variant="doctor"
+      title="Patients"
+      subtitle="Your roster and consultation history"
+      refreshing={query.isRefetching}
+      onRefresh={() => query.refetch()}
+    >
       <Field
         label="Search patients"
         value={search}
@@ -58,30 +63,31 @@ export default function DoctorPatients() {
         />
       ) : null}
       <View style={{ gap: 11 }}>
-        {query.data?.patients.map(({ patient, visitCount, lastVisit }) => (
-          <Pressable
-            key={patient.id}
-            onPress={() =>
-              router.push({ pathname: "/(doctor)/patients/[id]", params: { id: patient.id } })
-            }
-          >
-            <Card>
-              <View style={styles.row}>
-                <Avatar name={patient.name || patient.email} doctor />
-                <View style={{ flex: 1 }}>
-                  <Body strong>{patient.name || patient.email}</Body>
-                  <Muted>{patient.email}</Muted>
+        {query.data?.patients.map(({ patient, visitCount, lastVisit }, i) => (
+          <FadeInView key={patient.id} index={i}>
+            <PressableScale
+              onPress={() =>
+                router.push({ pathname: "/(doctor)/patients/[id]", params: { id: patient.id } })
+              }
+            >
+              <Card>
+                <View style={styles.row}>
+                  <Avatar name={patient.name || patient.email} doctor />
+                  <View style={{ flex: 1 }}>
+                    <Body strong>{patient.name || patient.email}</Body>
+                    <Muted>{patient.email}</Muted>
+                  </View>
+                  <View style={styles.right}>
+                    <Body strong>{visitCount} visits</Body>
+                    <Muted>{formatDate(lastVisit)}</Muted>
+                  </View>
                 </View>
-                <View style={styles.right}>
-                  <Body strong>{visitCount} visits</Body>
-                  <Muted>{formatDate(lastVisit)}</Muted>
-                </View>
-              </View>
-            </Card>
-          </Pressable>
+              </Card>
+            </PressableScale>
+          </FadeInView>
         ))}
       </View>
-    </Screen>
+    </AuroraScreen>
   );
 }
 

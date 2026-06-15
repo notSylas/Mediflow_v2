@@ -8,10 +8,10 @@ import {
   EmptyState,
   ErrorState,
   Loading,
-  PageHeader,
-  Screen,
   SectionHeader,
 } from "@/components/ui";
+import { AuroraScreen } from "@/components/aurora-screen";
+import { FadeInView } from "@/components/motion";
 import { apiFetch } from "@/lib/api";
 import type { PatientAppointmentRow } from "@/lib/types";
 
@@ -33,41 +33,52 @@ export default function PatientAppointments() {
   const open = (id: string) =>
     router.push({ pathname: "/(patient)/appointments/[id]", params: { id } });
 
+  const isEmpty = !query.error && upcoming.length === 0 && past.length === 0;
   return (
-    <Screen refreshing={query.isRefetching} onRefresh={() => query.refetch()}>
-      <PageHeader title="My appointments" subtitle="Upcoming and past consultations." />
+    <AuroraScreen
+      variant="patient"
+      title="My appointments"
+      subtitle="Upcoming and past consultations"
+      refreshing={query.isRefetching}
+      onRefresh={() => query.refetch()}
+    >
       {query.error ? (
         <ErrorState message={query.error.message} onRetry={() => query.refetch()} />
       ) : null}
 
-      <SectionHeader title="Upcoming" />
-      {upcoming.length === 0 ? (
+      {isEmpty ? (
         <EmptyState
           icon="calendar-blank-outline"
-          title="No upcoming visits"
-          message="Choose a time that works for you."
+          title="No visits yet"
+          message="Book your first consultation and it'll show up here."
           action={
             <Button
-              label="Book consultation"
+              label="Book a consultation"
+              icon="calendar-plus"
               compact
               onPress={() => router.push("/(patient)/book")}
             />
           }
         />
-      ) : (
-        <View style={{ gap: 12 }}>
-          {upcoming.map((row) => (
-            <PatientAppointmentCard
-              key={row.appointment.id}
-              row={row}
-              onPress={() => open(row.appointment.id)}
-            />
-          ))}
-        </View>
-      )}
+      ) : null}
+
+      {upcoming.length > 0 ? (
+        <FadeInView index={0}>
+          <SectionHeader title="Upcoming" />
+          <View style={{ gap: 12 }}>
+            {upcoming.map((row) => (
+              <PatientAppointmentCard
+                key={row.appointment.id}
+                row={row}
+                onPress={() => open(row.appointment.id)}
+              />
+            ))}
+          </View>
+        </FadeInView>
+      ) : null}
 
       {past.length > 0 ? (
-        <>
+        <FadeInView index={1}>
           <SectionHeader title="Past" />
           <View style={{ gap: 12 }}>
             {past.map((row) => (
@@ -78,8 +89,8 @@ export default function PatientAppointments() {
               />
             ))}
           </View>
-        </>
+        </FadeInView>
       ) : null}
-    </Screen>
+    </AuroraScreen>
   );
 }

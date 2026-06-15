@@ -49,7 +49,7 @@ export default function PatientLayout() {
       <Tabs.Screen
         name="prescriptions"
         options={{
-          title: "Prescriptions",
+          title: "Rx",
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons name="pill" color={color} size={size} />
           ),

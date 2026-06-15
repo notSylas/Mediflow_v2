@@ -8,6 +8,9 @@ export function ProgressBar({ value }: { value: number }) {
 
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      // One-time jump to the final width; can't be done in render (needs
+      // window.matchMedia, which is unavailable during SSR).
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setWidth(value);
       return;
     }

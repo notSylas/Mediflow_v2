@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireSession } from "@/lib/api-auth";
 import {
+  canSendAttachment,
   getConversationForParticipant,
   listMessages,
   markConversationRead,
@@ -50,6 +51,15 @@ export async function POST(
   }
   if (!parsed.data.body && !parsed.data.attachmentId) {
     return NextResponse.json({ error: "Message is empty." }, { status: 400 });
+  }
+
+  // An attachment may only be sent by its uploader, in the conversation it was
+  // uploaded into.
+  if (
+    parsed.data.attachmentId &&
+    !(await canSendAttachment(parsed.data.attachmentId, id, access.id))
+  ) {
+    return NextResponse.json({ error: "Invalid attachment." }, { status: 403 });
   }
 
   const senderRole = access.role === "doctor" ? "doctor" : "patient";

@@ -141,4 +141,26 @@ in `mobile/.env` to the dev machine's LAN URL (phone can't reach localhost).
 | WhatsApp reminders | 🧊 |
 | Patient medical profile (slim) in encounter | 🧊 |
 | Medication tracker / records vault | 🧊 undecided |
-| Chat, dashboards, diet/timeline, doctor signup | ❌ cut |
+| Dashboards, diet/timeline, doctor signup | ❌ cut |
+
+## Chat / messaging (added 2026-06-14)
+
+Patient↔doctor messaging over a self-hosted socket.io realtime service. Note:
+this reverses the original "chat cut / no websocket server" decision — see the
+updated `Rules.md` #1 and `AGENTS.md`.
+
+| Item | Status | Notes |
+|---|---|---|
+| Schema (conversations, messages, chat_attachments) | ✅ | attachments bound to conversation + uploader |
+| Realtime infra (Postgres NOTIFY → socket.io) | ✅ | `realtime/server.ts`, `npm run realtime`; swappable behind `src/lib/realtime.ts` |
+| Short-lived HMAC socket tokens (15 min, refresh on reconnect) | ✅ | `src/lib/realtime-token.ts` |
+| REST API (conversations, messages, read, attachments) | ✅ | `/api/v1/conversations/*` |
+| Messaging gated to **paid** appointments | ✅ | `chat-policy.ts`; unit-tested |
+| Attachment authorization (uploader + conversation bound) | ✅ | `chat-policy.ts`; unit-tested |
+| Web chat UI (live, pagination, attachments, read state) | ✅ | `ChatThread`, `DoctorMessages` |
+| Mobile chat (Expo, live, pagination, PDF open, read state) | ✅ | `components/chat-thread.tsx` |
+| Socket CORS allowlist (`REALTIME_ALLOWED_ORIGINS`) | ✅ | native apps unaffected (token auth) |
+| Tests (policy predicates + token) | ✅ | 10 unit tests |
+| Production realtime hosting | 🔜 | Vercel can't host the socket process — see `Deployment.md` |
+| Push notifications (new-message alerts) | 🔜 | no `expo-notifications` yet; chat only updates while open |
+| Realtime E2E (socket delivery) test | 🔜 | only unit coverage today |

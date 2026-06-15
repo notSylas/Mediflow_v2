@@ -14,9 +14,10 @@ Telemedicine app for a single doctor: patient books a paid slot → video consul
 - Pay at booking via Razorpay (committed patients are the whole point — the doctor's pain is no-shows).
 - Slots are computed at query time from `availability_rules` minus `availability_overrides` minus booked appointments. Never materialize slots.
 - Double-booking is prevented by the partial unique index `uq_appointments_doctor_slot` in the DB, not by application code. Booking flow must cancel expired `pending_payment` holds for a slot before inserting.
-- Video via LiveKit Cloud (app only mints tokens; media never touches our server). Email via Resend. No self-hosted WebRTC, no websockets, no Celery/Redis equivalents.
+- Video via LiveKit Cloud (app only mints tokens; media never touches our server). Email via Resend. No self-hosted WebRTC, no Celery/Redis equivalents.
+- Patient↔doctor chat IS in scope (added post-v1). Realtime runs on a **separate self-hosted socket.io process** (`realtime/server.ts`, `npm run realtime`) fed by Postgres `LISTEN/NOTIFY`. Messages persist via REST first; the socket is best-effort delivery only. Transport is swappable behind `src/lib/realtime.ts`. Messaging is gated to patients with a **paid** appointment; attachments are bound to their conversation + uploader.
 - A minimal authenticated shell is in v1 scope: email-OTP login (`(auth)/login`), session-aware header with logout, and simple role-based landing pages (`/patient`, `/doctor`) — these are placeholders, not dashboards.
-- Out of v1 scope: chat/messaging, medical records vault, complex dashboards, doctor signup/onboarding (creating `doctor_profiles` rows), doctor discovery. AI scribe (transcript → draft SOAP note) is v1.5.
+- Out of v1 scope: medical records vault, complex dashboards, doctor signup/onboarding (creating `doctor_profiles` rows), doctor discovery. AI scribe (transcript → draft SOAP note) is v1.5.
 
 ## Stack
 
