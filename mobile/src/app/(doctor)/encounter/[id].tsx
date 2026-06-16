@@ -1,15 +1,18 @@
 import { useState } from "react";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
-import { Alert, StyleSheet, View } from "react-native";
+import { Alert, StyleSheet, Text, View } from "react-native";
 import { MedicineCard } from "@/components/clinical";
 import { PrescriptionEditor, SoapEditor } from "@/components/doctor-editors";
+import { ReportCard } from "@/components/report-card";
 import {
   Avatar,
   BackHeader,
   Body,
   Button,
   Card,
+  ChoiceChips,
   ErrorState,
   Loading,
   Muted,
@@ -17,8 +20,10 @@ import {
   SectionHeader,
   StatusBadge,
 } from "@/components/ui";
+import { useToast } from "@/components/toast";
 import { apiFetch } from "@/lib/api";
 import { formatDate, formatDateTime, joinWindowOpen } from "@/lib/format";
+import { colors, fonts, radius } from "@/lib/theme";
 import type {
   Appointment,
   ConsultNote,
@@ -61,6 +66,27 @@ export default function EncounterPage() {
   });
   const [hasNote, setHasNote] = useState(false);
   const [prescriptionIssued, setPrescriptionIssued] = useState(false);
+  const [rxSkipped, setRxSkipped] = useState(false);
+  const [followUpDays, setFollowUpDays] = useState("7");
+  const [followUpDecision, setFollowUpDecision] = useState<
+    "undecided" | "recommended" | "not_needed"
+  >("undecided");
+  const [redFlagReviewed, setRedFlagReviewed] = useState(false);
+  const toast = useToast();
+
+  const followUp = useMutation({
+    mutationFn: () =>
+      apiFetch("/api/v1/follow-ups", {
+        method: "POST",
+        body: JSON.stringify({ appointmentId: id, inDays: Number(followUpDays) }),
+      }),
+    onSuccess: () => {
+      void client.invalidateQueries({ queryKey: ["doctor"] });
+      setFollowUpDecision("recommended");
+      toast.success("Follow-up recommended to the patient");
+    },
+    onError: () => toast.error("Couldn't set the follow-up. Try again."),
+  });
 
   const outcome = useMutation({
     mutationFn: (status: "completed" | "no_show") =>
@@ -72,6 +98,16 @@ export default function EncounterPage() {
       void client.invalidateQueries({ queryKey: ["doctor"] });
       void query.refetch();
     },
+  });
+  const cancelVisit = useMutation({
+    mutationFn: () =>
+      apiFetch<Appointment>(`/api/appointments/${id}/cancel`, { method: "POST" }),
+    onSuccess: () => {
+      void client.invalidateQueries({ queryKey: ["doctor"] });
+      void query.refetch();
+      toast.success("Visit cancelled. Review payment/refund manually.");
+    },
+    onError: () => toast.error("Couldn't cancel this visit. Please try again."),
   });
 
   if (query.isLoading) return <Loading label="Opening encounter…" />;
@@ -94,6 +130,12 @@ export default function EncounterPage() {
         data.encounter.note?.assessment ||
         data.encounter.note?.plan
     );
+  const prescriptionReady =
+    prescriptionIssued || data.encounter.prescription?.status === "issued";
+  const rxDecisionDone = prescriptionReady || rxSkipped;
+  const followUpDone = followUpDecision !== "undecided";
+  const redFlagDone = !appointment.triageFlaggedAt || redFlagReviewed;
+  const profileCompleteness = profileScore(data.patientProfile);
   const canJoin =
     appointment.status === "confirmed" &&
     joinWindowOpen(appointment.startsAt, appointment.endsAt);
@@ -103,16 +145,18 @@ export default function EncounterPage() {
       status === "completed"
         ? [
             !noteExists && "No SOAP note has been saved.",
-            data.encounter.prescription?.status === "draft" &&
-              !prescriptionIssued &&
-              "The prescription is still a draft.",
+            !rxDecisionDone && "No prescription decision has been made.",
+            !followUpDone && "No follow-up decision has been made.",
+            !redFlagDone && "The red-flag triage warning has not been reviewed.",
           ]
             .filter(Boolean)
             .join(" ")
         : "Use no-show only when the patient did not attend.";
     Alert.alert(
       status === "completed" ? "Complete consultation?" : "Mark patient no-show?",
-      `${warning} This changes the appointment outcome.`,
+      warning
+        ? `${warning} This changes the appointment outcome.`
+        : "This changes the appointment outcome.",
       [
         { text: "Go back", style: "cancel" },
         {
@@ -123,6 +167,19 @@ export default function EncounterPage() {
       ]
     );
   };
+  const confirmCancel = () =>
+    Alert.alert(
+      "Cancel this visit?",
+      "This removes the slot from the doctor's schedule. If the patient has already paid, the refund still needs manual review in Razorpay/clinic operations.",
+      [
+        { text: "Keep visit", style: "cancel" },
+        {
+          text: "Cancel visit",
+          style: "destructive",
+          onPress: () => cancelVisit.mutate(),
+        },
+      ]
+    );
 
   return (
     <Screen refreshing={query.isRefetching} onRefresh={() => query.refetch()}>
@@ -157,6 +214,105 @@ export default function EncounterPage() {
             </View>
           </View>
         ) : null}
+      </Card>
+
+      <SectionHeader title="Consult command center" />
+      <Card tone="doctor">
+        <View style={styles.commandGrid}>
+          <CommandMetric
+            icon={appointment.mode === "async" ? "file-document-edit-outline" : "video-outline"}
+            label="Mode"
+            value={appointment.mode === "async" ? "Async" : "Video"}
+          />
+          <CommandMetric
+            icon="history"
+            label="Prior visits"
+            value={data.history.length}
+          />
+          <CommandMetric
+            icon="account-heart-outline"
+            label="Profile"
+            value={`${profileCompleteness}%`}
+          />
+          <CommandMetric
+            icon="file-upload-outline"
+            label="Reports"
+            value={data.encounter.reports.length}
+          />
+        </View>
+        <View style={styles.workflowList}>
+          <WorkflowStep
+            done={Boolean(data.patientProfile)}
+            title="Review patient snapshot"
+            message={
+              data.patientProfile
+                ? "Medical profile is available."
+                : "Patient profile is not complete."
+            }
+          />
+          <WorkflowStep
+            done={noteExists}
+            title="Save SOAP note"
+            message={noteExists ? "Clinical note has content." : "Document the consultation."}
+          />
+          <WorkflowStep
+            done={rxDecisionDone}
+            title="Prescription decision"
+            message={
+              prescriptionReady
+                ? "Prescription is issued."
+                : rxSkipped
+                  ? "Marked as no prescription needed."
+                : data.encounter.prescription?.status === "draft"
+                  ? "Draft prescription needs issuing."
+                  : "Issue a prescription or explicitly skip."
+            }
+          />
+          <WorkflowStep
+            done={followUpDone}
+            title="Follow-up decision"
+            message={
+              followUpDecision === "recommended"
+                ? "Follow-up recommended to the patient."
+                : followUpDecision === "not_needed"
+                  ? "Marked as no follow-up needed."
+                  : "Recommend a follow-up or mark not needed."
+            }
+          />
+          {appointment.triageFlaggedAt ? (
+            <WorkflowStep
+              done={redFlagDone}
+              title="Red-flag reviewed"
+              message={
+                redFlagReviewed
+                  ? "Urgency warning reviewed."
+                  : "Review the triage warning before closing."
+              }
+            />
+          ) : null}
+        </View>
+        <View style={styles.commandActions}>
+          {!prescriptionReady ? (
+            <Button
+              label={rxSkipped ? "No Rx needed" : "No Rx needed"}
+              icon={rxSkipped ? "check" : "file-cancel-outline"}
+              tone="secondary"
+              compact
+              disabled={rxSkipped}
+              onPress={() => setRxSkipped(true)}
+            />
+          ) : null}
+          {appointment.triageFlaggedAt ? (
+            <Button
+              label={redFlagReviewed ? "Red flag reviewed" : "Mark red flag reviewed"}
+              icon={redFlagReviewed ? "check" : "alert-octagon-outline"}
+              tone="secondary"
+              compact
+              disabled={redFlagReviewed}
+              onPress={() => setRedFlagReviewed(true)}
+            />
+          ) : null}
+        </View>
       </Card>
 
       <SectionHeader title="Patient snapshot" />
@@ -197,10 +353,7 @@ export default function EncounterPage() {
           </Card>
         ) : null}
         {data.encounter.reports.map((report) => (
-          <View key={report.id}>
-            <Body strong>Attached report</Body>
-            <Muted>{report.filename}</Muted>
-          </View>
+          <ReportCard key={report.id} report={report} compact />
         ))}
       </Card>
 
@@ -208,8 +361,70 @@ export default function EncounterPage() {
       <PrescriptionEditor
         appointmentId={appointment.id}
         initial={data.encounter.prescription}
-        onIssued={() => setPrescriptionIssued(true)}
+        onIssued={() => {
+          setPrescriptionIssued(true);
+          setRxSkipped(false);
+        }}
       />
+
+      <SectionHeader title="Follow-up" />
+      <Card>
+        <Muted>Recommend a follow-up visit; the patient sees it on their home screen.</Muted>
+        <ChoiceChips
+          options={[
+            { label: "In 1 week", value: "7" },
+            { label: "In 2 weeks", value: "14" },
+            { label: "In 1 month", value: "30" },
+          ]}
+          value={followUpDays}
+          onChange={setFollowUpDays}
+        />
+        <Button
+          label="Recommend follow-up"
+          icon="calendar-refresh"
+          tone="secondary"
+          loading={followUp.isPending}
+          onPress={() => followUp.mutate()}
+        />
+        <Button
+          label={
+            followUpDecision === "not_needed" ? "No follow-up needed" : "No follow-up needed"
+          }
+          icon={followUpDecision === "not_needed" ? "check" : "calendar-remove-outline"}
+          tone="secondary"
+          disabled={followUpDecision === "not_needed"}
+          onPress={() => setFollowUpDecision("not_needed")}
+        />
+      </Card>
+
+      {appointment.status === "completed" ? (
+        <>
+          <SectionHeader title="Post-consult tasks" />
+          <Card tone={noteExists && rxDecisionDone && followUpDone ? "accent" : "warning"}>
+            <Body strong>
+              {noteExists && rxDecisionDone && followUpDone
+                ? "Consultation wrap-up complete"
+                : "Finish the remaining wrap-up items"}
+            </Body>
+            <Muted>
+              {[
+                !noteExists && "SOAP note",
+                !rxDecisionDone && "prescription decision",
+                !followUpDone && "follow-up decision",
+              ]
+                .filter(Boolean)
+                .join(", ") || "The patient record is ready."}
+            </Muted>
+            <Button
+              label="Open work queue"
+              icon="clipboard-pulse-outline"
+              tone="secondary"
+              compact
+              onPress={() => router.push("/(doctor)/work-queue")}
+            />
+          </Card>
+        </>
+      ) : null}
 
       {data.history.length > 0 ? (
         <>
@@ -241,12 +456,35 @@ export default function EncounterPage() {
       ) : null}
 
       {appointment.status === "confirmed" ? (
-        <Button
-          label="Mark as no-show"
-          tone="danger"
-          loading={outcome.isPending}
-          onPress={() => confirmOutcome("no_show")}
-        />
+        <>
+          <SectionHeader title="Visit operations" />
+          <Card tone="warning">
+            <Body strong>Schedule and attendance controls</Body>
+            <Muted>
+              Use no-show only after the patient misses the consultation. Cancel only
+              when the clinic is intentionally removing the visit; paid cancellations
+              still need refund review.
+            </Muted>
+            <View style={styles.twoCol}>
+              <View style={{ flex: 1 }}>
+                <Button
+                  label="No-show"
+                  tone="secondary"
+                  loading={outcome.isPending}
+                  onPress={() => confirmOutcome("no_show")}
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Button
+                  label="Cancel visit"
+                  tone="danger"
+                  loading={cancelVisit.isPending}
+                  onPress={confirmCancel}
+                />
+              </View>
+            </View>
+          </Card>
+        </>
       ) : null}
       {outcome.error ? <ErrorState message={outcome.error.message} /> : null}
     </Screen>
@@ -263,7 +501,100 @@ function Snapshot({ label, value }: { label: string; value: string | null }) {
   );
 }
 
+function CommandMetric({
+  icon,
+  label,
+  value,
+}: {
+  icon: keyof typeof MaterialCommunityIcons.glyphMap;
+  label: string;
+  value: string | number;
+}) {
+  return (
+    <View style={styles.commandMetric}>
+      <MaterialCommunityIcons name={icon} size={18} color={colors.doctor} />
+      <Text style={styles.commandValue}>{value}</Text>
+      <Text style={styles.commandLabel}>{label}</Text>
+    </View>
+  );
+}
+
+function WorkflowStep({
+  done,
+  title,
+  message,
+}: {
+  done: boolean;
+  title: string;
+  message: string;
+}) {
+  return (
+    <View style={styles.workflowRow}>
+      <View
+        style={[
+          styles.workflowIcon,
+          { backgroundColor: done ? colors.successBg : colors.warningBg },
+        ]}
+      >
+        <MaterialCommunityIcons
+          name={done ? "check" : "clock-outline"}
+          size={16}
+          color={done ? colors.success : colors.warning}
+        />
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={styles.workflowTitle}>{title}</Text>
+        <Text style={styles.workflowMessage}>{message}</Text>
+      </View>
+    </View>
+  );
+}
+
+function profileScore(profile: PatientProfile | null) {
+  if (!profile) return 0;
+  const values = [
+    profile.dateOfBirth,
+    profile.gender,
+    profile.bloodGroup,
+    profile.allergies,
+    profile.chronicConditions,
+    profile.currentMedications,
+    profile.emergencyContactName,
+  ];
+  return Math.round((values.filter(Boolean).length / values.length) * 100);
+}
+
 const styles = StyleSheet.create({
   patientHeader: { flexDirection: "row", alignItems: "center", gap: 11 },
   twoCol: { flexDirection: "row", gap: 10 },
+  commandGrid: { flexDirection: "row", flexWrap: "wrap", gap: 9 },
+  commandMetric: {
+    width: "48%",
+    minHeight: 76,
+    borderRadius: radius.md,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: "rgba(91,85,214,0.16)",
+    padding: 10,
+    gap: 3,
+  },
+  commandValue: { color: colors.text, fontFamily: fonts.display, fontSize: 18 },
+  commandLabel: { color: colors.textMuted, fontFamily: fonts.body, fontSize: 11 },
+  workflowList: { gap: 10, marginTop: 4 },
+  commandActions: { flexDirection: "row", flexWrap: "wrap", gap: 9, marginTop: 4 },
+  workflowRow: { flexDirection: "row", gap: 10, alignItems: "flex-start" },
+  workflowIcon: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  workflowTitle: { color: colors.text, fontFamily: fonts.heading, fontSize: 14 },
+  workflowMessage: {
+    color: colors.textMuted,
+    fontFamily: fonts.body,
+    fontSize: 12,
+    lineHeight: 17,
+  },
 });

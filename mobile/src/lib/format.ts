@@ -1,27 +1,41 @@
-export function formatDateTime(value: string | Date): string {
+type DateValue = string | Date | null | undefined;
+
+function parseDate(value: DateValue): Date | null {
+  if (value == null) return null;
+  const date = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+export function formatDateTime(value: DateValue): string {
+  const date = parseDate(value);
+  if (!date) return "—";
   return new Intl.DateTimeFormat(undefined, {
     weekday: "short",
     month: "short",
     day: "numeric",
     hour: "numeric",
     minute: "2-digit",
-  }).format(new Date(value));
+  }).format(date);
 }
 
-export function formatDate(value: string | Date): string {
+export function formatDate(value: DateValue): string {
+  const date = parseDate(value);
+  if (!date) return "—";
   return new Intl.DateTimeFormat(undefined, {
     weekday: "short",
     month: "short",
     day: "numeric",
     year: "numeric",
-  }).format(new Date(value));
+  }).format(date);
 }
 
-export function formatTime(value: string | Date): string {
+export function formatTime(value: DateValue): string {
+  const date = parseDate(value);
+  if (!date) return "—";
   return new Intl.DateTimeFormat(undefined, {
     hour: "numeric",
     minute: "2-digit",
-  }).format(new Date(value));
+  }).format(date);
 }
 
 export function formatMoney(paise: number | null | undefined): string {

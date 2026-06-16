@@ -9,7 +9,9 @@ import {
   TextInput,
   View,
   type KeyboardTypeOptions,
+  type StyleProp,
   type TextInputProps,
+  type ViewStyle,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { colors, fonts, radius, shadow, space } from "@/lib/theme";
@@ -89,9 +91,11 @@ export function BackHeader({
 export function Card({
   children,
   tone = "default",
+  style,
 }: {
   children: React.ReactNode;
   tone?: "default" | "accent" | "warning" | "danger" | "doctor";
+  style?: StyleProp<ViewStyle>;
 }) {
   const toneStyle = {
     default: null,
@@ -101,7 +105,7 @@ export function Card({
     doctor: { backgroundColor: colors.doctorBg, borderColor: "#d9d5ff" },
   }[tone];
 
-  return <View style={[styles.card, toneStyle]}>{children}</View>;
+  return <View style={[styles.card, toneStyle, style]}>{children}</View>;
 }
 
 export function SectionHeader({
@@ -153,10 +157,10 @@ export function Field({
   label,
   multiline,
   ...props
-}: TextInputProps & { label: string }) {
+}: TextInputProps & { label?: string }) {
   return (
     <View style={styles.fieldWrap}>
-      <Text style={styles.label}>{label}</Text>
+      {label ? <Text style={styles.label}>{label}</Text> : null}
       <TextInput
         placeholderTextColor={colors.textMuted}
         multiline={multiline}
@@ -308,6 +312,42 @@ export function ChoiceChips({
   );
 }
 
+export function SegmentedControl({
+  options,
+  value,
+  onChange,
+}: {
+  options: Array<{ label: string; value: string; count?: number }>;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <View style={styles.segmented}>
+      {options.map((option) => {
+        const selected = option.value === value;
+        return (
+          <Pressable
+            key={option.value}
+            accessibilityRole="tab"
+            accessibilityState={{ selected }}
+            onPress={() => onChange(option.value)}
+            style={({ pressed }) => [
+              styles.segment,
+              selected && styles.segmentActive,
+              pressed && { opacity: 0.72 },
+            ]}
+          >
+            <Text style={[styles.segmentText, selected && styles.segmentTextActive]}>
+              {option.label}
+              {option.count == null ? "" : `  ${option.count}`}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
 export function StatusBadge({
   status,
   audience = "doctor",
@@ -387,17 +427,19 @@ export function EmptyState({
   title,
   message,
   action,
+  compact,
 }: {
   icon: keyof typeof MaterialCommunityIcons.glyphMap;
   title: string;
   message: string;
   action?: React.ReactNode;
+  compact?: boolean;
 }) {
   return (
     <Card>
-      <View style={styles.empty}>
+      <View style={[styles.empty, compact && styles.emptyCompact]}>
         <View style={styles.emptyIcon}>
-          <MaterialCommunityIcons name={icon} size={26} color={colors.primary} />
+          <MaterialCommunityIcons name={icon} size={22} color={colors.primary} />
         </View>
         <Text style={styles.emptyTitle}>{title}</Text>
         <Text style={[styles.muted, { textAlign: "center" }]}>{message}</Text>
@@ -453,15 +495,15 @@ const styles = StyleSheet.create({
   pageHeader: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 2 },
   backHeader: { flexDirection: "row", alignItems: "center", gap: 10 },
   title: {
-    fontSize: 27,
-    lineHeight: 34,
+    fontSize: 22,
+    lineHeight: 28,
     fontFamily: fonts.display,
-    letterSpacing: -0.4,
+    letterSpacing: -0.3,
     color: colors.text,
   },
   headerTitle: {
-    fontSize: 20,
-    lineHeight: 26,
+    fontSize: 18,
+    lineHeight: 24,
     fontFamily: fonts.heading,
     letterSpacing: -0.2,
     color: colors.text,
@@ -474,7 +516,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontFamily: fonts.heading,
     letterSpacing: -0.2,
     color: colors.text,
@@ -529,8 +571,8 @@ const styles = StyleSheet.create({
   buttonCompact: { minHeight: 38, alignSelf: "flex-start", paddingHorizontal: 12 },
   buttonText: { fontSize: 15, fontFamily: fonts.semibold, letterSpacing: 0.1 },
   iconButton: {
-    width: 42,
-    height: 42,
+    width: 44,
+    height: 44,
     borderRadius: radius.md,
     alignItems: "center",
     justifyContent: "center",
@@ -550,11 +592,32 @@ const styles = StyleSheet.create({
   chipActive: { backgroundColor: colors.accent, borderColor: colors.primary },
   chipText: { fontSize: 13, color: colors.textMuted, fontFamily: fonts.bodySemibold },
   chipTextActive: { color: colors.primaryDark },
+  segmented: {
+    flexDirection: "row",
+    padding: 4,
+    borderRadius: radius.md,
+    backgroundColor: "#e8eeee",
+  },
+  segment: {
+    flex: 1,
+    minHeight: 44,
+    borderRadius: radius.sm,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 10,
+  },
+  segmentActive: { backgroundColor: colors.card, ...shadow },
+  segmentText: {
+    fontSize: 13,
+    fontFamily: fonts.bodySemibold,
+    color: colors.textMuted,
+  },
+  segmentTextActive: { color: colors.text },
   badge: { borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 5 },
   badgeText: { fontSize: 11, fontFamily: fonts.bodySemibold },
   statCard: {
     width: "48%",
-    minHeight: 130,
+    minHeight: 108,
     backgroundColor: colors.card,
     borderRadius: radius.lg,
     borderWidth: 1,
@@ -563,17 +626,17 @@ const styles = StyleSheet.create({
     ...shadow,
   },
   statIcon: {
-    width: 36,
-    height: 36,
+    width: 34,
+    height: 34,
     borderRadius: radius.md,
     alignItems: "center",
     justifyContent: "center",
   },
   statValue: {
-    marginTop: 10,
-    fontSize: 24,
+    marginTop: 8,
+    fontSize: 22,
     fontFamily: fonts.display,
-    letterSpacing: -0.5,
+    letterSpacing: -0.4,
     color: colors.text,
   },
   avatar: {
@@ -585,16 +648,17 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
   },
   avatarText: { color: colors.primaryFg, fontSize: 15, fontFamily: fonts.heading },
-  empty: { alignItems: "center", gap: 8, paddingVertical: 18 },
+  empty: { alignItems: "center", gap: 8, paddingVertical: 14 },
+  emptyCompact: { paddingVertical: 6 },
   emptyIcon: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: colors.accent,
     alignItems: "center",
     justifyContent: "center",
   },
-  emptyTitle: { fontSize: 17, fontFamily: fonts.heading, color: colors.text },
+  emptyTitle: { fontSize: 16, fontFamily: fonts.heading, color: colors.text },
   errorRow: { flexDirection: "row", gap: 10, alignItems: "flex-start" },
   loading: {
     flex: 1,

@@ -1,22 +1,23 @@
 import { StyleSheet, Text, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Svg, { Circle, Defs, RadialGradient, Stop } from "react-native-svg";
 import { fonts, gradients, radius, space } from "@/lib/theme";
 
 /**
- * Full-bleed aurora header: a diagonal gradient with soft glowing blobs.
+ * Full-bleed aurora header using one native gradient surface.
  * Every screen uses the same header so they stay visually consistent.
  *
  * - With `children` (e.g. the home stat strip) it flows top→bottom like a hero.
- * - Without children it keeps the SAME overall height as the hero and centers
- *   the title/subtitle, so a content-light page's header still matches home.
+ * - Compact headers size to their title row instead of reserving hero space.
+ * - Full headers retain a consistent minimum height for dashboard content.
  */
 export function AuroraHeader({
   variant = "patient",
   eyebrow,
   title,
   subtitle,
+  compact = false,
+  leading,
   action,
   children,
 }: {
@@ -24,19 +25,24 @@ export function AuroraHeader({
   eyebrow?: string;
   title: string;
   subtitle?: string;
+  compact?: boolean;
+  leading?: React.ReactNode;
   action?: React.ReactNode;
   children?: React.ReactNode;
 }) {
   const insets = useSafeAreaInsets();
   const base = variant === "doctor" ? gradients.doctor : gradients.patient;
-  const blobs = variant === "doctor" ? gradients.doctorBlobs : gradients.patientBlobs;
   const plain = !children;
 
   return (
     <View
       style={[
         styles.wrap,
-        { paddingTop: insets.top + 16, minHeight: insets.top + HEADER_BODY_HEIGHT },
+        compact && styles.wrapCompact,
+        {
+          paddingTop: compact ? insets.top : insets.top + 16,
+          minHeight: compact ? undefined : insets.top + HEADER_BODY_HEIGHT,
+        },
       ]}
     >
       <LinearGradient
@@ -45,26 +51,18 @@ export function AuroraHeader({
         end={{ x: 1, y: 1 }}
         style={StyleSheet.absoluteFill}
       />
-      <Svg style={StyleSheet.absoluteFill} pointerEvents="none">
-        <Defs>
-          <RadialGradient id="blobA" cx="50%" cy="50%" r="50%">
-            <Stop offset="0%" stopColor={blobs[0]} stopOpacity={0.55} />
-            <Stop offset="100%" stopColor={blobs[0]} stopOpacity={0} />
-          </RadialGradient>
-          <RadialGradient id="blobB" cx="50%" cy="50%" r="50%">
-            <Stop offset="0%" stopColor={blobs[1]} stopOpacity={0.5} />
-            <Stop offset="100%" stopColor={blobs[1]} stopOpacity={0} />
-          </RadialGradient>
-        </Defs>
-        <Circle cx="88%" cy="6%" r={140} fill="url(#blobA)" />
-        <Circle cx="6%" cy="96%" r={170} fill="url(#blobB)" />
-      </Svg>
-
-      <View style={[styles.content, plain ? styles.contentCenter : { gap: space.md }]}>
-        <View style={styles.topRow}>
+      <View
+        style={[
+          styles.content,
+          compact && styles.contentCompact,
+          plain && !compact ? styles.contentCenter : { gap: space.md },
+        ]}
+      >
+        <View style={[styles.topRow, compact && styles.topRowCompact]}>
+          {leading}
           <View style={{ flex: 1 }}>
             {eyebrow ? <Text style={styles.eyebrow}>{eyebrow}</Text> : null}
-            <Text style={styles.title}>{title}</Text>
+            <Text style={[styles.title, compact && styles.titleCompact]}>{title}</Text>
             {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
           </View>
           {action}
@@ -76,16 +74,24 @@ export function AuroraHeader({
 }
 
 // Height of the header below the status bar inset — keeps every header the same size.
-const HEADER_BODY_HEIGHT = 172;
-
+const HEADER_BODY_HEIGHT = 146;
 const styles = StyleSheet.create({
   wrap: {
     overflow: "hidden",
     paddingBottom: 28,
   },
-  content: { flex: 1, paddingHorizontal: space.md },
+  wrapCompact: { paddingBottom: 14 },
+  content: {
+    flex: 1,
+    width: "100%",
+    maxWidth: 640,
+    alignSelf: "center",
+    paddingHorizontal: space.md,
+  },
+  contentCompact: { flex: 0 },
   contentCenter: { justifyContent: "center" },
   topRow: { flexDirection: "row", alignItems: "flex-start", gap: 12 },
+  topRowCompact: { alignItems: "center" },
   eyebrow: {
     fontFamily: fonts.bodySemibold,
     fontSize: 13,
@@ -95,11 +101,12 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: fonts.display,
-    fontSize: 27,
-    lineHeight: 33,
+    fontSize: 24,
+    lineHeight: 30,
     color: "#ffffff",
-    letterSpacing: -0.4,
+    letterSpacing: -0.3,
   },
+  titleCompact: { fontSize: 22, lineHeight: 28 },
   subtitle: {
     fontFamily: fonts.body,
     fontSize: 14,

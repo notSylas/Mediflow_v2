@@ -9,6 +9,11 @@ import { requireDoctorSession } from "@/lib/api-auth";
 const updateProfileSchema = z.object({
   specialty: z.string().trim().min(1).max(200).nullable().optional(),
   bio: z.string().trim().max(2000).nullable().optional(),
+  photoUrl: z.string().trim().url().max(500).nullable().optional(),
+  qualifications: z.string().trim().max(300).nullable().optional(),
+  registrationNo: z.string().trim().max(100).nullable().optional(),
+  yearsExperience: z.number().int().min(0).max(80).nullable().optional(),
+  languages: z.string().trim().max(200).nullable().optional(),
   feeInPaise: z.number().int().positive().optional(),
   slotMinutes: z.number().int().positive().max(240).optional(),
   timezone: z.string().trim().min(1).max(100).optional(),

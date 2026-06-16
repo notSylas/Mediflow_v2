@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { appointments } from "@/db/schema";
 import { requireSession } from "@/lib/api-auth";
-import { getAppointmentForPatient } from "@/lib/appointments";
+import { getAppointmentForParticipant } from "@/lib/appointments";
 import { canCancelAppointment } from "@/lib/booking";
 
 export async function POST(
@@ -14,13 +14,13 @@ export async function POST(
   if (access instanceof NextResponse) return access;
 
   const { id } = await params;
-  const row = await getAppointmentForPatient(id, access.id);
+  const appointment = await getAppointmentForParticipant(id, access);
 
-  if (!row) {
+  if (!appointment) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  if (!canCancelAppointment(row.appointment, new Date())) {
+  if (!canCancelAppointment(appointment, new Date())) {
     return NextResponse.json(
       { error: "This appointment can no longer be cancelled" },
       { status: 400 }

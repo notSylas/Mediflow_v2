@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as DocumentPicker from "expo-document-picker";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import {
   Platform,
   Pressable,
@@ -62,6 +62,8 @@ interface AppointmentDetail {
 
 export default function BookingFlow() {
   const client = useQueryClient();
+  const params = useLocalSearchParams<{ followUpId?: string }>();
+  const followUpId = typeof params.followUpId === "string" ? params.followUpId : undefined;
   const [step, setStep] = useState(0);
   const [visitReason, setVisitReason] = useState("new-symptoms");
   const [symptoms, setSymptoms] = useState("");
@@ -124,6 +126,12 @@ export default function BookingFlow() {
       if (value.provider === "mock" && value.appointment) {
         setAppointment(value.appointment);
         setStep(3);
+        if (followUpId) {
+          void apiFetch(`/api/v1/follow-ups/${followUpId}`, {
+            method: "PATCH",
+            body: JSON.stringify({ status: "booked" }),
+          });
+        }
         void client.invalidateQueries({ queryKey: ["patient"] });
       } else {
         setPaymentNeedsNative(true);

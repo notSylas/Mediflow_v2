@@ -23,7 +23,8 @@ export const colors = {
 };
 
 export const radius = { sm: 8, md: 12, lg: 16, xl: 22, pill: 999 };
-export const space = { xs: 6, sm: 10, md: 16, lg: 24, xl: 32 };
+/** Consistent spacing scale: 4 / 8 / 12 / 16 / 24 / 32. */
+export const space = { xxs: 4, xs: 8, sm: 12, md: 16, lg: 24, xl: 32 };
 
 /** Figtree for display/headings (warm, confident); Noto Sans for body. Loaded
  *  in the root layout; falls back to system if not yet ready. */

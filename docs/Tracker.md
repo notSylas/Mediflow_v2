@@ -1,6 +1,6 @@
 # MediFlow v2 — Feature Tracker
 
-Live status board. Update when state changes. Last updated: 2026-06-13.
+Live status board. Update when state changes. Last updated: 2026-06-16.
 
 Legend: ✅ done · 🔨 in progress · 🔜 planned (v1) · 🧊 v1.5 · ❌ cut
 
@@ -120,6 +120,7 @@ real stale-closure booking bug during P0.1.
 | Typed API client (cookie-attached fetch) | ✅ | `mobile/src/lib/api.ts` |
 | Login (OTP) + verify + role routing | ✅ | runs in Expo Go |
 | Native design system + patient/doctor tab navigation | ✅ | loading, error, empty, forms, badges, cards, accessibility labels |
+| Patient mobile UX redesign | ✅ | action-led home, compact headers, visit segments, richer empty states, structured profile, native DOB picker, nested settings |
 | Patient pages | ✅ | home, booking, appointments/detail, reschedule/cancel, prescriptions, profile, receipt, settings |
 | Doctor pages | ✅ | dashboard, appointments, encounter, SOAP, Rx, outcomes, patients/history, schedule, settings |
 | `/api/v1` mobile read layer | ✅ | aggregated patient/doctor home, encounters, roster, schedule, prescriptions |

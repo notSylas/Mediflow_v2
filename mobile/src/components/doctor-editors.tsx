@@ -23,6 +23,18 @@ const SOAP_FIELDS = [
   ["plan", "Plan", "Treatment and next steps"],
 ] as const;
 
+const NOTE_SNIPPETS: Array<{
+  label: string;
+  field: keyof ConsultNote;
+  text: string;
+}> = [
+  { label: "No fever", field: "objective", text: "No fever reported." },
+  { label: "Vitals unavailable", field: "objective", text: "Vitals not available for this video consultation." },
+  { label: "Hydration advised", field: "plan", text: "Advised hydration, rest, and symptom monitoring." },
+  { label: "Review if worse", field: "plan", text: "Advised review if symptoms worsen or do not improve." },
+  { label: "Emergency warning", field: "plan", text: "Emergency warning signs explained; advised urgent in-person care if they occur." },
+];
+
 export function SoapEditor({
   appointmentId,
   initial,
@@ -82,6 +94,11 @@ export function SoapEditor({
     }, 1200);
   };
 
+  const insertSnippet = (field: keyof typeof values, text: string) => {
+    const current = values[field].trim();
+    change(field, current ? `${current}\n${text}` : text);
+  };
+
   const statusText = {
     idle: "Autosaves as you type",
     typing: "Typing…",
@@ -97,6 +114,19 @@ export function SoapEditor({
         <Text style={[styles.status, state === "error" && { color: colors.danger }]}>
           {statusText}
         </Text>
+      </View>
+      <SectionHeader title="Quick snippets" />
+      <View style={styles.snippetGrid}>
+        {NOTE_SNIPPETS.map((snippet) => (
+          <Pressable
+            key={snippet.label}
+            accessibilityRole="button"
+            onPress={() => insertSnippet(snippet.field, snippet.text)}
+            style={({ pressed }) => [styles.snippetChip, pressed && { opacity: 0.7 }]}
+          >
+            <Text style={styles.snippetText}>{snippet.label}</Text>
+          </Pressable>
+        ))}
       </View>
       {SOAP_FIELDS.map(([key, label, placeholder]) => (
         <Field
@@ -137,6 +167,110 @@ function blankMedicine(): MedicineDraft {
     instructions: "",
   };
 }
+
+interface PrescriptionTemplate {
+  label: string;
+  diagnosis: string;
+  advice: string;
+  medicines: Array<Omit<MedicineDraft, "key">>;
+}
+
+const PRESCRIPTION_TEMPLATES: PrescriptionTemplate[] = [
+  {
+    label: "Fever / cold",
+    diagnosis: "Acute viral upper respiratory symptoms",
+    advice: "Fluids, rest, steam inhalation if helpful, and review if fever persists or breathing worsens.",
+    medicines: [
+      {
+        name: "Paracetamol",
+        strength: "500 mg",
+        route: "oral",
+        morning: true,
+        afternoon: true,
+        evening: true,
+        night: false,
+        foodRelation: "After food",
+        durationDaysText: "3",
+        instructions: "Use only as clinically appropriate after doctor review.",
+      },
+      {
+        name: "Cetirizine",
+        strength: "10 mg",
+        route: "oral",
+        morning: false,
+        afternoon: false,
+        evening: false,
+        night: true,
+        foodRelation: "After food",
+        durationDaysText: "3",
+        instructions: "May cause drowsiness; verify suitability before issuing.",
+      },
+    ],
+  },
+  {
+    label: "Acidity",
+    diagnosis: "Acidity / dyspepsia",
+    advice: "Avoid spicy meals, late-night food, alcohol, and review if pain is severe or recurrent.",
+    medicines: [
+      {
+        name: "Pantoprazole",
+        strength: "40 mg",
+        route: "oral",
+        morning: true,
+        afternoon: false,
+        evening: false,
+        night: false,
+        foodRelation: "Before food",
+        durationDaysText: "5",
+        instructions: "Verify diagnosis and contraindications before issuing.",
+      },
+    ],
+  },
+  {
+    label: "Headache",
+    diagnosis: "Headache",
+    advice: "Hydration, sleep hygiene, screen break, and urgent review for red-flag symptoms.",
+    medicines: [
+      {
+        name: "Paracetamol",
+        strength: "500 mg",
+        route: "oral",
+        morning: false,
+        afternoon: false,
+        evening: false,
+        night: false,
+        foodRelation: "After food",
+        durationDaysText: "2",
+        instructions: "As needed after doctor review; do not exceed safe daily limits.",
+      },
+    ],
+  },
+  {
+    label: "Allergy",
+    diagnosis: "Allergic symptoms",
+    advice: "Avoid known triggers and seek urgent care for breathing difficulty or facial swelling.",
+    medicines: [
+      {
+        name: "Cetirizine",
+        strength: "10 mg",
+        route: "oral",
+        morning: false,
+        afternoon: false,
+        evening: false,
+        night: true,
+        foodRelation: "After food",
+        durationDaysText: "5",
+        instructions: "May cause drowsiness; verify suitability before issuing.",
+      },
+    ],
+  },
+  {
+    label: "Refill review",
+    diagnosis: "Medication refill review",
+    advice: "Refill issued after reviewing symptoms, response, and safety concerns.",
+    medicines: [blankMedicine()],
+  },
+];
 
 export function PrescriptionEditor({
   appointmentId,
@@ -214,6 +348,35 @@ export function PrescriptionEditor({
       current.map((medicine) => (medicine.key === key ? { ...medicine, ...patch } : medicine))
     );
 
+  const applyTemplate = (template: PrescriptionTemplate) => {
+    const apply = () => {
+      setDiagnosis(template.diagnosis);
+      setAdvice(template.advice);
+      setMedicines(
+        template.medicines.map((medicine) => ({
+          ...medicine,
+          key: nextMedicineKey++,
+        }))
+      );
+    };
+    const hasDraft =
+      diagnosis.trim() ||
+      advice.trim() ||
+      medicines.some((medicine) => medicine.name.trim());
+    if (hasDraft) {
+      Alert.alert(
+        "Apply template?",
+        "This replaces the current draft medicines, diagnosis, and advice.",
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "Apply", onPress: apply },
+        ]
+      );
+      return;
+    }
+    apply();
+  };
+
   if (issued) {
     return (
       <Card tone="accent">
@@ -265,6 +428,22 @@ export function PrescriptionEditor({
         <Body strong>Prescription</Body>
         <StatusBadge status="draft" />
       </View>
+      <Card tone="doctor">
+        <Body strong>Prescription templates</Body>
+        <Muted>Use as a starting point only. Review every medicine before issuing.</Muted>
+        <View style={styles.snippetGrid}>
+          {PRESCRIPTION_TEMPLATES.map((template) => (
+            <Pressable
+              key={template.label}
+              accessibilityRole="button"
+              onPress={() => applyTemplate(template)}
+              style={({ pressed }) => [styles.templateChip, pressed && { opacity: 0.7 }]}
+            >
+              <Text style={styles.templateText}>{template.label}</Text>
+            </Pressable>
+          ))}
+        </View>
+      </Card>
       <Field
         label="Diagnosis"
         value={diagnosis}
@@ -406,4 +585,21 @@ const styles = StyleSheet.create({
     backgroundColor: "#fbfcfc",
   },
   remove: { color: colors.danger, fontSize: 13, fontWeight: "700" },
+  snippetGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  snippetChip: {
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.card,
+    paddingHorizontal: 11,
+    paddingVertical: 8,
+  },
+  snippetText: { color: colors.text, fontSize: 12, fontWeight: "700" },
+  templateChip: {
+    borderRadius: radius.pill,
+    backgroundColor: colors.doctorBg,
+    paddingHorizontal: 11,
+    paddingVertical: 8,
+  },
+  templateText: { color: colors.doctor, fontSize: 12, fontWeight: "700" },
 });

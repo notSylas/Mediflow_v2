@@ -16,11 +16,12 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { IconButton } from "@/components/ui";
 import { ApiError, apiFetch, apiUpload } from "@/lib/api";
 import { API_URL, authClient } from "@/lib/auth";
 import { useChatSocket } from "@/lib/use-chat-socket";
+import { useToast } from "@/components/toast";
 import { formatTime } from "@/lib/format";
 import { colors, radius, space } from "@/lib/theme";
 import type { ChatAttachment, ChatMessage, MessagesPage } from "@/lib/chat-types";
@@ -36,6 +37,8 @@ export function ChatThread({
   peerName: string;
   onBack: () => void;
 }) {
+  const toast = useToast();
+  const insets = useSafeAreaInsets();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState("");
   const [loading, setLoading] = useState(true);
@@ -190,6 +193,7 @@ export function ChatThread({
     } catch {
       setDraft(body);
       setPendingFile(sentFile);
+      toast.error("Message not sent. Tap send to retry.");
     } finally {
       setSending(false);
     }
@@ -199,7 +203,7 @@ export function ChatThread({
     <SafeAreaView style={styles.safe} edges={["top"]}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={Platform.OS === "ios" ? 8 : 0}
       >
         <View style={styles.header}>
@@ -230,9 +234,12 @@ export function ChatThread({
         ) : (
           <FlatList
             ref={listRef}
+            style={styles.list}
             data={messages}
             keyExtractor={(m) => m.id}
             contentContainerStyle={styles.listContent}
+            keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}
+            keyboardShouldPersistTaps="handled"
             maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
             ListHeaderComponent={
               hasMore ? (
@@ -259,7 +266,17 @@ export function ChatThread({
           />
         )}
 
-        <View style={styles.composerWrap}>
+        <View
+          style={[
+            styles.composerWrap,
+            {
+              paddingBottom:
+                Platform.OS === "ios"
+                  ? Math.max(8, insets.bottom)
+                  : Math.max(10, insets.bottom),
+            },
+          ]}
+        >
           {uploadError ? <Text style={styles.uploadError}>{uploadError}</Text> : null}
           {pendingFile ? (
             <View style={styles.pendingChip}>
@@ -298,6 +315,7 @@ export function ChatThread({
               placeholder="Write a message…"
               placeholderTextColor={colors.textMuted}
               multiline
+              textAlignVertical="top"
               style={styles.input}
             />
             <Pressable
@@ -404,6 +422,7 @@ const styles = StyleSheet.create({
   disclaimer: { fontSize: 11, color: colors.textMuted, lineHeight: 15 },
   center: { flex: 1, alignItems: "center", justifyContent: "center", gap: 10 },
   empty: { fontSize: 14, color: colors.textMuted },
+  list: { flex: 1 },
   listContent: { padding: space.md, gap: 8 },
   loadMore: { alignItems: "center", paddingVertical: 8, marginBottom: 4 },
   loadMoreText: { fontSize: 13, color: colors.textMuted, fontWeight: "600" },
@@ -444,7 +463,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
     paddingHorizontal: space.sm,
     paddingTop: 8,
-    paddingBottom: Platform.OS === "ios" ? 8 : 10,
     gap: 8,
   },
   uploadError: { fontSize: 12, color: colors.danger, paddingHorizontal: 4 },

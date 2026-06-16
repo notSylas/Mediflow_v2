@@ -87,6 +87,10 @@ export const appointmentStatus = pgEnum("appointment_status", [
   "no_show",
 ]);
 
+// video = scheduled paid video consult; async = doctor-initiated / refill
+// follow-up handled over text (no live call).
+export const appointmentMode = pgEnum("appointment_mode", ["video", "async"]);
+
 export const paymentStatus = pgEnum("payment_status", [
   "created",
   "paid",
@@ -104,6 +108,12 @@ export const doctorProfiles = pgTable("doctor_profiles", {
     .references(() => user.id, { onDelete: "cascade" }),
   specialty: text("specialty"),
   bio: text("bio"),
+  // Trust / identity details shown to patients.
+  photoUrl: text("photo_url"),
+  qualifications: text("qualifications"), // e.g. "MBBS, MD (Internal Medicine)"
+  registrationNo: text("registration_no"), // medical council registration
+  yearsExperience: integer("years_experience"),
+  languages: text("languages"), // comma-separated, e.g. "English, Hindi"
   feeInPaise: integer("fee_in_paise").notNull(),
   slotMinutes: integer("slot_minutes").notNull().default(20),
   timezone: text("timezone").notNull().default("Asia/Kolkata"),
@@ -148,6 +158,7 @@ export const appointments = pgTable(
     startsAt: timestamp("starts_at", { withTimezone: true }).notNull(),
     endsAt: timestamp("ends_at", { withTimezone: true }).notNull(),
     status: appointmentStatus("status").notNull().default("pending_payment"),
+    mode: appointmentMode("mode").notNull().default("video"),
     intakeNote: text("intake_note"),
     // Structured intake (kept alongside intakeNote for display compatibility).
     visitReason: text("visit_reason"),
@@ -360,5 +371,52 @@ export const chatAttachments = pgTable("chat_attachments", {
   filename: text("filename").notNull(),
   mimeType: text("mime_type").notNull(),
   data: bytea("data").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// Doctor-recommended follow-up visits. v1 is doctor-created only (no auto-rules).
+export const followUpStatus = pgEnum("follow_up_status", [
+  "pending",
+  "booked",
+  "dismissed",
+]);
+
+export const followUps = pgTable("follow_ups", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  patientId: text("patient_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  doctorId: uuid("doctor_id")
+    .notNull()
+    .references(() => doctorProfiles.id, { onDelete: "cascade" }),
+  sourceAppointmentId: uuid("source_appointment_id").references(
+    () => appointments.id,
+    { onDelete: "set null" }
+  ),
+  dueAt: timestamp("due_at", { withTimezone: true }).notNull(),
+  status: followUpStatus("status").notNull().default("pending"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// Patient-initiated refill requests on an issued prescription. The doctor
+// fulfils by starting an async consult and prescribing, or declines.
+export const refillRequestStatus = pgEnum("refill_request_status", [
+  "pending",
+  "fulfilled",
+  "declined",
+]);
+
+export const refillRequests = pgTable("refill_requests", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  patientId: text("patient_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  doctorId: uuid("doctor_id")
+    .notNull()
+    .references(() => doctorProfiles.id, { onDelete: "cascade" }),
+  prescriptionId: uuid("prescription_id")
+    .notNull()
+    .references(() => prescriptions.id, { onDelete: "cascade" }),
+  status: refillRequestStatus("status").notNull().default("pending"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });

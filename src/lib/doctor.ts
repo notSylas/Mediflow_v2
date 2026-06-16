@@ -9,6 +9,11 @@ export async function getDoctorCard() {
       name: user.name,
       specialty: doctorProfiles.specialty,
       bio: doctorProfiles.bio,
+      photoUrl: doctorProfiles.photoUrl,
+      qualifications: doctorProfiles.qualifications,
+      registrationNo: doctorProfiles.registrationNo,
+      yearsExperience: doctorProfiles.yearsExperience,
+      languages: doctorProfiles.languages,
       feeInPaise: doctorProfiles.feeInPaise,
       slotMinutes: doctorProfiles.slotMinutes,
     })
@@ -29,6 +34,72 @@ export async function getDoctorRevenueInPaise(doctorProfileId: string): Promise<
     );
 
   return Number(row?.total ?? 0);
+}
+
+/** Paid earnings bucketed into today / this week (Mon) / this month / all-time. */
+export async function getDoctorEarnings(doctorProfileId: string) {
+  const rows = await db
+    .select({ amount: payments.amountInPaise, at: payments.updatedAt })
+    .from(payments)
+    .innerJoin(appointments, eq(appointments.id, payments.appointmentId))
+    .where(
+      and(eq(appointments.doctorId, doctorProfileId), eq(payments.status, "paid"))
+    );
+
+  const now = new Date();
+  const startToday = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate()
+  ).getTime();
+  const startWeek = startToday - (((now.getDay() + 6) % 7) * 86_400_000);
+  const startMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+
+  const earnings = { today: 0, week: 0, month: 0, total: 0 };
+  for (const row of rows) {
+    const at = new Date(row.at).getTime();
+    earnings.total += row.amount;
+    if (at >= startToday) earnings.today += row.amount;
+    if (at >= startWeek) earnings.week += row.amount;
+    if (at >= startMonth) earnings.month += row.amount;
+  }
+  return earnings;
+}
+
+/** Payment operational stats for the doctor dashboard. */
+export async function getDoctorPaymentStats(doctorProfileId: string) {
+  const rows = await db
+    .select({ status: payments.status, amount: payments.amountInPaise })
+    .from(payments)
+    .innerJoin(appointments, eq(appointments.id, payments.appointmentId))
+    .where(eq(appointments.doctorId, doctorProfileId));
+
+  const stats = {
+    paidCount: 0,
+    pendingCount: 0,
+    failedCount: 0,
+    refundedCount: 0,
+    paidAmountInPaise: 0,
+    pendingAmountInPaise: 0,
+    refundedAmountInPaise: 0,
+  };
+
+  for (const row of rows) {
+    if (row.status === "paid") {
+      stats.paidCount += 1;
+      stats.paidAmountInPaise += row.amount;
+    } else if (row.status === "created") {
+      stats.pendingCount += 1;
+      stats.pendingAmountInPaise += row.amount;
+    } else if (row.status === "failed") {
+      stats.failedCount += 1;
+    } else if (row.status === "refunded") {
+      stats.refundedCount += 1;
+      stats.refundedAmountInPaise += row.amount;
+    }
+  }
+
+  return stats;
 }
 
 const DEFAULT_FEE_IN_PAISE = 50000;

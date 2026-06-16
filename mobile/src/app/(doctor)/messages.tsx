@@ -2,8 +2,9 @@ import { useQuery } from "@tanstack/react-query";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback } from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { Avatar, EmptyState, ErrorState, Loading } from "@/components/ui";
+import { Avatar, EmptyState, ErrorState } from "@/components/ui";
 import { AuroraScreen } from "@/components/aurora-screen";
+import { ListSkeleton } from "@/components/skeleton";
 import { FadeInView, PressableScale } from "@/components/motion";
 import { apiFetch } from "@/lib/api";
 import { formatRelativeDay } from "@/lib/format-chat";
@@ -16,15 +17,24 @@ export default function DoctorMessages() {
     queryFn: () =>
       apiFetch<{ conversations: DoctorConversationRow[] }>("/api/v1/conversations"),
   });
+  const { refetch } = query;
 
   // Refresh unread counts whenever the list regains focus (e.g. back from a thread).
+  // Depend on the stable refetch function, not the changing query result object;
+  // otherwise each isRefetching update recreates this focus effect and loops.
   useFocusEffect(
     useCallback(() => {
-      void query.refetch();
-    }, [query])
+      void refetch();
+    }, [refetch])
   );
 
-  if (query.isLoading) return <Loading label="Loading messages…" />;
+  if (query.isLoading) {
+    return (
+      <AuroraScreen variant="doctor" title="Messages" subtitle="Patient conversations">
+        <ListSkeleton />
+      </AuroraScreen>
+    );
+  }
 
   const rows = query.data?.conversations ?? [];
 

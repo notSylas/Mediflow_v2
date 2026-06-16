@@ -1,7 +1,13 @@
 import { NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
-import { user } from "@/db/schema";
+import {
+  conversations,
+  followUps,
+  medicalReports,
+  refillRequests,
+  user,
+} from "@/db/schema";
 import { requireDoctorSession } from "@/lib/api-auth";
 import { listDoctorPatients } from "@/lib/appointments";
 import { getMedicineHistory, getPatientHistory } from "@/lib/consult";
@@ -30,10 +36,56 @@ export async function GET(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const [history, medicineHistory, patientProfile] = await Promise.all([
+  const [
+    history,
+    medicineHistory,
+    patientProfile,
+    followUpHistory,
+    refillHistory,
+    reports,
+    conversation,
+  ] = await Promise.all([
     getPatientHistory(id, profile.id),
     getMedicineHistory(id, profile.id),
     getPatientProfile(id),
+    db
+      .select({
+        id: followUps.id,
+        dueAt: followUps.dueAt,
+        status: followUps.status,
+        createdAt: followUps.createdAt,
+        sourceAppointmentId: followUps.sourceAppointmentId,
+      })
+      .from(followUps)
+      .where(eq(followUps.patientId, id)),
+    db
+      .select({
+        id: refillRequests.id,
+        prescriptionId: refillRequests.prescriptionId,
+        status: refillRequests.status,
+        createdAt: refillRequests.createdAt,
+      })
+      .from(refillRequests)
+      .where(eq(refillRequests.patientId, id)),
+    db
+      .select({
+        id: medicalReports.id,
+        filename: medicalReports.filename,
+        mimeType: medicalReports.mimeType,
+        createdAt: medicalReports.createdAt,
+      })
+      .from(medicalReports)
+      .where(eq(medicalReports.patientId, id)),
+    db
+      .select({
+        id: conversations.id,
+        lastMessageAt: conversations.lastMessageAt,
+        lastMessagePreview: conversations.lastMessagePreview,
+        doctorUnread: conversations.doctorUnread,
+      })
+      .from(conversations)
+      .where(and(eq(conversations.patientId, id), eq(conversations.doctorId, profile.id)))
+      .then((rows) => rows[0] ?? null),
   ]);
 
   return NextResponse.json({
@@ -41,6 +93,10 @@ export async function GET(
     patientProfile,
     history,
     medicineHistory,
+    followUps: followUpHistory,
+    refillRequests: refillHistory,
+    reports,
+    conversation,
     timezone: profile.timezone,
   });
 }

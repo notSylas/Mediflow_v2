@@ -48,6 +48,8 @@ export function DoctorAppointmentCard({
   onPress: () => void;
 }) {
   const patientName = row.patient.name || row.patient.email;
+  const needsRx =
+    row.appointment.status === "completed" && row.prescriptionStatus !== "issued";
   return (
     <Pressable onPress={onPress}>
       <Card>
@@ -62,6 +64,25 @@ export function DoctorAppointmentCard({
         {row.appointment.intakeNote ? (
           <Caption>{row.appointment.intakeNote.split("\n")[0]}</Caption>
         ) : null}
+        <View style={styles.tagRow}>
+          <MiniTag
+            icon={row.appointment.mode === "async" ? "file-document-edit-outline" : "video-outline"}
+            label={row.appointment.mode === "async" ? "Async consult" : "Video visit"}
+            tone={row.appointment.mode === "async" ? "doctor" : "info"}
+          />
+          {row.appointment.triageFlaggedAt ? (
+            <MiniTag icon="alert-octagon-outline" label="Triage flag" tone="danger" />
+          ) : null}
+          {needsRx ? (
+            <MiniTag
+              icon="file-document-edit-outline"
+              label={row.prescriptionStatus === "draft" ? "Draft Rx" : "Needs Rx"}
+              tone="warning"
+            />
+          ) : row.prescriptionStatus === "issued" ? (
+            <MiniTag icon="file-document-check-outline" label="Rx issued" tone="success" />
+          ) : null}
+        </View>
       </Card>
     </Pressable>
   );
@@ -97,6 +118,30 @@ export function MedicineCard({ medicine }: { medicine: Medicine }) {
   );
 }
 
+function MiniTag({
+  icon,
+  label,
+  tone,
+}: {
+  icon: keyof typeof MaterialCommunityIcons.glyphMap;
+  label: string;
+  tone: "doctor" | "info" | "warning" | "danger" | "success";
+}) {
+  const palette = {
+    doctor: { bg: colors.doctorBg, fg: colors.doctor },
+    info: { bg: colors.infoBg, fg: colors.info },
+    warning: { bg: colors.warningBg, fg: colors.warning },
+    danger: { bg: colors.dangerBg, fg: colors.danger },
+    success: { bg: colors.successBg, fg: colors.success },
+  }[tone];
+  return (
+    <View style={[styles.miniTag, { backgroundColor: palette.bg }]}>
+      <MaterialCommunityIcons name={icon} size={13} color={palette.fg} />
+      <Text style={[styles.miniTagText, { color: palette.fg }]}>{label}</Text>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   row: { flexDirection: "row", alignItems: "center", gap: 11 },
   between: {
@@ -114,6 +159,16 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   link: { color: colors.primary, fontSize: 13, fontWeight: "700" },
+  tagRow: { flexDirection: "row", flexWrap: "wrap", gap: 7 },
+  miniTag: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    borderRadius: radius.pill,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+  },
+  miniTagText: { fontSize: 11, fontWeight: "700" },
   medicine: {
     borderRadius: radius.md,
     borderWidth: 1,

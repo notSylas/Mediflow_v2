@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
-import { Pressable, StyleSheet, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import {
   BackHeader,
   Body,
@@ -15,7 +15,7 @@ import {
 } from "@/components/ui";
 import { apiFetch } from "@/lib/api";
 import { formatDate, formatTime } from "@/lib/format";
-import { colors, radius } from "@/lib/theme";
+import { colors, fonts, radius } from "@/lib/theme";
 import type {
   AvailabilityOverride,
   AvailabilityRule,
@@ -67,6 +67,51 @@ export default function DoctorSchedule() {
       return { date, key, blocked, rules, overrides, appointments };
     });
   }, [query.data, week]);
+  const health = useMemo(() => {
+    const availabilityDays = days.filter(
+      (day) => !day.blocked && (day.rules.length > 0 || day.overrides.some((o) => o.kind === "extra"))
+    ).length;
+    const blockedDays = days.filter((day) => day.blocked).length;
+    const bookedVisits = days.reduce((sum, day) => sum + day.appointments.length, 0);
+    if (!query.data?.rules.length) {
+      return {
+        tone: "danger" as const,
+        title: "Patients cannot book yet",
+        message: "Add weekly availability so patients can reserve paid slots.",
+        availabilityDays,
+        blockedDays,
+        bookedVisits,
+      };
+    }
+    if (availabilityDays === 0) {
+      return {
+        tone: "warning" as const,
+        title: "No available clinic days this week",
+        message: "This week is fully blocked or has no active windows.",
+        availabilityDays,
+        blockedDays,
+        bookedVisits,
+      };
+    }
+    if (availabilityDays <= 2) {
+      return {
+        tone: "warning" as const,
+        title: "Limited availability",
+        message: "Only a few days are open. Consider adding slots if demand is high.",
+        availabilityDays,
+        blockedDays,
+        bookedVisits,
+      };
+    }
+    return {
+      tone: "doctor" as const,
+      title: "Availability looks healthy",
+      message: "Patients have multiple booking windows this week.",
+      availabilityDays,
+      blockedDays,
+      bookedVisits,
+    };
+  }, [days, query.data?.rules.length]);
 
   if (query.isLoading) return <Loading />;
   return (
@@ -81,6 +126,19 @@ export default function DoctorSchedule() {
         <Button label="This week" compact tone="ghost" onPress={() => setWeek(0)} />
         <Button label="Next" compact tone="secondary" onPress={() => setWeek((value) => value + 1)} />
       </View>
+      <Card tone={health.tone === "danger" ? "danger" : health.tone === "warning" ? "warning" : "doctor"}>
+        <View style={styles.healthRow}>
+          <View>
+            <Body strong>{health.title}</Body>
+            <Muted>{health.message}</Muted>
+          </View>
+        </View>
+        <View style={styles.healthStats}>
+          <HealthStat label="Open days" value={health.availabilityDays} />
+          <HealthStat label="Blocked" value={health.blockedDays} />
+          <HealthStat label="Booked" value={health.bookedVisits} />
+        </View>
+      </Card>
       {query.error ? <ErrorState message={query.error.message} /> : null}
       {days.map((day) => (
         <Card key={day.key} tone={day.blocked ? "danger" : "default"}>
@@ -134,6 +192,15 @@ export default function DoctorSchedule() {
   );
 }
 
+function HealthStat({ label, value }: { label: string; value: number }) {
+  return (
+    <View style={styles.healthStat}>
+      <Text style={styles.healthValue}>{value}</Text>
+      <Text style={styles.healthLabel}>{label}</Text>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   weekNav: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   between: {
@@ -156,4 +223,16 @@ const styles = StyleSheet.create({
     gap: 4,
     backgroundColor: colors.bg,
   },
+  healthRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+  healthStats: { flexDirection: "row", gap: 9 },
+  healthStat: {
+    flex: 1,
+    borderRadius: radius.md,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 10,
+  },
+  healthValue: { color: colors.text, fontFamily: fonts.display, fontSize: 18 },
+  healthLabel: { color: colors.textMuted, fontFamily: fonts.body, fontSize: 11 },
 });
