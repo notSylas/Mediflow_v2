@@ -2,6 +2,7 @@ export interface ChatAttachment {
   id: string;
   filename: string;
   mimeType: string;
+  byteSize?: number;
 }
 
 export interface ChatMessage {

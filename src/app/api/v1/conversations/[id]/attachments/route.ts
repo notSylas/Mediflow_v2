@@ -48,5 +48,5 @@ export async function POST(
       mimeType: chatAttachments.mimeType,
     });
 
-  return NextResponse.json(created, { status: 201 });
+  return NextResponse.json({ ...created, byteSize: buffer.length }, { status: 201 });
 }

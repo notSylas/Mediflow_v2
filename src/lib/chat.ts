@@ -23,7 +23,7 @@ export interface ChatMessageDTO {
   senderRole: "patient" | "doctor";
   body: string | null;
   attachmentId: string | null;
-  attachment: { id: string; filename: string; mimeType: string } | null;
+  attachment: { id: string; filename: string; mimeType: string; byteSize: number } | null;
   createdAt: string;
 }
 
@@ -34,6 +34,7 @@ async function attachmentMeta(attachmentId: string | null) {
       id: chatAttachments.id,
       filename: chatAttachments.filename,
       mimeType: chatAttachments.mimeType,
+      byteSize: dsql<number>`octet_length(${chatAttachments.data})`,
     })
     .from(chatAttachments)
     .where(eq(chatAttachments.id, attachmentId));
@@ -170,6 +171,7 @@ export async function listMessages(conversationId: string, beforeId?: string) {
         id: chatAttachments.id,
         filename: chatAttachments.filename,
         mimeType: chatAttachments.mimeType,
+        byteSize: dsql<number>`octet_length(${chatAttachments.data})`,
       },
     })
     .from(messages)

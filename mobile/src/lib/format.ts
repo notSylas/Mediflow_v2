@@ -46,6 +46,14 @@ export function formatMoney(paise: number | null | undefined): string {
   }).format((paise ?? 0) / 100);
 }
 
+export function formatBytes(bytes: number | null | undefined): string {
+  if (bytes == null || bytes <= 0) return "—";
+  if (bytes < 1024) return `${bytes} B`;
+  const kb = bytes / 1024;
+  if (kb < 1024) return `${Math.round(kb)} KB`;
+  return `${(kb / 1024).toFixed(1)} MB`;
+}
+
 export function initials(value: string): string {
   return value
     .split(/\s+/)
