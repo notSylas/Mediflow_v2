@@ -19,9 +19,10 @@ test("patient books a slot, confirms payment, and cancels it", async ({ page }) 
   // Appointments list shows it as confirmed, with a Cancel option.
   await page.getByRole("link", { name: /view my appointments/i }).click();
   await expect(page).toHaveURL(/\/patient\/appointments/);
-  await expect(page.getByText("Confirmed", { exact: true })).toBeVisible();
+  // Status renders in more than one place (badge + label) on the redesigned card.
+  await expect(page.getByText("Confirmed", { exact: true }).first()).toBeVisible();
 
   await page.getByRole("button", { name: /^cancel$/i }).click();
   await page.getByRole("button", { name: /cancel appointment/i }).click();
-  await expect(page.getByText("Cancelled", { exact: true })).toBeVisible();
+  await expect(page.getByText("Cancelled", { exact: true }).first()).toBeVisible();
 });
