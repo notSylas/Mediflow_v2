@@ -30,7 +30,7 @@ export function Sidebar({ user }: { user: Session["user"] }) {
         </span>
       </Link>
 
-      <nav className="flex-1 space-y-2 px-4 py-2">
+      <nav className="min-h-0 flex-1 space-y-2 overflow-y-auto px-4 py-2">
         {items.map((item) => {
           const active = isNavActive(item.href, pathname);
           return (
