@@ -6,6 +6,7 @@ import { appointments } from "@/db/schema";
 import { requireSession } from "@/lib/api-auth";
 import { getAppointmentForPatient } from "@/lib/appointments";
 import { getAvailableSlots } from "@/lib/availability";
+import { isUniqueViolation } from "@/lib/db-errors";
 import { getDoctorProfile } from "@/lib/doctor";
 
 const schema = z.object({ startsAt: z.string().datetime() });
@@ -63,7 +64,7 @@ export async function POST(
       .returning();
     return NextResponse.json({ appointment: updated });
   } catch (error) {
-    if (error && typeof error === "object" && "code" in error && error.code === "23505") {
+    if (isUniqueViolation(error)) {
       return NextResponse.json(
         { error: "That slot was just taken. Please pick another." },
         { status: 409 }
