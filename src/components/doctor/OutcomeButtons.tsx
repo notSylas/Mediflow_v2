@@ -23,12 +23,18 @@ interface OutcomeButtonsProps {
   hasNote: boolean;
   /** True when a prescription exists but hasn't been issued. */
   prescriptionDraft: boolean;
+  /** True once the doctor has created a follow-up recommendation for this visit. */
+  followUpRecommended?: boolean;
+  /** True when the booking intake triggered a red-flag warning. */
+  triageFlagged?: boolean;
 }
 
 export function OutcomeButtons({
   appointmentId,
   hasNote,
   prescriptionDraft,
+  followUpRecommended = false,
+  triageFlagged = false,
 }: OutcomeButtonsProps) {
   const router = useRouter();
   const [pending, setPending] = useState<"completed" | "no_show" | null>(null);
@@ -58,6 +64,8 @@ export function OutcomeButtons({
   const completionWarnings = [
     !hasNote ? "The consultation note is empty." : null,
     prescriptionDraft ? "The prescription is still a draft and won't be visible to the patient." : null,
+    !followUpRecommended ? "No follow-up recommendation has been recorded." : null,
+    triageFlagged ? "This visit was triage-flagged — confirm red flags were reviewed." : null,
   ].filter(Boolean) as string[];
 
   return (

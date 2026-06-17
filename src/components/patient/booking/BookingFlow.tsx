@@ -192,50 +192,51 @@ export function BookingFlow({
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 space-y-6 duration-500">
       <BookingStepper currentIndex={STEP_INDEX[step]} />
-      <Card className="glass">
-        <CardContent className="pt-6">
-        {step === "loading" && <p className="text-sm text-muted-foreground">Loading…</p>}
+      <Card className="glass overflow-hidden rounded-3xl">
+        <div className="h-1.5 bg-gradient-to-r from-teal-500 via-emerald-400 to-cyan-400" />
+        <CardContent className="p-5 sm:p-8">
+          {step === "loading" && <p className="text-sm text-muted-foreground">Loading…</p>}
 
-        {step === "intake" && (
-          <IntakeStep
-            visitReason={visitReason}
-            onVisitReasonChange={setVisitReason}
-            symptoms={symptoms}
-            onSymptomsChange={setSymptoms}
-            report={report}
-            onReportChange={setReport}
-            consented={consented}
-            onConsentedChange={setConsented}
-            onContinue={() => setStep("slot")}
-          />
-        )}
+          {step === "intake" && (
+            <IntakeStep
+              visitReason={visitReason}
+              onVisitReasonChange={setVisitReason}
+              symptoms={symptoms}
+              onSymptomsChange={setSymptoms}
+              report={report}
+              onReportChange={setReport}
+              consented={consented}
+              onConsentedChange={setConsented}
+              onContinue={() => setStep("slot")}
+            />
+          )}
 
-        {step === "slot" && (
-          <SlotStep
-            timezone={timezone}
-            onPick={handleSlotPick}
-            onBack={() => setStep("intake")}
-            error={error}
-          />
-        )}
+          {step === "slot" && (
+            <SlotStep
+              timezone={timezone}
+              onPick={handleSlotPick}
+              onBack={() => setStep("intake")}
+              error={error}
+            />
+          )}
 
-        {step === "payment" && appointment && (
-          <PaymentStep
-            startsAt={appointment.startsAt}
-            timezone={timezone}
-            amountInPaise={payment?.amountInPaise ?? feeInPaise}
-            onConfirm={handleConfirmPayment}
-            error={error}
-          />
-        )}
+          {step === "payment" && appointment && (
+            <PaymentStep
+              startsAt={appointment.startsAt}
+              timezone={timezone}
+              amountInPaise={payment?.amountInPaise ?? feeInPaise}
+              onConfirm={handleConfirmPayment}
+              error={error}
+            />
+          )}
 
-        {step === "confirmation" && appointment && (
-          <ConfirmationStep
-            startsAt={appointment.startsAt}
-            timezone={timezone}
-            amountInPaise={payment?.amountInPaise ?? feeInPaise}
-          />
-        )}
+          {step === "confirmation" && appointment && (
+            <ConfirmationStep
+              startsAt={appointment.startsAt}
+              timezone={timezone}
+              amountInPaise={payment?.amountInPaise ?? feeInPaise}
+            />
+          )}
         </CardContent>
       </Card>
     </div>

@@ -2,8 +2,11 @@ import Link from "next/link";
 import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { formatInTimeZone } from "date-fns-tz";
-import { FileText } from "lucide-react";
+import { and, eq } from "drizzle-orm";
+import { AlertTriangle, CheckCircle2, FileText, RotateCcw } from "lucide-react";
 import { auth } from "@/lib/auth";
+import { db } from "@/db";
+import { followUps } from "@/db/schema";
 import {
   getEncounterData,
   getMedicineHistory,
@@ -12,6 +15,7 @@ import {
 import { describeMedicineSchedule } from "@/lib/medicines";
 import { ageFromDob, genderLabel, getPatientProfile } from "@/lib/patient";
 import { getOrCreateDoctorProfile } from "@/lib/doctor";
+import { createFollowUpAction } from "@/app/(app)/doctor/actions";
 import { JoinCallButton } from "@/components/JoinCallButton";
 import { PresenceBadge } from "@/components/PresenceBadge";
 import { OutcomeButtons } from "@/components/doctor/OutcomeButtons";
@@ -41,10 +45,20 @@ export default async function EncounterPage({
   if (!data) notFound();
 
   const profile = await getOrCreateDoctorProfile(session.user.id);
-  const [history, medicineHistory, patientProfile] = await Promise.all([
+  const [history, medicineHistory, patientProfile, followUp] = await Promise.all([
     getPatientHistory(data.patient.id, data.doctorProfileId, id),
     getMedicineHistory(data.patient.id, data.doctorProfileId),
     getPatientProfile(data.patient.id),
+    db
+      .select()
+      .from(followUps)
+      .where(
+        and(
+          eq(followUps.sourceAppointmentId, id),
+          eq(followUps.status, "pending")
+        )
+      )
+      .then((rows) => rows[0] ?? null),
   ]);
 
   const { appointment } = data;
@@ -166,6 +180,8 @@ export default async function EncounterPage({
                     data.note?.plan
                 )}
                 prescriptionDraft={data.prescription?.status === "draft"}
+                followUpRecommended={Boolean(followUp)}
+                triageFlagged={Boolean(appointment.triageFlaggedAt)}
               />
             )}
           </div>
@@ -193,6 +209,106 @@ export default async function EncounterPage({
         </div>
 
         <div className="space-y-6 lg:col-span-2">
+          <Card>
+            <CardHeader>
+              <CardTitle>Completion checklist</CardTitle>
+              <CardDescription>
+                Close the loop before marking the consultation complete.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm">
+              {[
+                {
+                  label: "SOAP note saved",
+                  done: Boolean(
+                    data.note?.subjective ||
+                      data.note?.objective ||
+                      data.note?.assessment ||
+                      data.note?.plan
+                  ),
+                },
+                {
+                  label:
+                    data.prescription?.status === "issued"
+                      ? "Prescription issued"
+                      : data.prescription?.status === "draft"
+                        ? "Prescription still in draft"
+                        : "Prescription skipped/not started",
+                  done: data.prescription?.status === "issued",
+                },
+                {
+                  label: followUp
+                    ? `Follow-up due ${formatInTimeZone(followUp.dueAt, timezone, "MMM d")}`
+                    : "Follow-up decision pending",
+                  done: Boolean(followUp),
+                },
+                {
+                  label: appointment.triageFlaggedAt
+                    ? "Red-flag intake reviewed"
+                    : "No triage red flag",
+                  done: !appointment.triageFlaggedAt,
+                  warn: Boolean(appointment.triageFlaggedAt),
+                },
+              ].map((item) => (
+                <div
+                  key={item.label}
+                  className="flex items-center gap-2 rounded-lg border bg-background/60 p-2.5"
+                >
+                  {item.done ? (
+                    <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                  ) : item.warn ? (
+                    <AlertTriangle className="h-4 w-4 text-amber-600" />
+                  ) : (
+                    <span className="h-4 w-4 rounded-full border" />
+                  )}
+                  <span className={item.done ? "" : "text-muted-foreground"}>
+                    {item.label}
+                  </span>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Follow-up recommendation</CardTitle>
+              <CardDescription>
+                Surface continuity on the patient home screen and doctor work queue.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {followUp ? (
+                <div className="flex items-start gap-3 rounded-lg border bg-emerald-50 p-3 text-sm">
+                  <RotateCcw className="mt-0.5 h-4 w-4 shrink-0 text-emerald-700" />
+                  <div>
+                    <p className="font-medium text-emerald-900">
+                      Recommended for{" "}
+                      {formatInTimeZone(followUp.dueAt, timezone, "MMM d, yyyy")}
+                    </p>
+                    <p className="text-emerald-800/80">
+                      The patient will see a follow-up prompt until they book or dismiss it.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-3 gap-2">
+                  {[7, 14, 30].map((days) => (
+                    <form key={days} action={createFollowUpAction}>
+                      <input type="hidden" name="appointmentId" value={appointment.id} />
+                      <input type="hidden" name="inDays" value={days} />
+                      <button
+                        type="submit"
+                        className="w-full rounded-lg border bg-background/60 px-3 py-2 text-sm font-medium transition-colors hover:border-primary/50"
+                      >
+                        {days} days
+                      </button>
+                    </form>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle>Past consultations</CardTitle>

@@ -1,6 +1,6 @@
 # MediFlow v2 — Feature Tracker
 
-Live status board. Update when state changes. Last updated: 2026-06-16.
+Live status board. Update when state changes. Last updated: 2026-06-18.
 
 Legend: ✅ done · 🔨 in progress · 🔜 planned (v1) · 🧊 v1.5 · ❌ cut
 
@@ -165,3 +165,19 @@ updated `Rules.md` #1 and `AGENTS.md`.
 | Production realtime hosting | 🔜 | Vercel can't host the socket process — see `Deployment.md` |
 | Push notifications (new-message alerts) | 🔜 | no `expo-notifications` yet; chat only updates while open |
 | Realtime E2E (socket delivery) test | 🔜 | only unit coverage today |
+
+## Web clinical workflow parity (added 2026-06-18)
+
+Mobile had pulled ahead of the web UI. This pass brings the web doctor/patient
+surfaces closer to the same operational model.
+
+| Item | Status | Notes |
+|---|---|---|
+| Doctor work queue page | ✅ | `/doctor/work-queue`: needs Rx, unread messages, refills, follow-ups, triage flags |
+| Doctor refill requests page | ✅ | `/doctor/refill-requests`: fulfil via async consult or decline |
+| Doctor dashboard attention strip | ✅ | Links into the work queue from `/doctor` |
+| Doctor patient record | ✅ | Clinical snapshot, timeline, reports, medicine history, refills/follow-ups, message signal |
+| Doctor patient roster care filters | ✅ | Search + "needs attention" filter with per-patient badges |
+| Encounter completion checklist | ✅ | SOAP/Rx/follow-up/triage checklist + follow-up recommendation controls |
+| Patient home care prompts | ✅ | Follow-up prompt, pending-payment prompt, profile nudge, active medicines |
+| Patient refill request CTA | ✅ | Prescription cards can create refill requests; pending state is shown |
