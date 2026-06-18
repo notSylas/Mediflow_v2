@@ -58,6 +58,20 @@ export async function countPendingRefillRequests(doctorId: string): Promise<numb
   return rows.length;
 }
 
+/** Patient's refill requests, used to prevent duplicate refill CTA noise. */
+export async function listPatientRefillRequests(patientId: string) {
+  return db
+    .select({
+      id: refillRequests.id,
+      prescriptionId: refillRequests.prescriptionId,
+      status: refillRequests.status,
+      createdAt: refillRequests.createdAt,
+    })
+    .from(refillRequests)
+    .where(eq(refillRequests.patientId, patientId))
+    .orderBy(desc(refillRequests.createdAt));
+}
+
 /** Loads a pending refill request that belongs to this doctor. */
 export async function getDoctorRefillRequest(id: string, doctorId: string) {
   const [row] = await db

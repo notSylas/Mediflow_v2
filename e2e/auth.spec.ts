@@ -85,7 +85,8 @@ test("doctor sets weekly availability and patient sees a matching slot", async (
   await signIn(page, patientEmail);
   await expect(page).toHaveURL(/\/patient/);
 
-  await page.getByRole("link", { name: /book a consultation/i }).click();
+  // The redesigned patient home surfaces the CTA more than once (hero + card).
+  await page.getByRole("link", { name: /book a consultation/i }).first().click();
   await expect(page).toHaveURL(/\/patient\/book/);
 
   await page.getByLabel("Tell us more").fill("Just a checkup.");

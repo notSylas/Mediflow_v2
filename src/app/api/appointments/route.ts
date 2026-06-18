@@ -14,6 +14,7 @@ import {
   VISIT_REASON_VALUES,
 } from "@/lib/booking";
 import { getDoctorProfile } from "@/lib/doctor";
+import { isUniqueViolation } from "@/lib/db-errors";
 import { hasEmergencyRedFlag } from "@/lib/triage";
 
 const createAppointmentSchema = z.object({
@@ -147,7 +148,7 @@ export async function POST(request: Request) {
     // emergency warning even if its own check missed it.
     return NextResponse.json({ ...created, triageFlagged }, { status: 201 });
   } catch (error) {
-    if (error && typeof error === "object" && "code" in error && error.code === "23505") {
+    if (isUniqueViolation(error)) {
       return NextResponse.json({ error: "Slot is no longer available" }, { status: 409 });
     }
     throw error;

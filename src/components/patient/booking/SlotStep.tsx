@@ -79,15 +79,19 @@ export function SlotStep({ timezone, onPick, onBack, error }: SlotStepProps) {
       {error && <p className="text-sm text-destructive">{error}</p>}
 
       <div className="space-y-2">
-        <p className="text-sm font-medium">Choose a date</p>
-        <div className="flex flex-wrap gap-2">
+        <div>
+          <p className="text-base font-semibold">Choose a date</p>
+          <p className="text-sm text-muted-foreground">Available clinic days are shown below.</p>
+        </div>
+        <div className="flex flex-wrap gap-3">
           {dates.map((date) => (
             <Button
               key={date}
               type="button"
-              size="sm"
+              size="lg"
               variant={date === activeDate ? "default" : "outline"}
               onClick={() => setSelectedDate(date)}
+              className="rounded-2xl"
             >
               {formatInTimeZone(new Date(`${date}T00:00:00Z`), "UTC", "EEE, MMM d")}
             </Button>
@@ -96,13 +100,18 @@ export function SlotStep({ timezone, onPick, onBack, error }: SlotStepProps) {
       </div>
 
       <div className="space-y-2">
-        <p className="text-sm font-medium">Choose a time</p>
-        <div className="flex flex-wrap gap-2">
+        <div>
+          <p className="text-base font-semibold">Choose a time</p>
+          <p className="text-sm text-muted-foreground">
+            The slot is held only after you continue to payment.
+          </p>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {timesForDate.map((slot) => (
             <Button
               key={slot}
               type="button"
-              size="sm"
+              size="lg"
               variant="outline"
               disabled={picking !== null}
               onClick={async () => {
@@ -110,6 +119,7 @@ export function SlotStep({ timezone, onPick, onBack, error }: SlotStepProps) {
                 await onPick(slot);
                 setPicking(null);
               }}
+              className="h-14 rounded-2xl bg-background/70"
             >
               {picking === slot
                 ? "Booking…"
@@ -119,7 +129,7 @@ export function SlotStep({ timezone, onPick, onBack, error }: SlotStepProps) {
         </div>
       </div>
 
-      <Button type="button" variant="outline" onClick={onBack}>
+      <Button type="button" variant="outline" onClick={onBack} className="rounded-2xl">
         Back
       </Button>
     </div>

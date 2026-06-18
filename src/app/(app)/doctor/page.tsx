@@ -3,11 +3,17 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { formatInTimeZone } from "date-fns-tz";
 import {
+  AlertTriangle,
   ArrowRight,
   CalendarClock,
   CalendarDays,
   CheckCircle2,
+  FilePenLine,
   IndianRupee,
+  ListChecks,
+  MessageCircle,
+  Pill,
+  RotateCcw,
   Settings,
   Stethoscope,
 } from "lucide-react";
@@ -18,7 +24,10 @@ import { db } from "@/db";
 import { availabilityRules } from "@/db/schema";
 import { auth } from "@/lib/auth";
 import { listDoctorAppointments } from "@/lib/appointments";
+import { listDoctorConversations } from "@/lib/chat";
 import { getDoctorRevenueInPaise, getOrCreateDoctorProfile } from "@/lib/doctor";
+import { listDoctorPendingFollowUps } from "@/lib/follow-ups";
+import { listPendingRefillRequests } from "@/lib/refills";
 import { JoinCallButton } from "@/components/JoinCallButton";
 import { PresenceBadge } from "@/components/PresenceBadge";
 import { SpotlightCard } from "@/components/wow/SpotlightCard";
@@ -40,7 +49,8 @@ export default async function DoctorDashboardPage() {
   if (session.user.role !== "doctor") redirect("/patient");
 
   const profile = await getOrCreateDoctorProfile(session.user.id);
-  const [rows, revenueInPaise, rules] = await Promise.all([
+  const [rows, revenueInPaise, rules, conversations, followUps, refillRequests] =
+    await Promise.all([
     listDoctorAppointments(profile.id),
     getDoctorRevenueInPaise(profile.id),
     db
@@ -48,6 +58,9 @@ export default async function DoctorDashboardPage() {
       .from(availabilityRules)
       .where(eq(availabilityRules.doctorId, profile.id))
       .limit(1),
+    listDoctorConversations(session.user.id),
+    listDoctorPendingFollowUps(profile.id),
+    listPendingRefillRequests(profile.id),
   ]);
 
   const setupSteps = [
@@ -92,6 +105,25 @@ export default async function DoctorDashboardPage() {
   const completedCount = rows.filter(
     ({ appointment }) => appointment.status === "completed"
   ).length;
+
+  const needsPrescription = rows.filter(
+    ({ appointment, prescriptionStatus }) =>
+      appointment.status === "completed" && prescriptionStatus !== "issued"
+  );
+  const unreadConversations = conversations.filter(
+    ({ conversation }) => conversation.doctorUnread > 0
+  );
+  const triageFlagged = rows.filter(
+    ({ appointment }) =>
+      Boolean(appointment.triageFlaggedAt) &&
+      ["confirmed", "completed"].includes(appointment.status)
+  );
+  const queueCount =
+    needsPrescription.length +
+    unreadConversations.length +
+    refillRequests.length +
+    followUps.length +
+    triageFlagged.length;
 
   const nextUp = rows
     .filter(
@@ -198,6 +230,80 @@ export default async function DoctorDashboardPage() {
           </SpotlightCard>
         ))}
       </div>
+
+      <Card className="glass">
+        <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <ListChecks className="h-5 w-5 text-primary" />
+              Needs your attention
+            </CardTitle>
+            <CardDescription>
+              Clinical and operational tasks collected in one queue.
+            </CardDescription>
+          </div>
+          <Button asChild variant={queueCount > 0 ? "default" : "outline"} size="sm">
+            <Link href="/doctor/work-queue">
+              Open queue
+              <ArrowRight className="ml-1 h-3.5 w-3.5" />
+            </Link>
+          </Button>
+        </CardHeader>
+        <CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          {[
+            {
+              label: "Needs Rx",
+              value: needsPrescription.length,
+              icon: FilePenLine,
+              tone: "amber" as const,
+            },
+            {
+              label: "Unread",
+              value: unreadConversations.length,
+              icon: MessageCircle,
+              tone: "blue" as const,
+            },
+            {
+              label: "Refills",
+              value: refillRequests.length,
+              icon: Pill,
+              tone: "violet" as const,
+            },
+            {
+              label: "Follow-ups",
+              value: followUps.length,
+              icon: RotateCcw,
+              tone: "emerald" as const,
+            },
+            {
+              label: "Triage",
+              value: triageFlagged.length,
+              icon: AlertTriangle,
+              tone: "rose" as const,
+            },
+          ].map((item) => (
+            <Link
+              key={item.label}
+              href="/doctor/work-queue"
+              className={cn(
+                "rounded-xl p-3 transition-transform hover:-translate-y-0.5",
+                TONES[item.tone].tile
+              )}
+            >
+              <span
+                className={cn(
+                  "flex h-8 w-8 items-center justify-center rounded-lg",
+                  TONES[item.tone].chip
+                )}
+              >
+                <item.icon className="h-4 w-4" />
+              </span>
+              <p className="mt-2 text-xl font-semibold tabular-nums">{item.value}</p>
+              <p className="text-xs text-muted-foreground">{item.label}</p>
+            </Link>
+          ))}
+        </CardContent>
+      </Card>
 
       <ShineBorder>
       <Card className="glass overflow-hidden rounded-2xl border-0">

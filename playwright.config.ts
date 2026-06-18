@@ -5,6 +5,12 @@ if (existsSync(".env")) {
   process.loadEnvFile(".env");
 }
 
+// Port is overridable so the suite can run on an isolated server + test DB
+// (E2E_PORT=3100 DATABASE_URL=...mediflow_test) without disturbing a dev server
+// on :3000. Defaults preserve the original single-machine behaviour.
+const PORT = process.env.E2E_PORT ?? "3000";
+const BASE_URL = `http://localhost:${PORT}`;
+
 export default defineConfig({
   testDir: "./e2e",
   globalSetup: "./e2e/global-setup.ts",
@@ -15,7 +21,7 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   reporter: [["html", { open: "never" }]],
   use: {
-    baseURL: "http://localhost:3000",
+    baseURL: BASE_URL,
     trace: "on-first-retry",
   },
   projects: [
@@ -25,8 +31,8 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "npm run build && npm run start",
-    url: "http://localhost:3000",
+    command: `npm run build && npm run start -- -p ${PORT}`,
+    url: BASE_URL,
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,
     env: {

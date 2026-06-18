@@ -71,10 +71,16 @@ export function IntakeStep({
   return (
     <div className="space-y-6">
       <div className="space-y-3">
-        <Label>What&apos;s this visit about?</Label>
+        <div>
+          <Label className="text-base">What&apos;s this visit about?</Label>
+          <p className="mt-1 text-sm text-muted-foreground">
+            This helps the doctor prepare before the consultation.
+          </p>
+        </div>
         <RadioGroup
           value={visitReason}
           onValueChange={(value) => onVisitReasonChange(value as VisitReason)}
+          className="grid gap-3 md:grid-cols-2"
         >
           {VISIT_REASONS.map((reason) => (
             <label
@@ -82,8 +88,8 @@ export function IntakeStep({
               htmlFor={`visit-reason-${reason.value}`}
               className={
                 visitReason === reason.value
-                  ? "flex cursor-pointer items-start gap-3 rounded-lg border border-primary bg-accent p-3 transition-colors"
-                  : "flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors hover:border-primary/40 hover:bg-accent/40"
+                  ? "flex cursor-pointer items-start gap-3 rounded-2xl border border-primary bg-teal-50 p-4 shadow-sm transition-colors"
+                  : "flex cursor-pointer items-start gap-3 rounded-2xl border bg-background/70 p-4 transition-colors hover:border-primary/40 hover:bg-accent/40"
               }
             >
               <RadioGroupItem
@@ -110,6 +116,7 @@ export function IntakeStep({
           value={symptoms}
           onChange={(event) => onSymptomsChange(event.target.value)}
           rows={5}
+          className="rounded-2xl bg-background/80"
         />
       </div>
 
@@ -135,7 +142,7 @@ export function IntakeStep({
         <Label htmlFor="report">Attach a report (optional)</Label>
         <label
           htmlFor="report"
-          className="flex cursor-pointer flex-col items-center gap-1 rounded-lg border-2 border-dashed p-5 text-center transition-colors hover:border-primary/40 hover:bg-accent/30"
+          className="flex cursor-pointer flex-col items-center gap-1 rounded-2xl border-2 border-dashed bg-background/70 p-6 text-center transition-colors hover:border-primary/40 hover:bg-accent/30"
         >
           <span className="text-sm font-medium">
             {uploading ? "Uploading…" : report ? report.filename : "Click to upload"}
@@ -158,7 +165,7 @@ export function IntakeStep({
         {uploadError && <p className="text-sm text-destructive">{uploadError}</p>}
       </div>
 
-      <label className="flex cursor-pointer items-start gap-2.5 text-sm text-muted-foreground">
+      <label className="flex cursor-pointer items-start gap-3 rounded-2xl border bg-muted/30 p-4 text-sm text-muted-foreground">
         <input
           type="checkbox"
           checked={consented}
@@ -183,6 +190,8 @@ export function IntakeStep({
         type="button"
         onClick={onContinue}
         disabled={symptoms.trim().length === 0 || uploading || !consented}
+        size="lg"
+        className="w-full sm:w-auto"
       >
         Continue to pick a time
       </Button>

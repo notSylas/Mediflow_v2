@@ -10,6 +10,11 @@ import { db } from "@/db";
 export default async function globalSetup() {
   await db.execute(sql`
     TRUNCATE TABLE
+      chat_attachments,
+      messages,
+      conversations,
+      refill_requests,
+      follow_ups,
       prescription_medicines,
       prescriptions,
       consult_notes,

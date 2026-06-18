@@ -79,8 +79,9 @@ test("consultation, prescription, and returning-patient history", async ({ page 
   await expect(page.getByText("Paracetamol")).toBeVisible();
   await expect(page.getByText(/Morning, Night · After food · 3 days/)).toBeVisible();
 
-  // Appointment detail shows the outcome too.
-  await page.getByRole("link", { name: /view appointment/i }).click();
+  // Appointment detail shows the outcome too. Link to the appointment from the
+  // prescription card (text-agnostic — the label has changed before).
+  await page.locator('a[href^="/patient/appointments/"]').first().click();
   await expect(page.getByText("Your prescription")).toBeVisible();
 
   // --- Second visit: returning patient. ---

@@ -9,6 +9,7 @@ import {
   Paperclip,
   SendHorizontal,
   ShieldAlert,
+  Stethoscope,
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -165,16 +166,33 @@ export function ChatThread({ conversationId, currentRole, peerName }: ChatThread
 
   return (
     <div className="flex h-full flex-col">
-      <div className="border-b px-4 py-3">
-        <p className="font-medium">{peerName}</p>
-        <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <ShieldAlert className="h-3.5 w-3.5" />
-          Not monitored 24/7 — for emergencies, call your local emergency number.
-        </p>
+      <div className="border-b bg-background/95 px-4 py-4 backdrop-blur">
+        <div className="flex items-center gap-3">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-teal-100 text-teal-700">
+            <Stethoscope className="h-5 w-5" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="truncate font-semibold">{peerName}</p>
+            <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <ShieldAlert className="h-3.5 w-3.5" />
+              Not monitored 24/7 — for emergencies, call your local emergency number.
+            </p>
+          </div>
+          <span className="hidden rounded-full border bg-background px-3 py-1 text-xs font-medium text-muted-foreground sm:inline-flex">
+            Secure chat
+          </span>
+        </div>
       </div>
 
-      <div ref={scrollRef} className="flex-1 space-y-2 overflow-y-auto px-4 py-4">
-        {loading && <p className="text-sm text-muted-foreground">Loading…</p>}
+      <div
+        ref={scrollRef}
+        className="flex-1 space-y-3 overflow-y-auto bg-[radial-gradient(circle_at_top_left,rgba(20,184,166,0.08),transparent_34%),linear-gradient(180deg,rgba(248,250,252,0.7),rgba(255,255,255,0.92))] px-4 py-5"
+      >
+        {loading && (
+          <div className="mx-auto mt-8 w-fit rounded-full border bg-background/80 px-4 py-2 text-sm text-muted-foreground shadow-sm">
+            Loading conversation…
+          </div>
+        )}
         {!loading && hasMore && (
           <div className="flex justify-center pb-1">
             <Button
@@ -194,9 +212,12 @@ export function ChatThread({ conversationId, currentRole, peerName }: ChatThread
           </div>
         )}
         {!loading && messages.length === 0 && (
-          <p className="py-8 text-center text-sm text-muted-foreground">
-            No messages yet. Say hello.
-          </p>
+          <div className="mx-auto mt-8 max-w-sm rounded-2xl border bg-background/85 p-5 text-center shadow-sm">
+            <p className="font-medium">No messages yet</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Start with a short, specific follow-up question.
+            </p>
+          </div>
         )}
         {messages.map((m) => {
           const mine = m.senderRole === currentRole;
@@ -207,10 +228,10 @@ export function ChatThread({ conversationId, currentRole, peerName }: ChatThread
             >
               <div
                 className={cn(
-                  "max-w-[78%] rounded-2xl px-3.5 py-2 text-sm",
+                  "max-w-[82%] rounded-3xl px-4 py-3 text-sm shadow-sm",
                   mine
-                    ? "rounded-br-sm bg-primary text-primary-foreground"
-                    : "rounded-bl-sm bg-muted text-foreground"
+                    ? "rounded-br-md bg-primary text-primary-foreground"
+                    : "rounded-bl-md border bg-background text-foreground"
                 )}
               >
                 {m.attachment &&
@@ -250,12 +271,12 @@ export function ChatThread({ conversationId, currentRole, peerName }: ChatThread
         })}
       </div>
 
-      <div className="border-t p-3">
+      <div className="border-t bg-background/95 p-3 backdrop-blur">
         {uploadError && (
           <p className="mb-2 text-xs text-destructive">{uploadError}</p>
         )}
         {pendingFile && (
-          <div className="mb-2 flex items-center gap-2 rounded-lg bg-muted px-3 py-1.5 text-sm">
+          <div className="mb-2 flex items-center gap-2 rounded-2xl border bg-muted/60 px-3 py-2 text-sm">
             <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
             <span className="flex-1 truncate">{pendingFile.filename}</span>
             <button onClick={() => setPendingFile(null)} aria-label="Remove attachment">
@@ -280,7 +301,7 @@ export function ChatThread({ conversationId, currentRole, peerName }: ChatThread
             size="icon"
             disabled={uploading}
             onClick={() => fileRef.current?.click()}
-            className="h-[42px] w-[42px] shrink-0"
+            className="h-11 w-11 shrink-0 rounded-2xl"
             aria-label="Attach a file"
           >
             {uploading ? (
@@ -300,13 +321,13 @@ export function ChatThread({ conversationId, currentRole, peerName }: ChatThread
             }}
             placeholder="Write a message…"
             rows={1}
-            className="max-h-32 min-h-[42px] resize-none"
+            className="max-h-32 min-h-11 resize-none rounded-2xl bg-background/80"
           />
           <Button
             onClick={send}
             disabled={(!draft.trim() && !pendingFile) || sending}
             size="icon"
-            className="h-[42px] w-[42px] shrink-0"
+            className="h-11 w-11 shrink-0 rounded-2xl"
           >
             <SendHorizontal className="h-4 w-4" />
           </Button>

@@ -4,6 +4,15 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { formatInTimeZone } from "date-fns-tz";
+import {
+  ArrowUpRight,
+  CalendarClock,
+  FileText,
+  IndianRupee,
+  MessageSquareText,
+  Video,
+  XCircle,
+} from "lucide-react";
 import { toast } from "sonner";
 import { JoinCallButton } from "@/components/JoinCallButton";
 import {
@@ -21,6 +30,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { statusLabel, statusVariant } from "@/lib/appointment-status";
+import { cn } from "@/lib/utils";
 
 export interface AppointmentCardProps {
   id: string;
@@ -50,6 +60,21 @@ export function AppointmentCard({
   const router = useRouter();
   const [cancelling, setCancelling] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const start = new Date(startsAt);
+  const end = new Date(endsAt);
+  const duration = Math.max(1, Math.round((end.getTime() - start.getTime()) / 60000));
+  const dateLabel = formatInTimeZone(start, timezone, "EEE, MMM d");
+  const timeLabel = formatInTimeZone(start, timezone, "h:mm a");
+  const fullLabel = formatInTimeZone(start, timezone, "EEEE, MMMM d 'at' h:mm a");
+  const isConfirmed = status === "confirmed";
+  const statusTone =
+    status === "confirmed"
+      ? "from-teal-500 to-emerald-400"
+      : status === "pending_payment"
+        ? "from-amber-400 to-orange-400"
+        : status === "completed"
+          ? "from-blue-500 to-indigo-400"
+          : "from-slate-300 to-slate-200";
 
   const handleCancel = async () => {
     setCancelling(true);
@@ -74,68 +99,130 @@ export function AppointmentCard({
   };
 
   return (
-    <Card className="glass hover-lift">
-      <CardContent className="space-y-2 pt-6">
-        <div className="flex items-center justify-between gap-2">
-          <Link href={`/patient/appointments/${id}`} className="font-medium hover:underline">
-            {formatInTimeZone(new Date(startsAt), timezone, "EEEE, MMM d 'at' h:mm a")}
-          </Link>
-          <Badge variant={statusVariant(status)}>
-            {statusLabel(status, "patient")}
-          </Badge>
-        </div>
+    <Card className="glass hover-lift overflow-hidden rounded-3xl">
+      <div className={cn("h-1.5 bg-gradient-to-r", statusTone)} />
+      <CardContent className="p-5 sm:p-6">
+        <div className="grid gap-5 md:grid-cols-[112px_minmax(0,1fr)]">
+          <div className="rounded-2xl border bg-background/70 p-4 text-center shadow-sm">
+            <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+              {formatInTimeZone(start, timezone, "MMM")}
+            </p>
+            <p className="mt-1 text-4xl font-semibold tracking-tight">
+              {formatInTimeZone(start, timezone, "d")}
+            </p>
+            <p className="text-sm text-muted-foreground">
+              {formatInTimeZone(start, timezone, "EEE")}
+            </p>
+          </div>
 
-        {status === "confirmed" && (
-          <JoinCallButton
-            appointmentId={id}
-            status={status}
-            startsAt={startsAt}
-            endsAt={endsAt}
-          />
-        )}
+          <div className="min-w-0 space-y-4">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="min-w-0">
+                <Link
+                  href={`/patient/appointments/${id}`}
+                  className="group inline-flex items-center gap-2 text-lg font-semibold tracking-tight hover:text-primary"
+                >
+                  <span className="truncate">{dateLabel} at {timeLabel}</span>
+                  <ArrowUpRight className="h-4 w-4 opacity-0 transition group-hover:opacity-100" />
+                </Link>
+                <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
+                  <span className="inline-flex items-center gap-1.5">
+                    <CalendarClock className="h-4 w-4" />
+                    {duration} min video consultation
+                  </span>
+                  <span className="sr-only">{fullLabel}</span>
+                </p>
+              </div>
+              <Badge variant={statusVariant(status)} className="shrink-0">
+                {statusLabel(status, "patient")}
+              </Badge>
+            </div>
 
-        {amountInPaise !== null && (
-          <p className="text-sm text-muted-foreground">₹{(amountInPaise / 100).toFixed(2)}</p>
-        )}
+            {intakeNote ? (
+              <div className="rounded-2xl border bg-muted/40 p-4">
+                <p className="mb-1 flex items-center gap-2 text-sm font-medium">
+                  <MessageSquareText className="h-4 w-4 text-primary" />
+                  Visit reason
+                </p>
+                <p className="line-clamp-3 whitespace-pre-line text-sm text-muted-foreground">
+                  {intakeNote}
+                </p>
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-dashed bg-muted/30 p-4 text-sm text-muted-foreground">
+                No visit note was added for this appointment.
+              </div>
+            )}
 
-        {intakeNote && (
-          <p className="whitespace-pre-line text-sm text-muted-foreground">{intakeNote}</p>
-        )}
+            <div className="flex flex-wrap items-center gap-2">
+              {amountInPaise !== null && (
+                <span className="inline-flex items-center gap-1.5 rounded-full border bg-background/70 px-3 py-1.5 text-sm text-muted-foreground">
+                  <IndianRupee className="h-3.5 w-3.5" />
+                  {(amountInPaise / 100).toFixed(0)} paid
+                </span>
+              )}
+              <span className="inline-flex items-center gap-1.5 rounded-full border bg-background/70 px-3 py-1.5 text-sm text-muted-foreground">
+                <Video className="h-3.5 w-3.5" />
+                Video visit
+              </span>
+              {reportId && (
+                <a
+                  href={`/api/reports/${reportId}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-full border bg-background/70 px-3 py-1.5 text-sm text-primary transition hover:bg-accent"
+                >
+                  <FileText className="h-3.5 w-3.5" />
+                  {reportFilename ?? "Attached report"}
+                </a>
+              )}
+            </div>
 
-        {reportId && (
-          <a
-            href={`/api/reports/${reportId}`}
-            target="_blank"
-            rel="noreferrer"
-            className="text-sm text-primary underline"
-          >
-            {reportFilename ?? "Attached report"}
-          </a>
-        )}
+            {error && (
+              <p className="rounded-2xl border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                {error}
+              </p>
+            )}
 
-        {error && <p className="text-sm text-destructive">{error}</p>}
-
-        {canCancel && (
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button type="button" variant="outline" size="sm" disabled={cancelling}>
-                Cancel
+            <div className="flex flex-wrap gap-2">
+              {isConfirmed && (
+                <JoinCallButton
+                  appointmentId={id}
+                  status={status}
+                  startsAt={startsAt}
+                  endsAt={endsAt}
+                />
+              )}
+              <Button asChild variant="outline">
+                <Link href={`/patient/appointments/${id}`}>View details</Link>
               </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Cancel this appointment?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This will free up the slot for other patients. This can&apos;t be undone.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Keep appointment</AlertDialogCancel>
-                <AlertDialogAction onClick={handleCancel}>Cancel appointment</AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        )}
+              {canCancel && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button type="button" variant="outline" disabled={cancelling}>
+                      <XCircle className="mr-2 h-4 w-4" />
+                      Cancel
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Cancel this appointment?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This will free up the slot for other patients. This can&apos;t be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Keep appointment</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleCancel} disabled={cancelling}>
+                        Cancel appointment
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
+            </div>
+          </div>
+        </div>
       </CardContent>
     </Card>
   );

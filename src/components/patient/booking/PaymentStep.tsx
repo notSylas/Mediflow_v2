@@ -32,7 +32,7 @@ export function PaymentStep({
 
   return (
     <div className="space-y-6">
-      <div className="overflow-hidden rounded-lg border">
+      <div className="overflow-hidden rounded-2xl border bg-background/70 shadow-sm">
         <div className="flex items-center justify-between gap-4 px-4 py-3">
           <span className="text-sm text-muted-foreground">Appointment</span>
           <span className="text-right font-medium">
@@ -47,14 +47,18 @@ export function PaymentStep({
         </div>
       </div>
 
-      <p className="text-sm text-muted-foreground">
+      <p className="rounded-2xl border border-teal-200 bg-teal-50/70 p-4 text-sm text-muted-foreground">
         Your slot is held for 10 minutes while you pay. Payment is processed
         securely by Razorpay.
       </p>
 
-      {error && <p className="text-sm text-destructive">{error}</p>}
+      {error && (
+        <p className="rounded-2xl border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive">
+          {error}
+        </p>
+      )}
 
-      <Button type="button" onClick={handleConfirm} disabled={confirming}>
+      <Button type="button" onClick={handleConfirm} disabled={confirming} size="lg">
         {confirming ? "Processing…" : "Pay & confirm booking"}
       </Button>
     </div>

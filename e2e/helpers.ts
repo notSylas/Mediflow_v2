@@ -73,7 +73,7 @@ export async function bookFirstAvailableSlot(
 
   await page.waitForURL(/\/patient\/book\?appointment=/);
   await page.getByRole("button", { name: /pay & confirm booking/i }).click();
-  await page.getByText("Your consultation is confirmed.").waitFor();
+  await page.getByText(/consultation is confirmed/i).waitFor();
 }
 
 /**
