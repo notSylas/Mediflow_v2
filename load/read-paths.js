@@ -20,7 +20,7 @@ export const options = {
 const PATHS = ["/api/slots", "/api/v1/patient/home", "/api/appointments"];
 const params = { headers: { Cookie: COOKIE } };
 
-export default function () {
+export default function readPathsSmoke() {
   for (const path of PATHS) {
     const res = http.get(`${BASE}${path}`, params);
     check(res, { "status is 200": (r) => r.status === 200 });

@@ -1,0 +1,1418 @@
+{
+  "info": {
+    "_postman_id": "40afc387-3e3c-49d0-9d95-mediflow-api",
+    "name": "MediFlow v2 API",
+    "description": "Postman collection for local MediFlow v2 API smoke testing. Use the `MediFlow v2 Local` environment and paste Better Auth browser cookies into `patientCookie` and `doctorCookie`.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Setup",
+      "item": [
+        {
+          "name": "Open login page",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["login"]
+            },
+            "description": "Use this to verify the local app is running. Login in the browser and paste the browser Cookie header into the environment variables."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('login page responds', () => {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Unauthenticated guard sample",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/patient/home",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "patient", "home"]
+            },
+            "description": "Expected 401 without a Cookie header."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('rejects missing auth', () => {",
+                  "  pm.expect(pm.response.code).to.eql(401);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Patient",
+      "item": [
+        {
+          "name": "Patient home",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "{{patientCookie}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/patient/home",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "patient", "home"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('patient home ok', () => pm.expect(pm.response.code).to.eql(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get patient profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "{{patientCookie}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/patient/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "patient", "profile"]
+            }
+          }
+        },
+        {
+          "name": "Update patient profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "{{patientCookie}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"dateOfBirth\": \"2000-01-01\",\n  \"gender\": \"male\",\n  \"bloodGroup\": \"O+\",\n  \"allergies\": \"None\",\n  \"chronicConditions\": \"None\",\n  \"currentMedications\": \"None\",\n  \"emergencyContactName\": \"Test Contact\",\n  \"emergencyContactPhone\": \"9999999999\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/patient/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "patient", "profile"]
+            }
+          }
+        },
+        {
+          "name": "Upload report",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "{{patientCookie}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/reports",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reports"]
+            },
+            "description": "Attach PDF, JPG, or PNG up to 5 MB. The response id is saved as `reportId`."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const json = pm.response.json();",
+                  "  if (json.id) pm.environment.set('reportId', json.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get uploaded report",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "{{patientCookie}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/{{reportId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reports", "{{reportId}}"]
+            }
+          }
+        },
+        {
+          "name": "Get available slots",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "{{patientCookie}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/slots",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "slots"]
+            },
+            "description": "Saves the first available slot to `startsAt`."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('slots ok', () => pm.expect(pm.response.code).to.eql(200));",
+                  "const json = pm.response.json();",
+                  "if (json.slots && json.slots.length) {",
+                  "  pm.environment.set('startsAt', json.slots[0]);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List appointments",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "{{patientCookie}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/appointments",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "appointments"]
+            }
+          }
+        },
+        {
+          "name": "Book appointment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "{{patientCookie}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"startsAt\": \"{{startsAt}}\",\n  \"visitReason\": \"general-consultation\",\n  \"symptoms\": \"Fever for two days\",\n  \"consent\": true,\n  \"consentSource\": \"web\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/appointments",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "appointments"]
+            },
+            "description": "Uses `startsAt` saved by `Get available slots`. If you want to attach a report, upload one first and add `\"reportId\": \"{{reportId}}\"` to this JSON body."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('created or conflict', () => pm.expect(pm.response.code).to.be.oneOf([201, 409]));",
+                  "if (pm.response.code === 201) {",
+                  "  const json = pm.response.json();",
+                  "  if (json.id) pm.environment.set('appointmentId', json.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get appointment detail",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "{{patientCookie}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/appointments/{{appointmentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "appointments", "{{appointmentId}}"]
+            }
+          }
+        },
+        {
+          "name": "Start payment / confirm mock payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "{{patientCookie}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/appointments/{{appointmentId}}/payment",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "appointments", "{{appointmentId}}", "payment"]
+            },
+            "description": "In local dev without Razorpay keys this confirms the appointment directly with provider=mock. With Razorpay keys it returns an orderId."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('payment response ok', () => pm.expect(pm.response.code).to.eql(200));",
+                  "const json = pm.response.json();",
+                  "if (json.orderId) pm.environment.set('razorpayOrderId', json.orderId);",
+                  "if (json.appointment && json.appointment.id) pm.environment.set('appointmentId', json.appointment.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verify Razorpay payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "{{patientCookie}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"razorpayOrderId\": \"{{razorpayOrderId}}\",\n  \"razorpayPaymentId\": \"{{razorpayPaymentId}}\",\n  \"razorpaySignature\": \"{{razorpaySignature}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/appointments/{{appointmentId}}/payment/verify",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "appointments", "{{appointmentId}}", "payment", "verify"]
+            },
+            "description": "Only needed when Razorpay is configured. Local mock provider does not use this."
+          }
+        },
+        {
+          "name": "Cancel appointment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "{{patientCookie}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/appointments/{{appointmentId}}/cancel",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "appointments", "{{appointmentId}}", "cancel"]
+            }
+          }
+        },
+        {
+          "name": "Patient prescriptions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "{{patientCookie}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/patient/prescriptions",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "patient", "prescriptions"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const json = pm.response.json();",
+                  "  const first = json.prescriptions && json.prescriptions[0];",
+                  "  const id = first && first.prescription && first.prescription.id;",
+                  "  if (id) pm.environment.set('prescriptionId', id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Request refill",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "{{patientCookie}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"prescriptionId\": \"{{prescriptionId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/patient/refill-requests",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "patient", "refill-requests"]
+            }
+          }
+        },
+        {
+          "name": "Dismiss follow-up",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "{{patientCookie}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"dismissed\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/follow-ups/{{followUpId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "follow-ups", "{{followUpId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Doctor",
+      "item": [
+        {
+          "name": "Doctor home",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "{{doctorCookie}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/doctor/home",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "doctor", "home"]
+            }
+          }
+        },
+        {
+          "name": "Work queue",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "{{doctorCookie}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/doctor/work-queue",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "doctor", "work-queue"]
+            }
+          }
+        },
+        {
+          "name": "Doctor appointments",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "{{doctorCookie}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/doctor/appointments",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "doctor", "appointments"]
+            }
+          }
+        },
+        {
+          "name": "List patients",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "{{doctorCookie}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/doctor/patients",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "doctor", "patients"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const json = pm.response.json();",
+                  "  const first = json.patients && json.patients[0];",
+                  "  const id = first && first.patient && first.patient.id;",
+                  "  if (id) pm.environment.set('patientId', id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get patient detail",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "{{doctorCookie}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/doctor/patients/{{patientId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "doctor", "patients", "{{patientId}}"]
+            }
+          }
+        },
+        {
+          "name": "Get doctor profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "{{doctorCookie}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/doctor/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "doctor", "profile"]
+            }
+          }
+        },
+        {
+          "name": "Update doctor profile",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "{{doctorCookie}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"specialty\": \"General physician\",\n  \"bio\": \"Online consultation doctor for common medical concerns.\",\n  \"qualifications\": \"MBBS\",\n  \"registrationNo\": \"REG12345\",\n  \"yearsExperience\": 5,\n  \"languages\": \"English, Hindi\",\n  \"feeInPaise\": 50000,\n  \"slotMinutes\": 20,\n  \"timezone\": \"Asia/Kolkata\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/doctor/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "doctor", "profile"]
+            }
+          }
+        },
+        {
+          "name": "Get availability rules",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "{{doctorCookie}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/doctor/availability/rules",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "doctor", "availability", "rules"]
+            }
+          }
+        },
+        {
+          "name": "Create availability rule",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "{{doctorCookie}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"weekday\": 1,\n  \"startTime\": \"10:00\",\n  \"endTime\": \"13:00\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/doctor/availability/rules",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "doctor", "availability", "rules"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const json = pm.response.json();",
+                  "  if (json.id) pm.environment.set('ruleId', json.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete availability rule",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "{{doctorCookie}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/doctor/availability/rules/{{ruleId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "doctor", "availability", "rules", "{{ruleId}}"]
+            }
+          }
+        },
+        {
+          "name": "Get availability overrides",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "{{doctorCookie}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/doctor/availability/overrides",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "doctor", "availability", "overrides"]
+            }
+          }
+        },
+        {
+          "name": "Create availability override",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "{{doctorCookie}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"date\": \"2026-06-25\",\n  \"kind\": \"extra\",\n  \"startTime\": \"18:00\",\n  \"endTime\": \"20:00\",\n  \"reason\": \"Evening clinic\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/doctor/availability/overrides",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "doctor", "availability", "overrides"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const json = pm.response.json();",
+                  "  if (json.id) pm.environment.set('overrideId', json.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete availability override",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "{{doctorCookie}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/doctor/availability/overrides/{{overrideId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "doctor", "availability", "overrides", "{{overrideId}}"]
+            }
+          }
+        },
+        {
+          "name": "Get encounter",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "{{doctorCookie}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/doctor/encounters/{{appointmentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "doctor", "encounters", "{{appointmentId}}"]
+            }
+          }
+        },
+        {
+          "name": "Save SOAP note",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "{{doctorCookie}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"subjective\": \"Patient reports fever for two days.\",\n  \"objective\": \"Video consultation. Vitals not available.\",\n  \"assessment\": \"Likely viral fever.\",\n  \"plan\": \"Hydration, rest, paracetamol if fever. Review if worsening.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/appointments/{{appointmentId}}/consult-note",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "appointments", "{{appointmentId}}", "consult-note"]
+            }
+          }
+        },
+        {
+          "name": "Save prescription draft",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "{{doctorCookie}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"diagnosis\": \"Viral fever\",\n  \"advice\": \"Hydration and rest. Return if symptoms worsen.\",\n  \"validUntil\": \"2026-07-01\",\n  \"medicines\": [\n    {\n      \"name\": \"Paracetamol\",\n      \"strength\": \"650\",\n      \"morning\": true,\n      \"afternoon\": false,\n      \"evening\": false,\n      \"night\": true,\n      \"foodRelation\": \"after food\",\n      \"durationDays\": 3,\n      \"instructions\": \"Take only if fever is present\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/appointments/{{appointmentId}}/prescription",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "appointments", "{{appointmentId}}", "prescription"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const json = pm.response.json();",
+                  "  if (json.prescription && json.prescription.id) pm.environment.set('prescriptionId', json.prescription.id);",
+                  "  if (json.id) pm.environment.set('prescriptionId', json.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Issue prescription",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "{{doctorCookie}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/appointments/{{appointmentId}}/prescription/issue",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "appointments", "{{appointmentId}}", "prescription", "issue"]
+            }
+          }
+        },
+        {
+          "name": "Mark appointment completed",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "{{doctorCookie}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"completed\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/appointments/{{appointmentId}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "appointments", "{{appointmentId}}", "status"]
+            }
+          }
+        },
+        {
+          "name": "Recommend follow-up",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "{{doctorCookie}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"appointmentId\": \"{{appointmentId}}\",\n  \"inDays\": 14\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/follow-ups",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "follow-ups"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const json = pm.response.json();",
+                  "  if (json.followUp && json.followUp.id) pm.environment.set('followUpId', json.followUp.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create async consult",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "{{doctorCookie}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patientId\": \"{{patientId}}\",\n  \"visitReason\": \"Follow-up consult\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/doctor/async-consult",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "doctor", "async-consult"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const json = pm.response.json();",
+                  "  if (json.appointmentId) pm.environment.set('appointmentId', json.appointmentId);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List refill requests",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "{{doctorCookie}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/doctor/refill-requests",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "doctor", "refill-requests"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const json = pm.response.json();",
+                  "  const list = json.requests || json.refillRequests || json;",
+                  "  const first = Array.isArray(list) && list[0];",
+                  "  if (first && first.id) pm.environment.set('refillRequestId', first.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Fulfill refill request",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "{{doctorCookie}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/doctor/refill-requests/{{refillRequestId}}/fulfill",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "doctor", "refill-requests", "{{refillRequestId}}", "fulfill"]
+            }
+          }
+        },
+        {
+          "name": "Decline refill request",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "{{doctorCookie}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/doctor/refill-requests/{{refillRequestId}}/decline",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "doctor", "refill-requests", "{{refillRequestId}}", "decline"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Messaging",
+      "item": [
+        {
+          "name": "List conversations - patient",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "{{patientCookie}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/conversations",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "conversations"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const json = pm.response.json();",
+                  "  if (json.conversation && json.conversation.id) pm.environment.set('conversationId', json.conversation.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List conversations - doctor",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "{{doctorCookie}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/conversations",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "conversations"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const json = pm.response.json();",
+                  "  const first = json.conversations && json.conversations[0];",
+                  "  const id = first && (first.conversation ? first.conversation.id : first.id);",
+                  "  if (id) pm.environment.set('conversationId', id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List messages",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "{{patientCookie}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/conversations/{{conversationId}}/messages",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "conversations", "{{conversationId}}", "messages"]
+            }
+          }
+        },
+        {
+          "name": "Send patient message",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "{{patientCookie}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"body\": \"Hello doctor, I have a follow-up question.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/conversations/{{conversationId}}/messages",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "conversations", "{{conversationId}}", "messages"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const json = pm.response.json();",
+                  "  if (json.message && json.message.id) pm.environment.set('messageId', json.message.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Send doctor message",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "{{doctorCookie}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"body\": \"Thanks. Please continue hydration and update me if symptoms worsen.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/conversations/{{conversationId}}/messages",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "conversations", "{{conversationId}}", "messages"]
+            }
+          }
+        },
+        {
+          "name": "Upload chat attachment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "{{patientCookie}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/conversations/{{conversationId}}/attachments",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "conversations", "{{conversationId}}", "attachments"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const json = pm.response.json();",
+                  "  if (json.id) pm.environment.set('attachmentId', json.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Send message with attachment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "{{patientCookie}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"body\": \"Attached the report.\",\n  \"attachmentId\": \"{{attachmentId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/conversations/{{conversationId}}/messages",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "conversations", "{{conversationId}}", "messages"]
+            }
+          }
+        },
+        {
+          "name": "Get attachment",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "{{patientCookie}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/attachments/{{attachmentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "attachments", "{{attachmentId}}"]
+            }
+          }
+        },
+        {
+          "name": "Mark conversation read",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "{{patientCookie}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/conversations/{{conversationId}}/read",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "conversations", "{{conversationId}}", "read"]
+            }
+          }
+        },
+        {
+          "name": "Realtime token",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "{{patientCookie}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/realtime/token",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "realtime", "token"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Negative Checks",
+      "item": [
+        {
+          "name": "Patient cannot access doctor profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "{{patientCookie}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/doctor/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "doctor", "profile"]
+            },
+            "description": "Expected 403."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('patient rejected from doctor route', () => pm.expect(pm.response.code).to.eql(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Invalid booking payload",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "{{patientCookie}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"startsAt\": \"not-a-date\",\n  \"visitReason\": \"general-consultation\",\n  \"symptoms\": \"ok\",\n  \"consent\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/appointments",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "appointments"]
+            },
+            "description": "Expected 400."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('invalid booking rejected', () => pm.expect(pm.response.code).to.eql(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Invalid refill prescription id",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "{{patientCookie}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"prescriptionId\": \"not-a-uuid\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/patient/refill-requests",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "patient", "refill-requests"]
+            },
+            "description": "Expected 400."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('invalid refill rejected', () => pm.expect(pm.response.code).to.eql(400));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "if (pm.response.code >= 500) {",
+          "  console.warn('Server error response:', pm.response.text());",
+          "}"
+        ]
+      }
+    }
+  ]
+}
