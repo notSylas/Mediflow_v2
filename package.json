@@ -14,7 +14,11 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "promote-doctor": "tsx scripts/promote-doctor.ts",
-    "realtime": "tsx watch --env-file=.env realtime/server.ts"
+    "realtime": "tsx watch --env-file=.env realtime/server.ts",
+    "docker:up": "docker compose up",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f",
+    "docker:build": "docker compose build"
   },
   "dependencies": {
     "@better-auth/expo": "^1.6.16",
