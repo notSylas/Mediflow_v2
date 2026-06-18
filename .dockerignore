@@ -1,0 +1,19 @@
+# Build context exclusions (the dev image only needs package*.json for `npm ci`;
+# source is bind-mounted at runtime). Keeps the context small and secrets out.
+node_modules
+.next
+.git
+.github
+mobile
+e2e
+test-results
+playwright-report
+coverage
+drizzle/meta
+*.log
+.env
+.env.*
+.DS_Store
+README.md
+docs
+load

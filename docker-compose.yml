@@ -1,0 +1,68 @@
+# Dev backend stack: Postgres + Next.js app (web UI + API) + realtime socket.
+# Both the app (:3000) and realtime (:4000) are published on the host 0.0.0.0,
+# so the web browser (localhost) AND the mobile app over the LAN can reach them.
+# Inside the network, services reach the DB as `postgres:5432`.
+#
+#   docker compose up        # start everything
+#   docker compose down      # stop
+#
+# Host tooling (npm run db:push, vitest, playwright) keeps using localhost:5433.
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: mediflow
+      POSTGRES_PASSWORD: mediflow_dev
+      POSTGRES_DB: mediflow
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mediflow -d mediflow"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    command: npm run dev
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      # Reach the DB by service name; overrides the host-oriented value in .env.
+      DATABASE_URL: postgresql://mediflow:mediflow_dev@postgres:5432/mediflow
+      # Reliable file-watching/HMR over the macOS bind mount.
+      WATCHPACK_POLLING: "true"
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  realtime:
+    build: .
+    # Bypass the npm script's `--env-file=.env` so compose env (DB by service
+    # name) isn't shadowed by the host-oriented .env value.
+    command: npx tsx watch realtime/server.ts
+    ports:
+      - "4000:4000"
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://mediflow:mediflow_dev@postgres:5432/mediflow
+      REALTIME_ALLOWED_ORIGINS: http://localhost:3000
+    volumes:
+      - .:/app
+      - /app/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  pgdata:
