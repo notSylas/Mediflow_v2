@@ -5,9 +5,10 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createAsyncConsult } from "@/lib/appointments";
 import { auth } from "@/lib/auth";
-import { createFollowUp } from "@/lib/follow-ups";
+import { createFollowUp, dismissFollowUp, snoozeFollowUp } from "@/lib/follow-ups";
 import { getOrCreateDoctorProfile } from "@/lib/doctor";
 import { getDoctorRefillRequest, setRefillRequestStatus } from "@/lib/refills";
+import { getConversationForParticipant, markConversationRead } from "@/lib/chat";
 
 async function requireDoctor() {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -92,5 +93,39 @@ export async function declineRefillRequestAction(formData: FormData) {
 
   await setRefillRequestStatus(requestId, "declined");
   revalidatePath("/doctor/refill-requests");
+  revalidatePath("/doctor/work-queue");
+}
+
+/** Dismiss a pending follow-up from the work queue without booking it. */
+export async function dismissFollowUpAction(formData: FormData) {
+  const { profile } = await requireDoctor();
+  const followUpId = requiredString(formData, "followUpId");
+
+  const updated = await dismissFollowUp(followUpId, profile.id);
+  if (!updated) throw new Error("Follow-up not found");
+
+  revalidatePath("/doctor/work-queue");
+}
+
+/** Push a pending follow-up's due date back by 7 days from the work queue. */
+export async function snoozeFollowUpAction(formData: FormData) {
+  const { profile } = await requireDoctor();
+  const followUpId = requiredString(formData, "followUpId");
+
+  const updated = await snoozeFollowUp(followUpId, profile.id, 7);
+  if (!updated) throw new Error("Follow-up not found");
+
+  revalidatePath("/doctor/work-queue");
+}
+
+/** Mark a conversation read from the work queue without opening the inbox. */
+export async function markMessageReadAction(formData: FormData) {
+  const { session } = await requireDoctor();
+  const conversationId = requiredString(formData, "conversationId");
+
+  const row = await getConversationForParticipant(conversationId, session.user);
+  if (!row) throw new Error("Conversation not found");
+
+  await markConversationRead(conversationId, "doctor");
   revalidatePath("/doctor/work-queue");
 }

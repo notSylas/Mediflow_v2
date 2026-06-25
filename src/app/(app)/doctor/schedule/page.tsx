@@ -2,7 +2,7 @@ import Link from "next/link";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { addDays } from "date-fns";
-import { formatInTimeZone } from "date-fns-tz";
+import { formatInTimeZone, fromZonedTime } from "date-fns-tz";
 import { asc, eq } from "drizzle-orm";
 import { Ban, ChevronLeft, ChevronRight } from "lucide-react";
 import { auth } from "@/lib/auth";
@@ -10,7 +10,9 @@ import { db } from "@/db";
 import { availabilityOverrides, availabilityRules } from "@/db/schema";
 import { listDoctorAppointments } from "@/lib/appointments";
 import { getOrCreateDoctorProfile } from "@/lib/doctor";
+import { computeAvailableSlots } from "@/lib/slots";
 import { Button } from "@/components/ui/button";
+import { DayBlockToggle } from "@/components/doctor/DayBlockToggle";
 
 function trimTime(time: string): string {
   return time.slice(0, 5);
@@ -56,7 +58,8 @@ export default async function DoctorSchedulePage({
     const weekday = Number(formatInTimeZone(date, timezone, "i")) % 7; // 0 = Sun
 
     const dayOverrides = overrides.filter((o) => o.date === dateKey);
-    const blocked = dayOverrides.some((o) => o.kind === "blocked");
+    const blockedOverride = dayOverrides.find((o) => o.kind === "blocked") ?? null;
+    const blocked = Boolean(blockedOverride);
     const extras = dayOverrides.filter((o) => o.kind === "extra");
 
     const windows = blocked
@@ -81,7 +84,45 @@ export default async function DoctorSchedulePage({
       )
       .sort((a, b) => a.appointment.startsAt.getTime() - b.appointment.startsAt.getTime());
 
-    return { date, dateKey, blocked, windows, booked, isToday: dateKey === todayKey };
+    // Real available-slot count for this day (not just window ranges), reusing
+    // the same computeAvailableSlots the booking flow uses — gives an honest
+    // fill ratio instead of guessing from window duration.
+    const dayStart = fromZonedTime(`${dateKey}T00:00:00`, timezone);
+    const dayEnd = addDays(dayStart, 1);
+    const availableSlots = blocked
+      ? []
+      : computeAvailableSlots({
+          rules,
+          overrides: dayOverrides.map((o) => ({
+            date: o.date,
+            kind: o.kind,
+            startTime: o.startTime,
+            endTime: o.endTime,
+          })),
+          busy: booked.map(({ appointment }) => ({
+            start: appointment.startsAt,
+            end: appointment.endsAt,
+          })),
+          slotMinutes: profile.slotMinutes,
+          timezone,
+          from: dayStart,
+          to: dayEnd,
+        });
+
+    const totalCapacity = availableSlots.length + booked.length;
+    const fillRatio = totalCapacity > 0 ? booked.length / totalCapacity : 0;
+
+    return {
+      date,
+      dateKey,
+      blocked,
+      blockedOverrideId: blockedOverride?.id ?? null,
+      windows,
+      booked,
+      availableCount: availableSlots.length,
+      fillRatio,
+      isToday: dateKey === todayKey,
+    };
   });
 
   const rangeLabel = `${formatInTimeZone(monday, timezone, "MMM d")} – ${formatInTimeZone(
@@ -90,13 +131,17 @@ export default async function DoctorSchedulePage({
     "MMM d, yyyy"
   )}`;
 
+  const weekBookedCount = days.reduce((sum, d) => sum + d.booked.length, 0);
+  const weekOpenCount = days.reduce((sum, d) => sum + d.availableCount, 0);
+
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 mx-auto max-w-6xl space-y-6 px-4 py-10 duration-500 sm:px-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Schedule</h1>
           <p className="mt-1 text-muted-foreground">
-            Your availability and bookings, week by week.
+            {weekBookedCount} booked this week · {weekOpenCount} slot
+            {weekOpenCount === 1 ? "" : "s"} still open
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -119,22 +164,40 @@ export default async function DoctorSchedulePage({
         </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-7">
+      {/* Single column below lg — a 7-day week forced into 2 columns reads
+          out of order on phones. Full 7-up grid only once there's room. */}
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-7">
         {days.map((day) => (
           <div
             key={day.dateKey}
             className={
               day.isToday
-                ? "glass rounded-xl border-primary/50 p-3 ring-2 ring-primary/15"
-                : "glass rounded-xl p-3"
+                ? "rounded-xl border border-primary/40 bg-primary/5 p-3"
+                : "rounded-xl border p-3"
             }
           >
-            <p className="text-sm font-semibold">
-              {formatInTimeZone(day.date, timezone, "EEE")}
-              <span className="ml-1.5 font-normal text-muted-foreground">
-                {formatInTimeZone(day.date, timezone, "d MMM")}
-              </span>
-            </p>
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-sm font-semibold">
+                {formatInTimeZone(day.date, timezone, "EEE")}
+                <span className="ml-1.5 font-normal text-muted-foreground">
+                  {formatInTimeZone(day.date, timezone, "d MMM")}
+                </span>
+              </p>
+              <DayBlockToggle date={day.dateKey} blockedOverrideId={day.blockedOverrideId} />
+            </div>
+
+            {!day.blocked && (
+              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
+                <div
+                  className="h-full rounded-full bg-primary transition-all"
+                  style={{ width: `${Math.round(day.fillRatio * 100)}%` }}
+                  role="img"
+                  aria-label={`${day.booked.length} booked of ${
+                    day.availableCount + day.booked.length
+                  } slots`}
+                />
+              </div>
+            )}
 
             <div className="mt-2 space-y-1.5">
               {day.blocked && (

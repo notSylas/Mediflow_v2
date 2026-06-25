@@ -41,6 +41,44 @@ export async function createFollowUp(args: {
   return created;
 }
 
+/** Doctor dismisses a pending follow-up without booking it. Ownership-checked. */
+export async function dismissFollowUp(followUpId: string, doctorId: string) {
+  const [updated] = await db
+    .update(followUps)
+    .set({ status: "dismissed" })
+    .where(
+      and(
+        eq(followUps.id, followUpId),
+        eq(followUps.doctorId, doctorId),
+        eq(followUps.status, "pending")
+      )
+    )
+    .returning();
+  return updated ?? null;
+}
+
+/** Doctor pushes a pending follow-up's due date back by `days`. Ownership-checked. */
+export async function snoozeFollowUp(followUpId: string, doctorId: string, days: number) {
+  const [existing] = await db
+    .select({ dueAt: followUps.dueAt })
+    .from(followUps)
+    .where(
+      and(
+        eq(followUps.id, followUpId),
+        eq(followUps.doctorId, doctorId),
+        eq(followUps.status, "pending")
+      )
+    );
+  if (!existing) return null;
+
+  const [updated] = await db
+    .update(followUps)
+    .set({ dueAt: new Date(existing.dueAt.getTime() + days * 86_400_000) })
+    .where(eq(followUps.id, followUpId))
+    .returning();
+  return updated ?? null;
+}
+
 /** The soonest pending follow-up for a patient (what the home card surfaces). */
 export async function getPatientPendingFollowUp(patientId: string) {
   const [row] = await db
