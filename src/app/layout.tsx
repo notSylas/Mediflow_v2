@@ -1,17 +1,14 @@
 import type { Metadata } from "next";
-import { Figtree, Noto_Sans, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "sonner";
 import "./globals.css";
 
-// Healthcare-brand pairing recommended by the ui-ux-pro-max design system:
-// Figtree headings (warm, confident) + Noto Sans body (clean, highly legible).
-const figtree = Figtree({
-  variable: "--font-heading",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-});
-
-const notoSans = Noto_Sans({
+// "Premium Clinical Glass" direction (docs/Design.md, via /design-consultation):
+// one family, many weights — Geist for both headings and body (replacing the
+// previous Figtree/Noto Sans pairing). Loaded once; globals.css aliases
+// --font-heading to the same variable so existing `font-heading` Tailwind
+// usages (card.tsx, alert-dialog.tsx) keep working unchanged.
+const geist = Geist({
   variable: "--font-sans",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
@@ -36,7 +33,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${figtree.variable} ${notoSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geist.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         {children}

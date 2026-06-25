@@ -2,25 +2,21 @@ import Link from "next/link";
 import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { formatInTimeZone } from "date-fns-tz";
-import { FileText } from "lucide-react";
+import { Download, FileText } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { getAppointmentForPatient } from "@/lib/appointments";
 import { getPrescriptionWithMedicines } from "@/lib/consult";
-import { describeMedicineSchedule } from "@/lib/medicines";
-import { getDoctorProfile } from "@/lib/doctor";
+import { getDoctorCard, getDoctorProfile } from "@/lib/doctor";
+import { getPatientProfile } from "@/lib/patient";
+import { patientDocumentName } from "@/lib/patient-identity";
 import { statusLabel } from "@/lib/appointment-status";
 import { JoinCallButton } from "@/components/JoinCallButton";
 import { RescheduleDialog } from "@/components/patient/RescheduleDialog";
-import { ShineBorder } from "@/components/wow/ShineBorder";
 import { CountdownRing } from "@/components/wow/CountdownRing";
+import { PrescriptionDocument } from "@/components/patient/PrescriptionDocument";
 import { Badge } from "@/components/ui/badge";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default async function PatientAppointmentDetailPage({
   params,
@@ -35,8 +31,20 @@ export default async function PatientAppointmentDetailPage({
   if (!row) notFound();
 
   const { appointment, payment, report } = row;
-  const profile = await getDoctorProfile();
+  const [profile, doctor, patientProfile] = await Promise.all([
+    getDoctorProfile(),
+    getDoctorCard(),
+    getPatientProfile(session.user.id),
+  ]);
   const timezone = profile?.timezone ?? "Asia/Kolkata";
+  const patient = {
+    name: patientDocumentName(session.user),
+    email: session.user.email,
+    dateOfBirth: patientProfile?.dateOfBirth,
+    gender: patientProfile?.gender,
+    bloodGroup: patientProfile?.bloodGroup,
+    allergies: patientProfile?.allergies,
+  };
 
   const prescription =
     appointment.status === "completed"
@@ -46,7 +54,7 @@ export default async function PatientAppointmentDetailPage({
       : null;
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6 px-6 py-12">
+    <div className="mx-auto max-w-4xl space-y-6 px-6 py-12">
       <div>
         <Link
           href="/patient/appointments"
@@ -70,30 +78,43 @@ export default async function PatientAppointmentDetailPage({
       </div>
 
       {appointment.status === "confirmed" && (
-        <ShineBorder>
-          <Card className="rounded-2xl border-0">
-            <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
-              <div>
-                <CardTitle>Your video consultation</CardTitle>
-                <CardDescription>
-                  The room opens 10 minutes before your slot. Make sure your camera
-                  and microphone are working — you&apos;ll get a preview screen before
-                  joining.
-                </CardDescription>
-              </div>
+        <div>
+          <div className="grid gap-4 sm:grid-cols-[1fr_auto]">
+            {/* Glass hero — the gradient/depth budget (docs/Design.md) spent
+                on this one moment: a confirmed, paid video consultation.
+                Action buttons live outside it, not on top of the gradient —
+                a default-variant button would lose contrast against its own
+                primary color. */}
+            <div className="glass-hero anim-fade-up p-6">
+              <p className="text-sm font-medium text-primary-foreground/85">
+                Your video consultation
+              </p>
+              <p className="mt-1 text-2xl font-semibold tabular-nums">
+                {formatInTimeZone(appointment.startsAt, timezone, "EEE, MMM d · h:mm a")}
+              </p>
+              <p className="mt-1 text-sm text-primary-foreground/85">
+                The room opens 10 minutes before your slot — make sure your
+                camera and microphone are working, you&apos;ll get a preview
+                screen before joining.
+              </p>
+            </div>
+            {/* Kept as its own frosted surface — CountdownRing's stroke/text
+                colors are tuned for a neutral card background and would lose
+                contrast painted directly onto the glass-hero gradient. */}
+            <div className="glass-frost flex items-center justify-center p-4">
               <CountdownRing startsAt={appointment.startsAt.toISOString()} />
-            </CardHeader>
-            <CardContent className="flex flex-wrap items-center gap-3">
-              <JoinCallButton
-                appointmentId={appointment.id}
-                status={appointment.status}
-                startsAt={appointment.startsAt.toISOString()}
-                endsAt={appointment.endsAt.toISOString()}
-              />
-              <RescheduleDialog appointmentId={appointment.id} timezone={timezone} />
-            </CardContent>
-          </Card>
-        </ShineBorder>
+            </div>
+          </div>
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <JoinCallButton
+              appointmentId={appointment.id}
+              status={appointment.status}
+              startsAt={appointment.startsAt.toISOString()}
+              endsAt={appointment.endsAt.toISOString()}
+            />
+            <RescheduleDialog appointmentId={appointment.id} timezone={timezone} />
+          </div>
+        </div>
       )}
 
       <Card>
@@ -131,41 +152,32 @@ export default async function PatientAppointmentDetailPage({
       </Card>
 
       {prescription && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Your prescription</CardTitle>
-            {prescription.issuedAt && (
-              <CardDescription>
-                Issued {formatInTimeZone(prescription.issuedAt, timezone, "MMM d, yyyy")}
-                {prescription.validUntil && <> · valid until {prescription.validUntil}</>}
-              </CardDescription>
-            )}
-          </CardHeader>
-          <CardContent className="space-y-3 text-sm">
-            {prescription.diagnosis && (
-              <p>
-                <span className="text-muted-foreground">Diagnosis: </span>
-                {prescription.diagnosis}
+        <PrescriptionDocument
+          prescription={prescription}
+          appointment={appointment}
+          medicines={prescription.medicines}
+          doctor={doctor}
+          patient={patient}
+          timezone={timezone}
+          actions={
+            <>
+              <p className="text-sm text-muted-foreground">
+                Keep this prescription available when buying medicines or booking a review.
               </p>
-            )}
-            {prescription.medicines.map((med) => (
-              <div key={med.id} className="rounded-md border p-3">
-                <p className="font-medium">
-                  {med.name}
-                  {med.strength && <span className="text-muted-foreground"> {med.strength}</span>}
-                </p>
-                <p className="text-muted-foreground">{describeMedicineSchedule(med)}</p>
-                {med.instructions && <p className="text-muted-foreground">{med.instructions}</p>}
+              <div className="flex flex-wrap gap-2">
+                <Button asChild>
+                  <Link href={`/patient/prescriptions/${prescription.id}`}>
+                    <Download className="mr-2 h-4 w-4" />
+                    Download prescription
+                  </Link>
+                </Button>
+                <Button asChild variant="outline">
+                  <Link href="/patient/prescriptions">All prescriptions</Link>
+                </Button>
               </div>
-            ))}
-            {prescription.advice && (
-              <p>
-                <span className="text-muted-foreground">Advice: </span>
-                {prescription.advice}
-              </p>
-            )}
-          </CardContent>
-        </Card>
+            </>
+          }
+        />
       )}
 
       {appointment.status === "completed" && !prescription && (

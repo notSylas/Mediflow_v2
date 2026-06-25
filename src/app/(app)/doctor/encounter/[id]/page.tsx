@@ -73,24 +73,27 @@ export default async function EncounterPage({
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 px-6 py-8">
-      <div>
-        <Link
-          href="/doctor/appointments"
-          className="text-sm text-muted-foreground hover:underline"
-        >
-          ← All appointments
-        </Link>
-        <div className="mt-2 flex flex-wrap items-center gap-3">
-          <h1 className="text-2xl font-semibold">{data.patient.name}</h1>
-          <Badge variant={appointment.status === "confirmed" ? "default" : "secondary"}>
-            {statusLabel(appointment.status, "doctor")}
-          </Badge>
-          {isReturning && <Badge variant="outline">Returning patient</Badge>}
-          {appointment.status === "confirmed" && (
-            <PresenceBadge appointmentId={appointment.id} />
-          )}
-        </div>
-        <p className="mt-1 text-muted-foreground">
+      <Link
+        href="/doctor/appointments"
+        className="text-sm text-muted-foreground hover:underline"
+      >
+        ← All appointments
+      </Link>
+
+      {/* Frosted glass patient-context strip (docs/Design.md) — the one
+          glass surface on this screen besides the Rx panel below. SOAP
+          fields and history stay flat per the "doctor is in a hurry"
+          scope rule; this strip is the highest-stakes identity moment. */}
+      <div className="glass-frost flex flex-wrap items-center gap-3 px-5 py-4">
+        <h1 className="text-2xl font-semibold">{data.patient.name}</h1>
+        <Badge variant={appointment.status === "confirmed" ? "default" : "secondary"}>
+          {statusLabel(appointment.status, "doctor")}
+        </Badge>
+        {isReturning && <Badge variant="outline">Returning patient</Badge>}
+        {appointment.status === "confirmed" && (
+          <PresenceBadge appointmentId={appointment.id} />
+        )}
+        <p className="ml-auto text-sm text-muted-foreground">
           {formatInTimeZone(appointment.startsAt, timezone, "EEEE, MMM d 'at' h:mm a")}
           {" · "}
           {data.patient.email}
@@ -193,6 +196,7 @@ export default async function EncounterPage({
           <SoapEditor appointmentId={appointment.id} initialNote={data.note} />
           <PrescriptionComposer
             appointmentId={appointment.id}
+            className="glass-rx-panel"
             initial={
               data.prescription
                 ? {

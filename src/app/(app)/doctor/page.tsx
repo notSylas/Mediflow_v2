@@ -31,7 +31,6 @@ import { listPendingRefillRequests } from "@/lib/refills";
 import { JoinCallButton } from "@/components/JoinCallButton";
 import { PresenceBadge } from "@/components/PresenceBadge";
 import { SpotlightCard } from "@/components/wow/SpotlightCard";
-import { ShineBorder } from "@/components/wow/ShineBorder";
 import { CountdownRing } from "@/components/wow/CountdownRing";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -166,7 +165,7 @@ export default async function DoctorDashboardPage() {
       </div>
 
       {setupRemaining > 0 && (
-        <Card className="glass border-primary/30">
+        <Card className="border-primary/30">
           <CardHeader>
             <CardTitle>Finish setting up your clinic</CardTitle>
             <CardDescription>
@@ -231,7 +230,7 @@ export default async function DoctorDashboardPage() {
         ))}
       </div>
 
-      <Card className="glass">
+      <Card>
         <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
           <div>
             <CardTitle className="flex items-center gap-2">
@@ -305,12 +304,60 @@ export default async function DoctorDashboardPage() {
         </CardContent>
       </Card>
 
-      <ShineBorder>
-      <Card className="glass overflow-hidden rounded-2xl border-0">
-        <div className="h-1 bg-primary" />
-        <CardHeader>
-          <CardTitle>Next patient</CardTitle>
-          {!nextUp && (
+      {nextUp ? (
+        <div>
+          {/* Glass hero — "Next patient" is the doctor's equivalent hero
+              moment to the patient's booking confirmation (docs/Design.md
+              explicitly allows this surface). Avatar/badge get a translucent
+              white treatment since --accent would be low-contrast against
+              the gradient; actions live outside it for the same reason. */}
+          <div className="grid gap-4 sm:grid-cols-[1fr_auto]">
+            <div className="glass-hero anim-fade-up flex items-center gap-4 p-6">
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white/20 text-base font-medium uppercase text-primary-foreground">
+                {(nextUp.patient.name || nextUp.patient.email).slice(0, 2)}
+              </span>
+              <div>
+                <p className="flex flex-wrap items-center gap-2 font-semibold">
+                  {nextUp.patient.name || nextUp.patient.email}
+                  <PresenceBadge appointmentId={nextUp.appointment.id} />
+                </p>
+                <p className="text-sm text-primary-foreground/85">
+                  {formatInTimeZone(
+                    nextUp.appointment.startsAt,
+                    timezone,
+                    "EEE, MMM d 'at' h:mm a"
+                  )}
+                </p>
+                {nextUp.appointment.intakeNote && (
+                  <p className="mt-0.5 line-clamp-1 max-w-md text-sm text-primary-foreground/85">
+                    {nextUp.appointment.intakeNote.split("\n")[0]}
+                  </p>
+                )}
+              </div>
+            </div>
+            <div className="glass-frost flex items-center justify-center p-4">
+              <CountdownRing startsAt={nextUp.appointment.startsAt.toISOString()} />
+            </div>
+          </div>
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <JoinCallButton
+              appointmentId={nextUp.appointment.id}
+              status={nextUp.appointment.status}
+              startsAt={nextUp.appointment.startsAt.toISOString()}
+              endsAt={nextUp.appointment.endsAt.toISOString()}
+            />
+            <Button asChild variant="outline">
+              <Link href={`/doctor/encounter/${nextUp.appointment.id}`}>
+                <Stethoscope className="mr-2 h-4 w-4" />
+                Open encounter
+              </Link>
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle>Next patient</CardTitle>
             <CardDescription>
               No confirmed consultations coming up. Patients book against your
               availability — keep it current in{" "}
@@ -319,56 +366,11 @@ export default async function DoctorDashboardPage() {
               </Link>
               .
             </CardDescription>
-          )}
-        </CardHeader>
-        {nextUp && (
-          <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-4">
-              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-accent text-base font-medium uppercase text-accent-foreground">
-                {(nextUp.patient.name || nextUp.patient.email).slice(0, 2)}
-              </span>
-              <div>
-                <p className="flex flex-wrap items-center gap-2 font-semibold">
-                  {nextUp.patient.name || nextUp.patient.email}
-                  <PresenceBadge appointmentId={nextUp.appointment.id} />
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  {formatInTimeZone(
-                    nextUp.appointment.startsAt,
-                    timezone,
-                    "EEE, MMM d 'at' h:mm a"
-                  )}
-                </p>
-                {nextUp.appointment.intakeNote && (
-                  <p className="mt-0.5 line-clamp-1 max-w-md text-sm text-muted-foreground">
-                    {nextUp.appointment.intakeNote.split("\n")[0]}
-                  </p>
-                )}
-              </div>
-            </div>
-            <div className="flex items-center gap-4">
-              <CountdownRing startsAt={nextUp.appointment.startsAt.toISOString()} />
-              <div className="flex flex-wrap items-center gap-2">
-                <JoinCallButton
-                  appointmentId={nextUp.appointment.id}
-                  status={nextUp.appointment.status}
-                  startsAt={nextUp.appointment.startsAt.toISOString()}
-                  endsAt={nextUp.appointment.endsAt.toISOString()}
-                />
-                <Button asChild variant="outline">
-                  <Link href={`/doctor/encounter/${nextUp.appointment.id}`}>
-                    <Stethoscope className="mr-2 h-4 w-4" />
-                    Open encounter
-                  </Link>
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        )}
-      </Card>
-      </ShineBorder>
+          </CardHeader>
+        </Card>
+      )}
 
-      <Card className="glass">
+      <Card className="glass-frost">
         <CardHeader className="flex flex-row items-center justify-between space-y-0">
           <div>
             <CardTitle>Today&apos;s schedule</CardTitle>

@@ -1,8 +1,20 @@
+import Link from "next/link";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { CalendarClock, CalendarPlus, FileCheck2, IndianRupee, ShieldCheck, Video } from "lucide-react";
+import {
+  AlertTriangle,
+  CalendarClock,
+  CalendarPlus,
+  FileCheck2,
+  IndianRupee,
+  ShieldCheck,
+  UserRoundCheck,
+  Video,
+} from "lucide-react";
 import { auth } from "@/lib/auth";
 import { getDoctorCard, getDoctorProfile } from "@/lib/doctor";
+import { getPatientProfile } from "@/lib/patient";
+import { getBookingProfileMissing } from "@/lib/patient-readiness";
 import { BookingFlow } from "@/components/patient/booking/BookingFlow";
 import {
   PatientHero,
@@ -10,6 +22,7 @@ import {
   PatientSideCard,
 } from "@/components/patient/PatientPortal";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
 export default async function BookPage() {
@@ -19,8 +32,14 @@ export default async function BookPage() {
     redirect("/login");
   }
 
-  const [profile, doctor] = await Promise.all([getDoctorProfile(), getDoctorCard()]);
+  const [profile, doctor, patientProfile] = await Promise.all([
+    getDoctorProfile(),
+    getDoctorCard(),
+    getPatientProfile(session.user.id),
+  ]);
   const doctorName = doctor?.name ? `Dr. ${doctor.name}` : "Your doctor";
+  const missingProfile = getBookingProfileMissing(session.user, patientProfile);
+  const canBook = missingProfile.length === 0;
 
   return (
     <PatientPageShell>
@@ -59,7 +78,51 @@ export default async function BookPage() {
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
         <div>
-          {profile ? (
+          {!canBook ? (
+            <Card className="glass overflow-hidden rounded-3xl border-amber-200">
+              <div className="h-1.5 bg-gradient-to-r from-amber-400 via-orange-400 to-red-400" />
+              <CardContent className="space-y-6 p-6 sm:p-8">
+                <div className="flex gap-4">
+                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-amber-700">
+                    <AlertTriangle className="h-5 w-5" />
+                  </span>
+                  <div>
+                    <h2 className="text-xl font-semibold">Complete profile before booking</h2>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Video consultations need basic patient identity so the doctor can
+                      prescribe safely and the prescription has valid patient details.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-3">
+                  {["Full name", "Valid date of birth", "Gender"].map((item) => {
+                    const missing = missingProfile.includes(item);
+                    return (
+                      <div
+                        key={item}
+                        className="rounded-2xl border bg-background/70 p-4 text-sm"
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="font-medium">{item}</span>
+                          <Badge variant={missing ? "outline" : "secondary"}>
+                            {missing ? "Missing" : "Done"}
+                          </Badge>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <Button asChild size="lg">
+                  <Link href="/patient/profile">
+                    <UserRoundCheck className="mr-2 h-4 w-4" />
+                    Complete patient profile
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
+          ) : profile ? (
             <BookingFlow feeInPaise={profile.feeInPaise} timezone={profile.timezone} />
           ) : (
             <Card className="glass rounded-2xl border-dashed">
