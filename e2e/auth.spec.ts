@@ -35,26 +35,24 @@ test("login, land on patient home, then logout", async ({ page }) => {
   await expect(page).toHaveURL(/\/login/);
 });
 
-test("new user signs up with a password, then signs back in with it", async ({
-  page,
-}) => {
-  const email = `e2e+${Date.now()}-signup@example.com`;
-  const password = "supersecret123";
+test("a non-staff account is blocked at the clinic sign-in", async ({ page }) => {
+  // Sign-in is shared backend, but the /doctor/login surface confirms the
+  // account is actually a doctor after OTP and, when it isn't, shows an
+  // explicit message instead of dropping a patient into the clinic UI.
+  const email = `e2e+${Date.now()}-wrongrole@example.com`;
 
-  await page.goto("/signup");
-  await page.getByLabel("Full name").fill("Test Patient");
+  await page.goto("/doctor/login");
   await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Password", { exact: true }).fill(password);
-  await page.getByRole("button", { name: /create account/i }).click();
-  await expect(page).toHaveURL(/\/patient/);
+  await page.getByRole("button", { name: /send code/i }).click();
+  await expect(page.getByLabel("Verification code")).toBeVisible();
 
-  await page.getByRole("button", { name: /log out/i }).click();
-  await expect(page).toHaveURL(/\/login/);
+  const otp = await getSignInOtp(email);
+  await page.getByLabel("Verification code").fill(otp);
+  await page.getByRole("button", { name: /verify & sign in/i }).click();
 
-  await page.getByRole("button", { name: "Password" }).click();
-  await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Password", { exact: true }).fill(password);
-  await page.getByRole("button", { name: /^sign in$/i }).click();
+  // No auto-redirect — the explicit message and a route to their own portal.
+  await expect(page.getByText(/isn't set up for clinic access/i)).toBeVisible();
+  await page.getByRole("link", { name: /patient portal/i }).click();
   await expect(page).toHaveURL(/\/patient/);
 });
 

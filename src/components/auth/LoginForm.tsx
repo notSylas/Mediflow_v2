@@ -3,58 +3,58 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeft, ArrowRight, MailCheck } from "lucide-react";
+import { ArrowLeft, ArrowRight, MailCheck, ShieldAlert } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { PasswordInput } from "@/components/auth/PasswordInput";
-import { cn } from "@/lib/utils";
 
-type Method = "password" | "otp";
+type Variant = "patient" | "doctor";
 
-export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
+/**
+ * Email-OTP sign-in, the only public-facing method (passwords are an opt-in
+ * convenience configured later in Account settings, never a primary option —
+ * see docs/PRD.md and the 2026-06-25 auth-split plan).
+ *
+ * `variant` splits the two surfaces that share this form:
+ * - "patient" (the /login page): Google is offered when configured.
+ * - "doctor" (the /doctor/login page): Google is never offered — it can't be
+ *   role-filtered pre-auth, so a patient clicking it would authenticate as a
+ *   patient on the doctor surface. OTP-only removes that ambiguity. After a
+ *   successful sign-in we also confirm the account is actually a doctor and,
+ *   if not, show an explicit message instead of silently dropping them into
+ *   the clinic UI they can't use.
+ */
+export function LoginForm({
+  googleEnabled,
+  variant = "patient",
+}: {
+  googleEnabled: boolean;
+  variant?: Variant;
+}) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const requestedRedirect = searchParams.get("redirectTo");
+  const fallbackRedirect = variant === "doctor" ? "/doctor" : "/";
   const redirectTo =
     requestedRedirect?.startsWith("/") && !requestedRedirect.startsWith("//")
       ? requestedRedirect
-      : "/";
+      : fallbackRedirect;
 
-  const [method, setMethod] = useState<Method>("otp");
+  // Google is only ever an option on the patient surface.
+  const showGoogle = googleEnabled && variant === "patient";
+
   const [step, setStep] = useState<"email" | "otp">("email");
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [otp, setOtp] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [wrongRole, setWrongRole] = useState(false);
 
   const succeed = () => {
     router.push(redirectTo);
     router.refresh();
-  };
-
-  const handlePasswordSignIn = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setIsLoading(true);
-    try {
-      const { error } = await authClient.signIn.email({
-        email: email.trim(),
-        password,
-      });
-      if (error) {
-        setError(error.message ?? "Wrong email or password.");
-        return;
-      }
-      succeed();
-    } catch {
-      setError("Couldn't reach the server. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
   };
 
   const handleSendOtp = async (e: React.FormEvent) => {
@@ -91,6 +91,16 @@ export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
         setError(error.message ?? "Invalid code.");
         return;
       }
+      // On the doctor surface, confirm the freshly-signed-in account actually
+      // has clinic access before sending them on. Better Auth has no pre-auth
+      // role lookup, so this is necessarily a post-auth check.
+      if (variant === "doctor") {
+        const { data: session } = await authClient.getSession();
+        if (session?.user?.role !== "doctor") {
+          setWrongRole(true);
+          return;
+        }
+      }
       succeed();
     } catch {
       setError("Couldn't reach the server. Please try again.");
@@ -117,74 +127,38 @@ export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
     }
   };
 
-  const switchMethod = (next: Method) => {
-    setMethod(next);
-    setStep("email");
-    setError(null);
-  };
+  // A non-doctor signed in on the doctor surface. They now hold a valid
+  // (patient) session, so we point them at their own portal rather than
+  // auto-redirecting — the explicit message tells them why they're not in the
+  // clinic UI.
+  if (wrongRole) {
+    return (
+      <div className="flex flex-col gap-4">
+        <div className="flex items-start gap-3 rounded-xl border border-destructive/30 bg-destructive/5 p-4">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-destructive/10 text-destructive">
+            <ShieldAlert className="h-4.5 w-4.5" />
+          </span>
+          <div className="space-y-1">
+            <p className="text-sm font-medium text-foreground">
+              This account isn&apos;t set up for clinic access
+            </p>
+            <p className="text-sm text-muted-foreground">
+              You&apos;re signed in, but{" "}
+              <span className="font-medium text-foreground">{email}</span> is a
+              patient account. The clinic dashboard is for staff only.
+            </p>
+          </div>
+        </div>
+        <Button asChild size="lg" className="h-11">
+          <Link href="/patient">Go to your patient portal</Link>
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Method toggle */}
-      <div className="grid grid-cols-2 gap-1 rounded-xl bg-muted p-1">
-        {(["password", "otp"] as const).map((m) => (
-          <button
-            key={m}
-            type="button"
-            aria-pressed={method === m}
-            onClick={() => switchMethod(m)}
-            className={cn(
-              "rounded-lg px-3 py-1.5 text-sm font-medium transition-colors",
-              method === m
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            {m === "password" ? "Password" : "Email code"}
-          </button>
-        ))}
-      </div>
-
-      {method === "password" ? (
-        <form onSubmit={handlePasswordSignIn} className="flex flex-col gap-3">
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              autoComplete="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              className="h-11"
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="password">Password</Label>
-            <PasswordInput
-              id="password"
-              autoComplete="current-password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Your password"
-              className="h-11"
-            />
-          </div>
-          {error && (
-            <p role="alert" className="text-sm text-destructive">
-              {error}
-            </p>
-          )}
-          <Button type="submit" size="lg" disabled={isLoading} className="h-11">
-            {isLoading ? "Signing in…" : "Sign in"}
-            {!isLoading && (
-              <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover/button:translate-x-0.5" />
-            )}
-          </Button>
-        </form>
-      ) : step === "email" ? (
+      {step === "email" ? (
         <form onSubmit={handleSendOtp} className="flex flex-col gap-3">
           <Label htmlFor="email">Email</Label>
           <Input
@@ -248,7 +222,7 @@ export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
         </form>
       )}
 
-      {googleEnabled && (
+      {showGoogle && (
         <>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <Separator className="flex-1" />
@@ -266,13 +240,6 @@ export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
           </Button>
         </>
       )}
-
-      <p className="text-center text-sm text-muted-foreground">
-        New to MediFlow?{" "}
-        <Link href="/signup" className="font-medium text-primary hover:underline">
-          Create an account
-        </Link>
-      </p>
     </div>
   );
 }

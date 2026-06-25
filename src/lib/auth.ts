@@ -63,13 +63,49 @@ export const auth = betterAuth({
         ? false
         : process.env.NODE_ENV === "production",
   },
-  // Email + password sign-up/sign-in. Email-OTP (below) stays available as a
-  // passwordless alternative on the same login page. Verification email is
-  // wired in milestone 5 (Resend); accounts are usable immediately for now.
+  // Sign-in is email-OTP first (see the emailOTP plugin below) — that's the
+  // only public-facing method. Email+password stays *enabled* so an
+  // already-authenticated user can opt into a password from Account settings
+  // (authClient.changePassword), but `disableSignUp` closes the public
+  // password-account creation path at the source: a direct POST to
+  // /sign-up/email is rejected, not just hidden in the UI. New accounts are
+  // created implicitly on first OTP sign-in.
   emailAndPassword: {
     enabled: true,
+    disableSignUp: true,
     minPasswordLength: 8,
     requireEmailVerification: false,
+  },
+  // Anti-takeover notification for the change-email flow below. This hook
+  // fires after the new-email OTP is verified but *before* the row is updated,
+  // so `user.email` here is still the OLD address — the one place we can warn
+  // the previous mailbox that its account was moved. Best-effort and never
+  // throws: a failed notification must not block a legitimate change. Scoped
+  // to the change-email endpoint so it doesn't fire on unrelated verification.
+  emailVerification: {
+    async beforeEmailVerification(user, request) {
+      try {
+        const path = request ? new URL(request.url).pathname : "";
+        if (!path.endsWith("/email-otp/change-email")) return;
+        await sendEmail({
+          to: user.email,
+          subject: "Your MediFlow sign-in email was changed",
+          html: emailLayout(
+            `<p>The email address used to sign in to your MediFlow account was just changed to a new address.</p>
+             <p><strong>If you did this, no action is needed.</strong></p>
+             <p>If you didn't request this, your account may have been accessed by someone else — reply to this email right away so we can help secure it.</p>`
+          ),
+        });
+      } catch {
+        // Best-effort: never block a legitimate email change on a notice that
+        // failed to send (e.g. provider hiccup).
+      }
+    },
+    async afterEmailVerification(user) {
+      // Audit trail (Rule #11 — ids only, no PII). A confirmed email change is
+      // a security-relevant event worth a durable log line.
+      console.info(`[audit] email changed for user ${user.id}`);
+    },
   },
   user: {
     additionalFields: {
@@ -96,12 +132,25 @@ export const auth = betterAuth({
   plugins: [
     expo(),
     emailOTP({
-      async sendVerificationOTP({ email, otp }) {
+      // Lets an authenticated user move their account to a new email. The OTP
+      // is sent to the *new* address (proving they control it); the previous
+      // address is warned via beforeEmailVerification above. Safe by design:
+      // doctor_profiles and every other relation reference user.id, never the
+      // email string, so a change never breaks appointments/profile linkage.
+      changeEmail: { enabled: true },
+      async sendVerificationOTP({ email, otp, type }) {
+        const isChangeEmail = type === "change-email";
         await sendEmail({
           to: email,
-          subject: `${otp} is your MediFlow sign-in code`,
+          subject: isChangeEmail
+            ? `${otp} confirms your new MediFlow email`
+            : `${otp} is your MediFlow sign-in code`,
           html: emailLayout(
-            `<p>Your one-time sign-in code is:</p>
+            `<p>${
+              isChangeEmail
+                ? "Use this code to confirm this address as your new MediFlow sign-in email:"
+                : "Your one-time sign-in code is:"
+            }</p>
              <p style="font-size:28px;font-weight:700;letter-spacing:6px;color:#0f766e">${otp}</p>
              <p>It expires shortly. If you didn't request this, you can ignore this email.</p>`
           ),

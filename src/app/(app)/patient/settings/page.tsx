@@ -76,7 +76,10 @@ export default async function PatientSettingsPage() {
           title="Account controls"
           description="Update the details tied to your patient login."
         >
-          <AccountSettings initialName={session.user.name ?? ""} />
+          <AccountSettings
+            initialName={session.user.name ?? ""}
+            currentEmail={session.user.email}
+          />
         </PatientSection>
 
         <aside className="space-y-6">
