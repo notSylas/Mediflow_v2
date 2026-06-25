@@ -23,9 +23,17 @@ interface ChatThreadProps {
   currentRole: "patient" | "doctor";
   /** Who you're talking to, for the header. */
   peerName: string;
+  peerSubtitle?: string;
+  quickReplies?: string[];
 }
 
-export function ChatThread({ conversationId, currentRole, peerName }: ChatThreadProps) {
+export function ChatThread({
+  conversationId,
+  currentRole,
+  peerName,
+  peerSubtitle,
+  quickReplies = [],
+}: ChatThreadProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
@@ -164,16 +172,30 @@ export function ChatThread({ conversationId, currentRole, peerName }: ChatThread
     }
   };
 
+  const mineBubble =
+    currentRole === "doctor"
+      ? "bg-indigo-600 text-white"
+      : "bg-primary text-primary-foreground";
+  const mineMuted =
+    currentRole === "doctor" ? "text-white/70" : "text-primary-foreground/70";
+  const accent =
+    currentRole === "doctor"
+      ? "bg-indigo-100 text-indigo-700"
+      : "bg-teal-100 text-teal-700";
+
   return (
-    <div className="flex h-full flex-col">
-      <div className="border-b bg-background/95 px-4 py-4 backdrop-blur">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden">
+      <div className="shrink-0 border-b bg-background/95 px-4 py-4 backdrop-blur">
         <div className="flex items-center gap-3">
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-teal-100 text-teal-700">
+          <span className={cn("flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl", accent)}>
             <Stethoscope className="h-5 w-5" />
           </span>
           <div className="min-w-0 flex-1">
             <p className="truncate font-semibold">{peerName}</p>
-            <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            {peerSubtitle && (
+              <p className="truncate text-xs text-muted-foreground">{peerSubtitle}</p>
+            )}
+            <p className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
               <ShieldAlert className="h-3.5 w-3.5" />
               Not monitored 24/7 — for emergencies, call your local emergency number.
             </p>
@@ -186,7 +208,7 @@ export function ChatThread({ conversationId, currentRole, peerName }: ChatThread
 
       <div
         ref={scrollRef}
-        className="flex-1 space-y-3 overflow-y-auto bg-[radial-gradient(circle_at_top_left,rgba(20,184,166,0.08),transparent_34%),linear-gradient(180deg,rgba(248,250,252,0.7),rgba(255,255,255,0.92))] px-4 py-5"
+        className="min-h-0 flex-1 space-y-4 overflow-y-auto bg-[radial-gradient(circle_at_top_left,rgba(20,184,166,0.08),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(99,102,241,0.08),transparent_30%),linear-gradient(180deg,rgba(248,250,252,0.86),rgba(255,255,255,0.96))] px-4 py-5 sm:px-6"
       >
         {loading && (
           <div className="mx-auto mt-8 w-fit rounded-full border bg-background/80 px-4 py-2 text-sm text-muted-foreground shadow-sm">
@@ -222,16 +244,13 @@ export function ChatThread({ conversationId, currentRole, peerName }: ChatThread
         {messages.map((m) => {
           const mine = m.senderRole === currentRole;
           return (
-            <div
-              key={m.id}
-              className={cn("flex", mine ? "justify-end" : "justify-start")}
-            >
+            <div key={m.id} className={cn("flex", mine ? "justify-end" : "justify-start")}>
               <div
                 className={cn(
-                  "max-w-[82%] rounded-3xl px-4 py-3 text-sm shadow-sm",
+                  "max-w-[min(82%,38rem)] rounded-3xl px-4 py-3 text-sm shadow-sm ring-1",
                   mine
-                    ? "rounded-br-md bg-primary text-primary-foreground"
-                    : "rounded-bl-md border bg-background text-foreground"
+                    ? `rounded-br-md ${mineBubble} ring-black/5`
+                    : "rounded-bl-md border bg-background/95 text-foreground ring-border/70"
                 )}
               >
                 {m.attachment &&
@@ -240,7 +259,7 @@ export function ChatThread({ conversationId, currentRole, peerName }: ChatThread
                     <img
                       src={`/api/v1/attachments/${m.attachment.id}`}
                       alt={m.attachment.filename}
-                      className="mb-1 max-h-60 w-full rounded-lg object-cover"
+                      className="mb-2 max-h-72 w-full rounded-2xl object-cover shadow-sm"
                     />
                   ) : (
                     <a
@@ -248,8 +267,8 @@ export function ChatThread({ conversationId, currentRole, peerName }: ChatThread
                       target="_blank"
                       rel="noreferrer"
                       className={cn(
-                        "mb-1 flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm underline",
-                        mine ? "bg-primary-foreground/15" : "bg-background"
+                        "mb-2 flex items-center gap-2 rounded-2xl px-3 py-2 text-sm underline",
+                        mine ? "bg-white/15 text-white" : "border bg-muted/60 text-foreground"
                       )}
                     >
                       <FileText className="h-4 w-4 shrink-0" />
@@ -260,7 +279,7 @@ export function ChatThread({ conversationId, currentRole, peerName }: ChatThread
                 <p
                   className={cn(
                     "mt-1 text-[10px]",
-                    mine ? "text-primary-foreground/70" : "text-muted-foreground"
+                    mine ? mineMuted : "text-muted-foreground"
                   )}
                 >
                   {formatInTimeZone(new Date(m.createdAt), "Asia/Kolkata", "h:mm a")}
@@ -271,7 +290,7 @@ export function ChatThread({ conversationId, currentRole, peerName }: ChatThread
         })}
       </div>
 
-      <div className="border-t bg-background/95 p-3 backdrop-blur">
+      <div className="shrink-0 border-t bg-background/95 p-3 backdrop-blur">
         {uploadError && (
           <p className="mb-2 text-xs text-destructive">{uploadError}</p>
         )}
@@ -284,7 +303,21 @@ export function ChatThread({ conversationId, currentRole, peerName }: ChatThread
             </button>
           </div>
         )}
-        <div className="flex items-end gap-2">
+        {quickReplies.length > 0 && (
+          <div className="mb-2 flex gap-2 overflow-x-auto pb-1">
+            {quickReplies.map((reply) => (
+              <button
+                key={reply}
+                type="button"
+                onClick={() => setDraft((current) => (current ? `${current}\n${reply}` : reply))}
+                className="shrink-0 rounded-full border bg-muted/50 px-3 py-1.5 text-xs font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground"
+              >
+                {reply}
+              </button>
+            ))}
+          </div>
+        )}
+        <div className="flex items-end gap-2 rounded-3xl border bg-muted/35 p-2 shadow-sm">
           <input
             ref={fileRef}
             type="file"
@@ -301,7 +334,7 @@ export function ChatThread({ conversationId, currentRole, peerName }: ChatThread
             size="icon"
             disabled={uploading}
             onClick={() => fileRef.current?.click()}
-            className="h-11 w-11 shrink-0 rounded-2xl"
+            className="h-11 w-11 shrink-0 rounded-2xl bg-background"
             aria-label="Attach a file"
           >
             {uploading ? (
@@ -321,13 +354,16 @@ export function ChatThread({ conversationId, currentRole, peerName }: ChatThread
             }}
             placeholder="Write a message…"
             rows={1}
-            className="max-h-32 min-h-11 resize-none rounded-2xl bg-background/80"
+            className="max-h-32 min-h-11 resize-none rounded-2xl border-0 bg-background px-4 shadow-none focus-visible:ring-1"
           />
           <Button
             onClick={send}
             disabled={(!draft.trim() && !pendingFile) || sending}
             size="icon"
-            className="h-11 w-11 shrink-0 rounded-2xl"
+            className={cn(
+              "h-11 w-11 shrink-0 rounded-2xl",
+              currentRole === "doctor" && "bg-indigo-600 hover:bg-indigo-700"
+            )}
           >
             <SendHorizontal className="h-4 w-4" />
           </Button>

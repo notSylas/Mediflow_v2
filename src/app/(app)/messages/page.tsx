@@ -24,11 +24,13 @@ export default async function MessagesPage() {
   if (session.user.role === "doctor") {
     const rows = await listDoctorConversations(session.user.id);
     return (
-      <div className="mx-auto h-[calc(100dvh-1rem)] max-w-6xl p-2 sm:p-4">
+      <div className="mx-auto h-[calc(100dvh-1rem)] max-w-7xl overflow-hidden p-2 sm:p-4">
         <DoctorMessages
           conversations={rows.map((r) => ({
             id: r.conversation.id,
+            patientId: r.patient.id,
             patientName: r.patient.name || r.patient.email,
+            patientEmail: r.patient.email,
             preview: r.conversation.lastMessagePreview,
             unread: r.conversation.doctorUnread,
             lastMessageAt: r.conversation.lastMessageAt?.toISOString() ?? null,
