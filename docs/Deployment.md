@@ -1,6 +1,6 @@
 # MediFlow v2 — Deployment Guide
 
-Target setup: **Vercel** (app) + **Neon** (Postgres) + **LiveKit Cloud** (video) + **Razorpay** (payments) + **Resend** (email, once wired). Total cost at single-doctor scale: roughly free-tier everything except Razorpay's per-transaction fee.
+Target setup: **Vercel** (app) + **Neon** (Postgres) + **LiveKit Cloud** (video) + **Razorpay** (payments) + **Resend** (email) + a persistent Node host for realtime chat. Total cost at single-doctor scale: roughly free-tier everything except Razorpay's per-transaction fee and the realtime host.
 
 ## 0. Prerequisites
 
@@ -36,13 +36,33 @@ Target setup: **Vercel** (app) + **Neon** (Postgres) + **LiveKit Cloud** (video)
    | Variable | Value |
    |---|---|
    | `DATABASE_URL` | Neon pooled URL |
+   | `POSTGRES_MAX_CONNECTIONS` | `3`-`5` for Vercel/Neon unless load testing proves you need more |
    | `BETTER_AUTH_SECRET` | `npx @better-auth/cli secret` |
    | `BETTER_AUTH_URL` | `https://<your-domain>` |
    | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | optional — Google sign-in |
    | `RAZORPAY_KEY_ID` / `RAZORPAY_KEY_SECRET` / `RAZORPAY_WEBHOOK_SECRET` | from step 3 |
    | `LIVEKIT_URL` / `LIVEKIT_API_KEY` / `LIVEKIT_API_SECRET` | from step 2 |
-   | `RESEND_API_KEY` | once email is wired |
+   | `RESEND_API_KEY` | Resend production key |
+   | `EMAIL_FROM` | verified sender, e.g. `MediFlow <noreply@yourdomain.com>` |
+   | `CRON_SECRET` | long random secret for `/api/cron/reminders` |
+   | `NEXT_PUBLIC_REALTIME_URL` | public realtime host URL, e.g. `https://realtime.yourdomain.com` |
    | `SENTRY_DSN` / `NEXT_PUBLIC_SENTRY_DSN` | optional |
+   | `LOG_LEVEL` | optional; use `info` in production |
+
+   Production launch rule: do not leave Razorpay, LiveKit, Resend, or `CRON_SECRET`
+   blank. Blank Razorpay keys fall back to mock payments, blank Resend prints
+   emails to logs, and blank `CRON_SECRET` leaves the reminder endpoint open.
+
+   Before deploying, run the env audit locally after loading/copying production
+   values:
+
+   ```bash
+   npm run check:env
+   npm run check:env:strict
+   ```
+
+   The script hides values and only reports present/missing/unsafe settings.
+   Strict mode fails until production-only values are set.
 
 3. Deploy. Add your custom domain (Settings → Domains) and update `BETTER_AUTH_URL` to match.
 4. If using Google sign-in: add `https://<domain>/api/auth/callback/google` to the OAuth client's redirect URIs.
@@ -64,12 +84,14 @@ UPDATE "user" SET role = 'doctor' WHERE email = '<doctor-email>';
 
 Then the doctor visits `/doctor` (profile auto-provisions), sets fee/slot length/timezone and availability. Done — patients can book.
 
-## 5b. Reminders cron
+## 5b. Email + reminders cron
 
 `vercel.json` already declares a cron that calls `/api/cron/reminders` every 10 minutes.
 Set `CRON_SECRET` in Vercel; the cron job sends `Authorization: Bearer <CRON_SECRET>`,
-which the endpoint verifies. No other setup needed — pre-consult reminder emails go out
-automatically once email (Resend) is configured.
+which the endpoint verifies. No other setup needed — booking confirmations and
+pre-consult reminder emails go out automatically when `RESEND_API_KEY` and
+`EMAIL_FROM` are configured. Without `RESEND_API_KEY`, emails are logged to the
+server console for development only.
 
 ## 5c. Realtime chat server
 
@@ -98,12 +120,15 @@ still works over REST — messages just don't appear until the thread is refetch
 
 ## 6. Post-deploy checklist
 
+- [ ] `npm run lint`, `npx tsc --noEmit`, `npm test`, `npm run check:env:strict`, and `npm run build` pass before deploy.
+- [ ] Vercel env has no local URLs: `BETTER_AUTH_URL` is the production domain and `DATABASE_URL` is Neon, not Docker.
 - [ ] Book a real ₹-test consultation end-to-end (Razorpay test keys on a staging deploy, or a small live payment refunded after).
 - [ ] Webhook delivery shows 200 in the Razorpay dashboard.
 - [ ] Video call works doctor↔patient across two devices/networks.
-- [ ] OTP email delivery (or interim: confirm pino logs in Vercel → Logs).
+- [ ] OTP, booking confirmation, and reminder email delivery works through Resend.
 - [ ] `e2e` suite green locally against the production build: `npx playwright test`.
 - [ ] Realtime server reachable: `GET https://<realtime-host>/` returns `realtime ok`, and a message sent on one device appears live on another.
+- [ ] `/api/cron/reminders` returns 401 without the secret and 200 with `Authorization: Bearer <CRON_SECRET>`.
 
 ## Local dev (reference)
 

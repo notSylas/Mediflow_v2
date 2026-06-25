@@ -34,9 +34,9 @@ An online clinic for that doctor. Patients book a **paid** slot (payment at book
 
 ## Scope fences
 
-- **v1**: everything above. Single doctor, but the data model keeps `doctor` an entity (multi-doctor later = data change, not rewrite).
-- **v1.5**: AI scribe (transcript → draft SOAP + prescription), branded prescription PDF, email confirmations/reminders if not done in v1.
-- **Cut** (decided 2026-06-12): chat/messaging, records vault, revenue dashboards, doctor discovery/signup, medication tracker, diet/timeline pages. See `docs/v1-feature-inventory.md` for the complete disposition list.
+- **v1**: everything above, plus patient↔doctor chat/messaging and a native mobile app (Expo) — both were originally cut on 2026-06-12 below, then explicitly reversed on 2026-06-14 (see `AGENTS.md`, `docs/Tracker.md`) and built. Single doctor, but the data model keeps `doctor` an entity (multi-doctor later = data change, not rewrite).
+- **v1.5**: branded prescription PDF, email confirmations/reminders if not done in v1. AI scribe (transcript → draft SOAP + prescription) is explicitly **not** planned — no AI-assisted documentation features in the initial stages of this product (user policy, not a timing call; re-evaluate from scratch if this changes).
+- **Cut** (decided 2026-06-12, chat/messaging and mobile reversed 2026-06-14 — see above): records vault, revenue dashboards, doctor discovery/signup, medication tracker, diet/timeline pages. See `docs/v1-feature-inventory.md` for the complete disposition list.
 
 ## Success criteria
 
@@ -46,4 +46,4 @@ An online clinic for that doctor. Patients book a **paid** slot (payment at book
 
 ## Non-goals
 
-Marketplace dynamics, insurance billing, EHR interoperability, native mobile apps.
+Marketplace dynamics, insurance billing, EHR interoperability. AI-assisted documentation (scribe, summarization) in the initial product stages — see v1.5 scope fence above.

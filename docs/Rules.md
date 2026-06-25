@@ -9,7 +9,7 @@ Non-negotiables for anyone (human or AI) working in this repo. `AGENTS.md` is th
 3. Double-booking prevention lives in the **database** (partial unique index), not application logic. Any new booking path must cancel expired holds for the slot, then insert, and map error 23505 → 409.
 4. Issued prescriptions are **immutable**. No edit/delete path, ever — corrections happen on the next consult.
 5. Video is managed (LiveKit). The app mints tokens; media never touches our server.
-6. Integrations degrade gracefully when unconfigured: payments → mock, video → 503 + friendly page, OTP → log. Never crash on missing env at import time.
+6. Integrations degrade gracefully when unconfigured: payments → mock, video → 503 + friendly page, OTP → log, WhatsApp → silently skip (email is the guaranteed notification channel; WhatsApp is additive only). Never crash on missing env at import time.
 7. Old repo (`~/Projects/MediFlow`) is reference-only. Never copy code from it; never modify it.
 
 ## Data
@@ -17,7 +17,7 @@ Non-negotiables for anyone (human or AI) working in this repo. `AGENTS.md` is th
 8. Money: integer paise. Floats never touch currency.
 9. Timestamps: `timestamptz`; wall-clock values are doctor-timezone-local; render with `formatInTimeZone`.
 10. Schema changes go in `src/db/schema.ts` → `npm run db:push` (dev). Keep `docs/Schema.md` in sync.
-11. Patient data is medical data: no PII in logs (log ids, not names/emails/notes), ownership check on **every** resource access.
+11. Patient data is medical data: no PII in logs (log ids, not names/emails/notes), ownership check on **every** resource access. **Sole named exception:** a forwardable prescription-view link (signed, revocable, public token in the URL) is intentionally accessible with no session — a pharmacy has no app account. Scope this exception to that one link type only; never extend it to any other resource without writing the exception down here first.
 
 ## API
 
