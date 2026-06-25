@@ -15,6 +15,8 @@ import {
 } from "@/lib/booking";
 import { getDoctorProfile } from "@/lib/doctor";
 import { isUniqueViolation } from "@/lib/db-errors";
+import { getPatientProfile } from "@/lib/patient";
+import { getBookingProfileMissing } from "@/lib/patient-readiness";
 import { hasEmergencyRedFlag } from "@/lib/triage";
 
 const createAppointmentSchema = z.object({
@@ -44,6 +46,20 @@ export async function POST(request: Request) {
 
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.issues }, { status: 400 });
+  }
+
+  const patientProfile = await getPatientProfile(access.id);
+  const missingProfile = getBookingProfileMissing(access, patientProfile);
+
+  if (missingProfile.length > 0) {
+    return NextResponse.json(
+      {
+        error:
+          "Complete your full name, date of birth, and gender before booking a video consultation.",
+        missing: missingProfile,
+      },
+      { status: 403 }
+    );
   }
 
   const profile = await getDoctorProfile();

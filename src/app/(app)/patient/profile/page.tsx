@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { getPatientProfile } from "@/lib/patient";
+import { patientEditableName } from "@/lib/patient-identity";
 import {
   PatientProfileForm,
   type PatientProfileValues,
@@ -31,8 +32,10 @@ export default async function PatientProfilePage() {
   if (!session) redirect("/login");
 
   const profile = await getPatientProfile(session.user.id);
+  const editableName = patientEditableName(session.user);
 
   const initial: PatientProfileValues = {
+    name: editableName,
     dateOfBirth: profile?.dateOfBirth ?? null,
     gender: profile?.gender ?? null,
     bloodGroup: profile?.bloodGroup ?? null,
@@ -43,6 +46,7 @@ export default async function PatientProfilePage() {
     emergencyContactPhone: profile?.emergencyContactPhone ?? null,
   };
   const profileFields = [
+    initial.name,
     initial.dateOfBirth,
     initial.gender,
     initial.bloodGroup,
@@ -56,6 +60,12 @@ export default async function PatientProfilePage() {
     (profileFields.filter(Boolean).length / profileFields.length) * 100
   );
   const safetyItems = [
+    {
+      icon: UserRoundCheck,
+      title: "Booking identity",
+      value: initial.name && initial.dateOfBirth && initial.gender ? "Ready" : "Required",
+      ready: Boolean(initial.name && initial.dateOfBirth && initial.gender),
+    },
     {
       icon: AlertTriangle,
       title: "Allergies",
@@ -83,7 +93,7 @@ export default async function PatientProfilePage() {
           eyebrow="Medical profile"
           icon={HeartPulse}
           title="Help your doctor treat you safely"
-          description="Your profile gives the doctor context before every consultation: allergies, conditions, current medicines, and emergency contact details."
+          description="Full name, date of birth, and gender are required before booking. The rest helps the doctor prescribe more safely."
         >
           <div className="space-y-4">
             <div className="flex items-start justify-between gap-4">
@@ -100,7 +110,7 @@ export default async function PatientProfilePage() {
             </div>
             <p className="text-sm text-teal-50/80">
               Even partial information is useful. Update it whenever your medicines or conditions
-              change.
+              change. Basic identity must be complete before a video consultation can be booked.
             </p>
           </div>
         </PatientHero>

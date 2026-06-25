@@ -154,3 +154,27 @@ export async function listPatientPrescriptions(patientId: string) {
   );
 }
 
+/** One issued prescription for the signed-in patient, with appointment and medicines. */
+export async function getPatientPrescriptionById(patientId: string, prescriptionId: string) {
+  const [row] = await db
+    .select({ prescription: prescriptions, appointment: appointments })
+    .from(prescriptions)
+    .innerJoin(appointments, eq(appointments.id, prescriptions.appointmentId))
+    .where(
+      and(
+        eq(prescriptions.id, prescriptionId),
+        eq(prescriptions.patientId, patientId),
+        eq(prescriptions.status, "issued")
+      )
+    );
+
+  if (!row) return null;
+
+  const medicines = await db
+    .select()
+    .from(prescriptionMedicines)
+    .where(eq(prescriptionMedicines.prescriptionId, row.prescription.id))
+    .orderBy(asc(prescriptionMedicines.sortOrder));
+
+  return { ...row, medicines };
+}

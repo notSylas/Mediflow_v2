@@ -61,6 +61,10 @@ export interface PrescriptionInitial {
 interface PrescriptionComposerProps {
   appointmentId: string;
   initial: PrescriptionInitial | null;
+  /** Forwarded to the root Card — lets callers apply a surface treatment
+   * (e.g. the glass-rx-panel utility, docs/Design.md) without this
+   * component knowing about that styling decision. */
+  className?: string;
 }
 
 let nextKey = 1;
@@ -80,7 +84,11 @@ function emptyMedicine(): MedicineDraft {
   };
 }
 
-export function PrescriptionComposer({ appointmentId, initial }: PrescriptionComposerProps) {
+export function PrescriptionComposer({
+  appointmentId,
+  initial,
+  className,
+}: PrescriptionComposerProps) {
   const [issued, setIssued] = useState(initial?.status === "issued");
   const [diagnosis, setDiagnosis] = useState(initial?.diagnosis ?? "");
   const [advice, setAdvice] = useState(initial?.advice ?? "");
@@ -179,7 +187,7 @@ export function PrescriptionComposer({ appointmentId, initial }: PrescriptionCom
 
   if (issued) {
     return (
-      <Card>
+      <Card className={className}>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             Prescription <Badge>Issued</Badge>
@@ -227,7 +235,7 @@ export function PrescriptionComposer({ appointmentId, initial }: PrescriptionCom
   }
 
   return (
-    <Card>
+    <Card className={className}>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           Prescription <Badge variant="secondary">Draft</Badge>

@@ -17,6 +17,7 @@ const GENDER_LABELS: Record<string, string> = {
 };
 
 export interface PatientProfileValues {
+  name: string;
   dateOfBirth: string | null;
   gender: string | null;
   bloodGroup: string | null;
@@ -40,6 +41,23 @@ export function PatientProfileForm({ initial }: { initial: PatientProfileValues 
     setV((prev) => ({ ...prev, [key]: value || null }));
 
   const save = async () => {
+    if (!v.name.trim()) {
+      toast.error("Full name is required before booking.");
+      return;
+    }
+    if (v.name.includes("@")) {
+      toast.error("Use your real name, not your email address.");
+      return;
+    }
+    if (!v.dateOfBirth) {
+      toast.error("Date of birth is required before booking.");
+      return;
+    }
+    if (!v.gender) {
+      toast.error("Gender is required before booking.");
+      return;
+    }
+
     setSaving(true);
     try {
       const res = await fetch("/api/patient/profile", {
@@ -66,53 +84,68 @@ export function PatientProfileForm({ initial }: { initial: PatientProfileValues 
         <div>
           <h3 className="font-semibold">Basic details</h3>
           <p className="text-sm text-muted-foreground">
-            These help the doctor understand age, gender context, and blood-group information.
+            Full name, date of birth, and gender are required before booking a video
+            consultation.
           </p>
         </div>
-        <div className="grid gap-4 sm:grid-cols-3">
-        <div className="space-y-1.5">
-          <Label htmlFor="dob">Date of birth</Label>
-          <Input
-            id="dob"
-            type="date"
-            className={inputClass}
-            value={v.dateOfBirth ?? ""}
-            onChange={(e) => set("dateOfBirth", e.target.value)}
-          />
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-1.5 sm:col-span-2">
+            <Label htmlFor="full-name">Full name</Label>
+            <Input
+              id="full-name"
+              className={inputClass}
+              value={v.name}
+              onChange={(e) => setV((prev) => ({ ...prev, name: e.target.value }))}
+              placeholder="Patient's legal or preferred full name"
+              autoComplete="name"
+              required
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="dob">Date of birth</Label>
+            <Input
+              id="dob"
+              type="date"
+              className={inputClass}
+              value={v.dateOfBirth ?? ""}
+              onChange={(e) => set("dateOfBirth", e.target.value)}
+              required
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="gender">Gender</Label>
+            <select
+              id="gender"
+              className={selectClass}
+              value={v.gender ?? ""}
+              onChange={(e) => set("gender", e.target.value)}
+              required
+            >
+              <option value="">Select…</option>
+              {GENDERS.map((g) => (
+                <option key={g} value={g}>
+                  {GENDER_LABELS[g]}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="space-y-1.5 sm:col-span-2">
+            <Label htmlFor="blood">Blood group</Label>
+            <select
+              id="blood"
+              className={selectClass}
+              value={v.bloodGroup ?? ""}
+              onChange={(e) => set("bloodGroup", e.target.value)}
+            >
+              <option value="">Unknown</option>
+              {BLOOD_GROUPS.map((b) => (
+                <option key={b} value={b}>
+                  {b}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="gender">Gender</Label>
-          <select
-            id="gender"
-            className={selectClass}
-            value={v.gender ?? ""}
-            onChange={(e) => set("gender", e.target.value)}
-          >
-            <option value="">Select…</option>
-            {GENDERS.map((g) => (
-              <option key={g} value={g}>
-                {GENDER_LABELS[g]}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="blood">Blood group</Label>
-          <select
-            id="blood"
-            className={selectClass}
-            value={v.bloodGroup ?? ""}
-            onChange={(e) => set("bloodGroup", e.target.value)}
-          >
-            <option value="">Unknown</option>
-            {BLOOD_GROUPS.map((b) => (
-              <option key={b} value={b}>
-                {b}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
       </section>
 
       <section className="space-y-4 rounded-2xl border bg-muted/20 p-4">

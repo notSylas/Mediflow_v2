@@ -6,6 +6,7 @@ import {
   ArrowRight,
   ArrowUpRight,
   CalendarPlus,
+  Download,
   FileText,
   HeartPulse,
   Pill,
@@ -186,10 +187,10 @@ export default async function PatientPrescriptionsPage() {
                             </p>
                           </div>
                         </div>
-                        <Button asChild variant="ghost" size="sm" className="shrink-0">
-                          <Link href={`/patient/appointments/${appointment.id}`}>
-                            appointment
-                            <ArrowUpRight className="ml-1 h-3.5 w-3.5" />
+                        <Button asChild>
+                          <Link href={`/patient/prescriptions/${prescription.id}`}>
+                            <Download className="mr-2 h-4 w-4" />
+                            Download prescription
                           </Link>
                         </Button>
                       </CardHeader>
@@ -241,18 +242,30 @@ export default async function PatientPrescriptionsPage() {
                             Need to continue this medicine? Send a refill request instead of
                             self-extending a prescription.
                           </div>
-                          {refillStatus === "pending" ? (
-                            <Button disabled variant="outline">
-                              Refill request pending
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Button asChild variant="outline">
+                              <Link href={`/patient/appointments/${appointment.id}`}>
+                                View appointment
+                                <ArrowUpRight className="ml-1 h-3.5 w-3.5" />
+                              </Link>
                             </Button>
-                          ) : (
-                            <form action={requestRefillAction}>
-                              <input type="hidden" name="prescriptionId" value={prescription.id} />
-                              <Button type="submit" variant="outline">
-                                Request refill
+                            {refillStatus === "pending" ? (
+                              <Button disabled variant="outline">
+                                Refill request pending
                               </Button>
-                            </form>
-                          )}
+                            ) : (
+                              <form action={requestRefillAction}>
+                                <input
+                                  type="hidden"
+                                  name="prescriptionId"
+                                  value={prescription.id}
+                                />
+                                <Button type="submit" variant="outline">
+                                  Request refill
+                                </Button>
+                              </form>
+                            )}
+                          </div>
                         </div>
                       </CardContent>
                     </Card>
