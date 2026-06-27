@@ -420,3 +420,18 @@ export const refillRequests = pgTable("refill_requests", {
   status: refillRequestStatus("status").notNull().default("pending"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+// ---------------------------------------------------------------------------
+// Medicine formulary — server-backed source for the prescription autocomplete.
+// Editable without an app release (via DB / re-seed); the mobile app keeps a
+// bundled copy as an offline fallback.
+// ---------------------------------------------------------------------------
+export const medicines = pgTable("medicines", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull().unique(),
+  strengths: text("strengths").array().notNull().default(sql`'{}'::text[]`),
+  route: text("route").notNull().default("oral"),
+  category: text("category"),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});

@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { router, useLocalSearchParams } from "expo-router";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { Alert, StyleSheet, Text, View } from "react-native";
 import { MedicineCard } from "@/components/clinical";
-import { PrescriptionEditor, SoapEditor } from "@/components/doctor-editors";
+import { SoapEditor } from "@/components/doctor-editors";
 import { ReportCard } from "@/components/report-card";
 import {
   Avatar,
@@ -65,7 +65,6 @@ export default function EncounterPage() {
     enabled: Boolean(id),
   });
   const [hasNote, setHasNote] = useState(false);
-  const [prescriptionIssued, setPrescriptionIssued] = useState(false);
   const [rxSkipped, setRxSkipped] = useState(false);
   const [followUpDays, setFollowUpDays] = useState("7");
   const [followUpDecision, setFollowUpDecision] = useState<
@@ -73,6 +72,14 @@ export default function EncounterPage() {
   >("undecided");
   const [redFlagReviewed, setRedFlagReviewed] = useState(false);
   const toast = useToast();
+
+  // Refresh when returning from the prescription workspace so status stays live.
+  const { refetch } = query;
+  useFocusEffect(
+    useCallback(() => {
+      void refetch();
+    }, [refetch])
+  );
 
   const followUp = useMutation({
     mutationFn: () =>
@@ -130,8 +137,8 @@ export default function EncounterPage() {
         data.encounter.note?.assessment ||
         data.encounter.note?.plan
     );
-  const prescriptionReady =
-    prescriptionIssued || data.encounter.prescription?.status === "issued";
+  const prescriptionReady = data.encounter.prescription?.status === "issued";
+  const prescriptionDraft = data.encounter.prescription?.status === "draft";
   const rxDecisionDone = prescriptionReady || rxSkipped;
   const followUpDone = followUpDecision !== "undecided";
   const redFlagDone = !appointment.triageFlaggedAt || redFlagReviewed;
@@ -358,14 +365,52 @@ export default function EncounterPage() {
       </Card>
 
       <SoapEditor appointmentId={appointment.id} initial={data.encounter.note} onSaved={setHasNote} />
-      <PrescriptionEditor
-        appointmentId={appointment.id}
-        initial={data.encounter.prescription}
-        onIssued={() => {
-          setPrescriptionIssued(true);
-          setRxSkipped(false);
-        }}
-      />
+
+      <SectionHeader title="Prescription" />
+      <Card tone="doctor">
+        <View style={styles.patientHeader}>
+          <View style={styles.rxIcon}>
+            <MaterialCommunityIcons
+              name="file-document-edit-outline"
+              size={22}
+              color={colors.doctor}
+            />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Body strong>
+              {prescriptionReady
+                ? "Prescription issued"
+                : prescriptionDraft
+                  ? "Draft in progress"
+                  : "No prescription yet"}
+            </Body>
+            <Muted>
+              {prescriptionReady
+                ? data.encounter.prescription?.medicines
+                    .map((m) => m.name)
+                    .filter(Boolean)
+                    .join(", ") || "Locked and visible to the patient."
+                : "Write and issue the prescription in a dedicated workspace."}
+            </Muted>
+          </View>
+          {data.encounter.prescription ? (
+            <StatusBadge status={data.encounter.prescription.status} />
+          ) : null}
+        </View>
+        <Button
+          label={
+            prescriptionReady
+              ? "View prescription"
+              : prescriptionDraft
+                ? "Continue prescription"
+                : "Write prescription"
+          }
+          icon="file-document-edit-outline"
+          onPress={() =>
+            router.push({ pathname: "/(doctor)/prescribe/[id]", params: { id } })
+          }
+        />
+      </Card>
 
       <SectionHeader title="Follow-up" />
       <Card>
@@ -566,6 +611,14 @@ function profileScore(profile: PatientProfile | null) {
 
 const styles = StyleSheet.create({
   patientHeader: { flexDirection: "row", alignItems: "center", gap: 11 },
+  rxIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: radius.md,
+    backgroundColor: colors.card,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   twoCol: { flexDirection: "row", gap: 10 },
   commandGrid: { flexDirection: "row", flexWrap: "wrap", gap: 9 },
   commandMetric: {

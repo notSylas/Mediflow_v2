@@ -223,7 +223,7 @@ export function CompactField({
   );
 }
 
-type ButtonTone = "primary" | "secondary" | "danger" | "ghost";
+type ButtonTone = "primary" | "secondary" | "danger" | "danger-outline" | "ghost";
 
 export function Button({
   label,
@@ -243,7 +243,11 @@ export function Button({
   compact?: boolean;
 }) {
   const solid = tone === "primary" || tone === "danger";
-  const foreground = solid ? colors.primaryFg : colors.text;
+  const foreground = solid
+    ? colors.primaryFg
+    : tone === "danger-outline"
+      ? colors.danger
+      : colors.text;
   const trailingIcon = Boolean(icon && !compact);
 
   const body = loading ? (
@@ -308,6 +312,7 @@ export function Button({
   const toneStyle = {
     secondary: { backgroundColor: colors.card, borderColor: colors.borderStrong },
     danger: { backgroundColor: colors.danger, borderColor: colors.danger },
+    "danger-outline": { backgroundColor: colors.card, borderColor: colors.danger },
     ghost: { backgroundColor: "transparent", borderColor: "transparent" },
   }[tone];
 

@@ -6,7 +6,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { auroraHeaderStyles } from "@/components/aurora-header";
 import { AuroraScreen } from "@/components/aurora-screen";
 import { PatientAppointmentCard } from "@/components/clinical";
-import { FadeInView } from "@/components/motion";
+import { FadeInView, PressableScale } from "@/components/motion";
 import {
   Button,
   Card,
@@ -17,8 +17,9 @@ import {
 } from "@/components/ui";
 import { ListSkeleton } from "@/components/skeleton";
 import { apiFetch } from "@/lib/api";
-import { colors, fonts, radius } from "@/lib/theme";
-import type { PatientAppointmentRow } from "@/lib/types";
+import { formatMoney } from "@/lib/format";
+import { colors, fonts, radius, shadowSoft } from "@/lib/theme";
+import type { PatientAppointmentRow, PatientHomeData } from "@/lib/types";
 
 type VisitTab = "upcoming" | "past";
 
@@ -29,6 +30,13 @@ export default function PatientAppointments() {
     queryKey: ["patient", "appointments"],
     queryFn: () => apiFetch<PatientAppointmentRow[]>("/api/appointments"),
   });
+  // Shares the home-screen cache, so this is free when home was visited.
+  const home = useQuery({
+    queryKey: ["patient", "home"],
+    queryFn: () => apiFetch<PatientHomeData>("/api/v1/patient/home"),
+  });
+  const fee = home.data?.doctor?.feeInPaise;
+  const slotMinutes = home.data?.doctor?.slotMinutes ?? 20;
   if (query.isLoading) {
     return (
       <AuroraScreen
@@ -84,6 +92,14 @@ export default function PatientAppointments() {
       refreshing={query.isRefetching}
       onRefresh={() => query.refetch()}
     >
+      <FadeInView>
+        <BookingCta
+          fee={fee}
+          slotMinutes={slotMinutes}
+          onPress={() => router.push("/(patient)/book")}
+        />
+      </FadeInView>
+
       {query.error ? (
         <ErrorState message={query.error.message} onRetry={() => query.refetch()} />
       ) : null}
@@ -155,8 +171,86 @@ export default function PatientAppointments() {
   );
 }
 
+function BookingCta({
+  fee,
+  slotMinutes,
+  onPress,
+}: {
+  fee: number | undefined;
+  slotMinutes: number;
+  onPress: () => void;
+}) {
+  const meta = [
+    fee != null ? formatMoney(fee) : null,
+    `${slotMinutes} min`,
+    "secure video visit",
+  ]
+    .filter(Boolean)
+    .join(" · ");
+  return (
+    <View style={styles.cta}>
+      <View style={styles.ctaTop}>
+        <View style={styles.ctaIcon}>
+          <MaterialCommunityIcons name="calendar-heart" size={23} color={colors.primary} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.ctaTitle}>Need to see your doctor?</Text>
+          <Text style={styles.ctaSub}>
+            Book a private video consultation with your clinic doctor.
+          </Text>
+        </View>
+      </View>
+      <View style={styles.ctaMeta}>
+        <MaterialCommunityIcons name="shield-check" size={14} color={colors.primary} />
+        <Text style={styles.ctaMetaText}>{meta}</Text>
+      </View>
+      <PressableScale haptic="light" style={styles.ctaButton} onPress={onPress}>
+        <Text style={styles.ctaButtonText}>Book a consultation</Text>
+        <MaterialCommunityIcons name="arrow-right" size={18} color={colors.primaryDark} />
+      </PressableScale>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   list: { gap: 12 },
+  cta: {
+    backgroundColor: colors.accent,
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    borderColor: "#d4def8",
+    padding: 18,
+    gap: 13,
+  },
+  ctaTop: { flexDirection: "row", alignItems: "center", gap: 12 },
+  ctaIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: radius.md,
+    backgroundColor: colors.card,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  ctaTitle: { fontFamily: fonts.heading, fontSize: 17, letterSpacing: -0.3, color: colors.text },
+  ctaSub: { fontFamily: fonts.body, fontSize: 13, lineHeight: 18, color: colors.textMuted, marginTop: 2 },
+  ctaMeta: { flexDirection: "row", alignItems: "center", gap: 7 },
+  ctaMetaText: { fontFamily: fonts.bodySemibold, fontSize: 12.5, color: colors.accentFg },
+  ctaButton: {
+    minHeight: 50,
+    borderRadius: radius.lg,
+    backgroundColor: colors.card,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    ...shadowSoft,
+  },
+  ctaButtonText: {
+    fontFamily: fonts.semibold,
+    fontSize: 15,
+    letterSpacing: -0.2,
+    color: colors.primaryDark,
+  },
   tipRow: { flexDirection: "row", alignItems: "flex-start", gap: 11 },
   tipIcon: {
     width: 40,

@@ -16,6 +16,7 @@
     "check:env": "tsx scripts/check-production-env.ts",
     "check:env:strict": "tsx scripts/check-production-env.ts --strict",
     "promote-doctor": "tsx scripts/promote-doctor.ts",
+    "seed:medicines": "tsx --env-file=.env scripts/seed-medicines.ts",
     "realtime": "tsx watch --env-file=.env realtime/server.ts",
     "docker:up": "docker compose up",
     "docker:down": "docker compose down",

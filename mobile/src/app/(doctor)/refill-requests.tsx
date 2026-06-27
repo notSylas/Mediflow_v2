@@ -51,9 +51,9 @@ export default function RefillRequests() {
       }),
     onSuccess: ({ appointmentId }) => {
       invalidate();
-      router.push({ pathname: "/(doctor)/encounter/[id]", params: { id: appointmentId } });
+      router.push({ pathname: "/(doctor)/prescribe/[id]", params: { id: appointmentId } });
     },
-    onError: () => toast.error("Couldn't open the consult. Please try again."),
+    onError: () => toast.error("Couldn't open the prescription. Please try again."),
   });
 
   const decline = useMutation({

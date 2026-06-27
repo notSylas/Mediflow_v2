@@ -134,7 +134,7 @@ export default function DoctorHome() {
       tone: "warning",
       title: `${awaitingPrescription} visit${awaitingPrescription === 1 ? "" : "s"} awaiting a prescription`,
       message: "Complete the notes and issue the prescription.",
-      onPress: () => router.push("/(doctor)/appointments"),
+      onPress: () => router.push("/(doctor)/work-queue"),
     });
   }
   if (unread > 0) {

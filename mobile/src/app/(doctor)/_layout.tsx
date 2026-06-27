@@ -1,6 +1,7 @@
 import { Redirect, Tabs } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { GlassTabBar, type TabIconMap } from "@/components/glass-tab-bar";
+import { DoctorFab } from "@/components/doctor-fab";
 import { Loading } from "@/components/ui";
 import { useSession } from "@/lib/auth";
 import { apiFetch } from "@/lib/api";
@@ -36,10 +37,11 @@ export default function DoctorLayout() {
   }
 
   return (
-    <Tabs
-      screenOptions={{ headerShown: false }}
-      tabBar={(props) => <GlassTabBar {...props} variant="doctor" icons={ICONS} />}
-    >
+    <>
+      <Tabs
+        screenOptions={{ headerShown: false }}
+        tabBar={(props) => <GlassTabBar {...props} variant="doctor" icons={ICONS} />}
+      >
       <Tabs.Screen name="index" options={{ title: "Clinic" }} />
       <Tabs.Screen name="appointments" options={{ title: "Visits" }} />
       <Tabs.Screen name="patients" options={{ title: "Patients" }} />
@@ -52,8 +54,11 @@ export default function DoctorLayout() {
       <Tabs.Screen name="work-queue" options={{ href: null }} />
       <Tabs.Screen name="messages/[id]" options={{ href: null }} />
       <Tabs.Screen name="encounter/[id]" options={{ href: null }} />
+      <Tabs.Screen name="prescribe/[id]" options={{ href: null }} />
       <Tabs.Screen name="patients/[id]" options={{ href: null }} />
-      <Tabs.Screen name="schedule" options={{ href: null }} />
-    </Tabs>
+        <Tabs.Screen name="schedule" options={{ href: null }} />
+      </Tabs>
+      <DoctorFab />
+    </>
   );
 }

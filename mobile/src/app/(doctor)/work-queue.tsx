@@ -121,6 +121,7 @@ export default function DoctorWorkQueue() {
             title="Needs prescription"
             rows={data.needsPrescription}
             index={0}
+            target="prescribe"
           />
           <AppointmentQueueSection
             title="Triage-flagged visits"
@@ -194,10 +195,12 @@ function AppointmentQueueSection({
   title,
   rows,
   index,
+  target = "encounter",
 }: {
   title: string;
   rows: DoctorAppointmentRow[];
   index: number;
+  target?: "encounter" | "prescribe";
 }) {
   if (rows.length === 0) return null;
   return (
@@ -210,7 +213,10 @@ function AppointmentQueueSection({
             row={row}
             onPress={() =>
               router.push({
-                pathname: "/(doctor)/encounter/[id]",
+                pathname:
+                  target === "prescribe"
+                    ? "/(doctor)/prescribe/[id]"
+                    : "/(doctor)/encounter/[id]",
                 params: { id: row.appointment.id },
               })
             }

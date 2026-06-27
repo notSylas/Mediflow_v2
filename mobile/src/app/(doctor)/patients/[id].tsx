@@ -80,7 +80,7 @@ export default function DoctorPatientDetail() {
         body: JSON.stringify({ patientId: id }),
       }),
     onSuccess: ({ appointmentId }) =>
-      router.push({ pathname: "/(doctor)/encounter/[id]", params: { id: appointmentId } }),
+      router.push({ pathname: "/(doctor)/prescribe/[id]", params: { id: appointmentId } }),
     onError: () => toast.error("Couldn't start the consult. Please try again."),
   });
   if (query.isLoading) return <Loading />;

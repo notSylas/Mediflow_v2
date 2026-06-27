@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as DocumentPicker from "expo-document-picker";
@@ -26,9 +26,10 @@ import {
   Screen,
   SectionHeader,
 } from "@/components/ui";
+import { SlotPicker } from "@/components/slot-picker";
 import { apiFetch, apiUpload } from "@/lib/api";
-import { formatDate, formatDateTime, formatMoney, formatTime } from "@/lib/format";
-import { colors, fonts, radius, shadowGlow } from "@/lib/theme";
+import { formatDateTime, formatMoney, formatTime } from "@/lib/format";
+import { colors, fonts, radius } from "@/lib/theme";
 import { hasEmergencyRedFlag } from "@/lib/triage";
 import type { Appointment, Payment } from "@/lib/types";
 
@@ -86,15 +87,6 @@ export default function BookingFlow() {
       apiFetch<AppointmentDetail>(`/api/v1/patient/appointments/${appointment?.id}`),
     enabled: Boolean(appointment?.id) && step === 2,
   });
-
-  const groupedSlots = useMemo(() => {
-    const groups = new Map<string, string[]>();
-    for (const value of slots.data?.slots ?? []) {
-      const key = formatDate(value);
-      groups.set(key, [...(groups.get(key) ?? []), value]);
-    }
-    return [...groups.entries()];
-  }, [slots.data]);
 
   const create = useMutation({
     mutationFn: () =>
@@ -235,44 +227,30 @@ export default function BookingFlow() {
     return (
       <Screen refreshing={slots.isRefetching} onRefresh={() => slots.refetch()}>
         <BackHeader title="Choose a time" subtitle="Step 2 of 3" onBack={() => setStep(0)} />
-        <Card tone="accent">
-          <Body strong>Live availability</Body>
-          <Muted>
-            Times are shown in your device timezone. Clinic timezone:{" "}
-            {slots.data?.timezone ?? "Asia/Kolkata"}.
-          </Muted>
-        </Card>
+        <View style={styles.availabilityRow}>
+          <MaterialCommunityIcons name="circle" size={9} color={colors.success} />
+          <Text style={styles.availabilityText}>
+            Live availability · clinic timezone {slots.data?.timezone ?? "Asia/Kolkata"}
+          </Text>
+        </View>
         {slots.error ? <ErrorState message={slots.error.message} onRetry={() => slots.refetch()} /> : null}
-        {groupedSlots.length === 0 ? (
-          <Card>
-            <Body strong>No slots currently available</Body>
-            <Muted>Pull to refresh or check again later.</Muted>
+        <SlotPicker
+          slots={slots.data?.slots ?? []}
+          value={selectedSlot}
+          onChange={setSelectedSlot}
+        />
+        {create.error ? <ErrorState message={create.error.message} /> : null}
+        {selectedSlot ? (
+          <Card tone="accent">
+            <View style={styles.summaryRow}>
+              <Muted>Selected time</Muted>
+              <Body strong>{formatDateTime(selectedSlot)}</Body>
+            </View>
           </Card>
         ) : null}
-        {groupedSlots.map(([date, values]) => (
-          <View key={date} style={{ gap: 9 }}>
-            <SectionHeader title={date} />
-            <View style={styles.slotGrid}>
-              {values.map((value) => {
-                const active = selectedSlot === value;
-                return (
-                  <Pressable
-                    key={value}
-                    onPress={() => setSelectedSlot(value)}
-                    style={[styles.slot, active && styles.slotActive]}
-                  >
-                    <Text style={[styles.slotText, active && styles.slotTextActive]}>
-                      {formatTime(value)}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          </View>
-        ))}
-        {create.error ? <ErrorState message={create.error.message} /> : null}
         <Button
-          label="Reserve this slot"
+          label={selectedSlot ? `Reserve ${formatTime(selectedSlot)}` : "Choose a time above"}
+          icon="arrow-right"
           loading={create.isPending}
           disabled={!selectedSlot}
           onPress={() => create.mutate()}
@@ -399,20 +377,8 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   consentText: { flex: 1, fontSize: 13, lineHeight: 19, color: colors.text },
-  slotGrid: { flexDirection: "row", flexWrap: "wrap", gap: 9 },
-  slot: {
-    minWidth: "30%",
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.card,
-    alignItems: "center",
-  },
-  slotActive: { backgroundColor: colors.primary, borderColor: colors.primary, ...shadowGlow },
-  slotText: { color: colors.text, fontSize: 14, fontFamily: fonts.monoSemibold, letterSpacing: -0.4 },
-  slotTextActive: { color: colors.primaryFg },
+  availabilityRow: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 2 },
+  availabilityText: { fontFamily: fonts.bodyMedium, fontSize: 12.5, color: colors.textMuted },
   summaryRow: {
     flexDirection: "row",
     justifyContent: "space-between",

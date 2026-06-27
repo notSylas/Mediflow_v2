@@ -236,12 +236,13 @@ export default function PatientHome() {
                 style={styles.passCta}
                 onPress={openNext}
               >
-                <MaterialCommunityIcons
-                  name={canJoin ? "video" : "arrow-right"}
-                  size={18}
-                  color={colors.primaryDark}
-                />
+                {canJoin ? (
+                  <MaterialCommunityIcons name="video" size={19} color={colors.primaryDark} />
+                ) : null}
                 <Text style={styles.passCtaText}>{heroCta}</Text>
+                {!canJoin ? (
+                  <MaterialCommunityIcons name="arrow-right" size={18} color={colors.primaryDark} />
+                ) : null}
               </PressableScale>
               <PressableScale
                 accessibilityRole="button"
@@ -628,7 +629,7 @@ const styles = StyleSheet.create({
   passActions: { flexDirection: "row", gap: 10, marginTop: 14 },
   passCta: {
     flex: 1,
-    minHeight: 48,
+    minHeight: 52,
     borderRadius: radius.lg,
     backgroundColor: "#fff",
     flexDirection: "row",
@@ -643,8 +644,8 @@ const styles = StyleSheet.create({
     letterSpacing: -0.2,
   },
   passGhost: {
-    width: 48,
-    minHeight: 48,
+    width: 52,
+    minHeight: 52,
     borderRadius: radius.lg,
     backgroundColor: "rgba(255,255,255,0.16)",
     borderWidth: 1,
