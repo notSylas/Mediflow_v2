@@ -1,11 +1,18 @@
-import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Redirect, Tabs } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
+import { GlassTabBar, type TabIconMap } from "@/components/glass-tab-bar";
 import { Loading } from "@/components/ui";
 import { useSession } from "@/lib/auth";
 import { apiFetch } from "@/lib/api";
-import { colors } from "@/lib/theme";
 import type { DoctorConversationRow } from "@/lib/chat-types";
+
+const ICONS: TabIconMap = {
+  index: "view-dashboard",
+  appointments: "calendar-clock",
+  patients: "account-group",
+  messages: "message-text",
+  settings: "cog",
+};
 
 export default function DoctorLayout() {
   const { data: session, isPending } = useSession();
@@ -30,67 +37,17 @@ export default function DoctorLayout() {
 
   return (
     <Tabs
-      screenOptions={{
-        headerShown: false,
-        tabBarActiveTintColor: colors.doctor,
-        tabBarInactiveTintColor: colors.textMuted,
-        tabBarStyle: {
-          height: 76,
-          paddingTop: 8,
-          paddingBottom: 12,
-          borderTopColor: colors.border,
-          backgroundColor: colors.card,
-        },
-        tabBarLabelStyle: { fontSize: 11, fontWeight: "600" },
-      }}
+      screenOptions={{ headerShown: false }}
+      tabBar={(props) => <GlassTabBar {...props} variant="doctor" icons={ICONS} />}
     >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: "Clinic",
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="view-dashboard-outline" color={color} size={size} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="appointments"
-        options={{
-          title: "Visits",
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="calendar-clock" color={color} size={size} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="patients"
-        options={{
-          title: "Patients",
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="account-group-outline" color={color} size={size} />
-          ),
-        }}
-      />
+      <Tabs.Screen name="index" options={{ title: "Clinic" }} />
+      <Tabs.Screen name="appointments" options={{ title: "Visits" }} />
+      <Tabs.Screen name="patients" options={{ title: "Patients" }} />
       <Tabs.Screen
         name="messages"
-        options={{
-          title: "Messages",
-          tabBarBadge: unread > 0 ? unread : undefined,
-          tabBarBadgeStyle: { backgroundColor: colors.danger, fontSize: 10 },
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="chat-outline" color={color} size={size} />
-          ),
-        }}
+        options={{ title: "Chat", tabBarBadge: unread > 0 ? unread : undefined }}
       />
-      <Tabs.Screen
-        name="settings"
-        options={{
-          title: "Settings",
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="cog-outline" color={color} size={size} />
-          ),
-        }}
-      />
+      <Tabs.Screen name="settings" options={{ title: "Settings" }} />
       <Tabs.Screen name="refill-requests" options={{ href: null }} />
       <Tabs.Screen name="work-queue" options={{ href: null }} />
       <Tabs.Screen name="messages/[id]" options={{ href: null }} />

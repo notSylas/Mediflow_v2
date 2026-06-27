@@ -1,238 +1,475 @@
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StatusBar } from "expo-status-bar";
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { HeroHeader, auroraHeaderStyles } from "@/components/aurora-header";
+import { FadeInView, PressableScale } from "@/components/motion";
+import { Button, Card, ErrorState, Loading, Muted, SectionHeader } from "@/components/ui";
 import {
-  BackHeader,
-  Body,
-  Button,
-  Card,
-  ErrorState,
-  Loading,
-  Muted,
-  Screen,
-  StatusBadge,
-} from "@/components/ui";
+  DayRail,
+  ExceptionSheet,
+  HoursEditorSheet,
+  type ExceptionPayload,
+} from "@/components/schedule-editor";
 import { apiFetch } from "@/lib/api";
-import { formatDate, formatTime } from "@/lib/format";
-import { colors, fonts, radius } from "@/lib/theme";
+import { formatDate } from "@/lib/format";
+import { colors, fonts, radius, space } from "@/lib/theme";
+import {
+  WEEKDAY_LABELS,
+  apptMinutes,
+  bookableSlotsNext7Days,
+  rulesToWindows,
+  toHHMM,
+  type Window,
+} from "@/lib/availability";
 import type {
   AvailabilityOverride,
   AvailabilityRule,
   DoctorAppointmentRow,
+  DoctorProfile,
 } from "@/lib/types";
 
-interface Response {
+interface ScheduleResponse {
   rules: AvailabilityRule[];
   overrides: AvailabilityOverride[];
   appointments: DoctorAppointmentRow[];
   timezone: string;
 }
 
-const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+// Monday-first week order.
+const WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0];
+
+const TEMPLATES: Array<{ key: string; title: string; sub: string; days: number[]; windows: Window[] }> = [
+  {
+    key: "weekday",
+    title: "Weekday clinic",
+    sub: "Mon–Fri · 9 AM – 5 PM",
+    days: [1, 2, 3, 4, 5],
+    windows: [{ startMin: 540, endMin: 1020 }],
+  },
+  {
+    key: "split",
+    title: "Split shift",
+    sub: "Mon–Fri · 9–1 & 5–8",
+    days: [1, 2, 3, 4, 5],
+    windows: [
+      { startMin: 540, endMin: 780 },
+      { startMin: 1020, endMin: 1200 },
+    ],
+  },
+  {
+    key: "mornings",
+    title: "Mornings only",
+    sub: "Mon–Sat · 9 AM – 12 PM",
+    days: [1, 2, 3, 4, 5, 6],
+    windows: [{ startMin: 540, endMin: 720 }],
+  },
+];
 
 export default function DoctorSchedule() {
-  const [week, setWeek] = useState(0);
+  const client = useQueryClient();
   const query = useQuery({
     queryKey: ["doctor", "schedule"],
-    queryFn: () => apiFetch<Response>("/api/v1/doctor/schedule"),
+    queryFn: () => apiFetch<ScheduleResponse>("/api/v1/doctor/schedule"),
   });
-  const days = useMemo(() => {
-    const today = new Date();
-    const monday = new Date(today);
-    monday.setDate(today.getDate() - ((today.getDay() + 6) % 7) + week * 7);
-    monday.setHours(0, 0, 0, 0);
-    return Array.from({ length: 7 }, (_, index) => {
-      const date = new Date(monday);
-      date.setDate(monday.getDate() + index);
-      const key = date.toISOString().slice(0, 10);
-      const weekday = date.getDay();
-      const overrides = query.data?.overrides.filter((item) => item.date === key) ?? [];
-      const blocked = overrides.some((item) => item.kind === "blocked");
-      const rules = blocked
-        ? []
-        : query.data?.rules.filter((item) => item.weekday === weekday) ?? [];
-      const appointments =
-        query.data?.appointments
-          .filter(
-            ({ appointment }) =>
-              new Date(appointment.startsAt).toDateString() === date.toDateString() &&
-              ["confirmed", "completed"].includes(appointment.status)
+  const profileQuery = useQuery({
+    queryKey: ["doctor", "profile"],
+    queryFn: () => apiFetch<DoctorProfile>("/api/doctor/profile"),
+  });
+  const slotMinutes = profileQuery.data?.slotMinutes ?? 20;
+
+  const [editorDay, setEditorDay] = useState<number | null>(null);
+  const [exceptionMode, setExceptionMode] = useState<"off" | "extra" | null>(null);
+  const [now] = useState(() => Date.now());
+
+  const rules = useMemo(() => query.data?.rules ?? [], [query.data]);
+  const overrides = useMemo(() => query.data?.overrides ?? [], [query.data]);
+  const appointments = useMemo(() => query.data?.appointments ?? [], [query.data]);
+
+  const refresh = () => {
+    void query.refetch();
+    void client.invalidateQueries({ queryKey: ["doctor", "home"] });
+  };
+
+  const applyHours = useMutation({
+    mutationFn: async ({ days, windows }: { days: number[]; windows: Window[] }) => {
+      for (const day of days) {
+        const existing = rules.filter((r) => r.weekday === day);
+        await Promise.all(
+          existing.map((r) =>
+            apiFetch(`/api/doctor/availability/rules/${r.id}`, { method: "DELETE" })
           )
-          .sort(
-            (a, b) =>
-              new Date(a.appointment.startsAt).getTime() -
-              new Date(b.appointment.startsAt).getTime()
-          ) ?? [];
-      return { date, key, blocked, rules, overrides, appointments };
-    });
-  }, [query.data, week]);
-  const health = useMemo(() => {
-    const availabilityDays = days.filter(
-      (day) => !day.blocked && (day.rules.length > 0 || day.overrides.some((o) => o.kind === "extra"))
-    ).length;
-    const blockedDays = days.filter((day) => day.blocked).length;
-    const bookedVisits = days.reduce((sum, day) => sum + day.appointments.length, 0);
-    if (!query.data?.rules.length) {
-      return {
-        tone: "danger" as const,
-        title: "Patients cannot book yet",
-        message: "Add weekly availability so patients can reserve paid slots.",
-        availabilityDays,
-        blockedDays,
-        bookedVisits,
-      };
-    }
-    if (availabilityDays === 0) {
-      return {
-        tone: "warning" as const,
-        title: "No available clinic days this week",
-        message: "This week is fully blocked or has no active windows.",
-        availabilityDays,
-        blockedDays,
-        bookedVisits,
-      };
-    }
-    if (availabilityDays <= 2) {
-      return {
-        tone: "warning" as const,
-        title: "Limited availability",
-        message: "Only a few days are open. Consider adding slots if demand is high.",
-        availabilityDays,
-        blockedDays,
-        bookedVisits,
-      };
-    }
-    return {
-      tone: "doctor" as const,
-      title: "Availability looks healthy",
-      message: "Patients have multiple booking windows this week.",
-      availabilityDays,
-      blockedDays,
-      bookedVisits,
-    };
-  }, [days, query.data?.rules.length]);
+        );
+        await Promise.all(
+          windows.map((w) =>
+            apiFetch("/api/doctor/availability/rules", {
+              method: "POST",
+              body: JSON.stringify({
+                weekday: day,
+                startTime: toHHMM(w.startMin),
+                endTime: toHHMM(w.endMin),
+              }),
+            })
+          )
+        );
+      }
+    },
+    onSuccess: () => {
+      setEditorDay(null);
+      refresh();
+    },
+  });
 
-  if (query.isLoading) return <Loading />;
-  return (
-    <Screen refreshing={query.isRefetching} onRefresh={() => query.refetch()}>
-      <BackHeader
-        title="Clinic schedule"
-        subtitle={`Timezone: ${query.data?.timezone ?? "Asia/Kolkata"}`}
-        onBack={() => router.back()}
-      />
-      <View style={styles.weekNav}>
-        <Button label="Previous" compact tone="secondary" onPress={() => setWeek((value) => value - 1)} />
-        <Button label="This week" compact tone="ghost" onPress={() => setWeek(0)} />
-        <Button label="Next" compact tone="secondary" onPress={() => setWeek((value) => value + 1)} />
-      </View>
-      <Card tone={health.tone === "danger" ? "danger" : health.tone === "warning" ? "warning" : "doctor"}>
-        <View style={styles.healthRow}>
-          <View>
-            <Body strong>{health.title}</Body>
-            <Muted>{health.message}</Muted>
-          </View>
-        </View>
-        <View style={styles.healthStats}>
-          <HealthStat label="Open days" value={health.availabilityDays} />
-          <HealthStat label="Blocked" value={health.blockedDays} />
-          <HealthStat label="Booked" value={health.bookedVisits} />
-        </View>
-      </Card>
-      {query.error ? <ErrorState message={query.error.message} /> : null}
-      {days.map((day) => (
-        <Card key={day.key} tone={day.blocked ? "danger" : "default"}>
-          <View style={styles.between}>
-            <View>
-              <Body strong>{DAY_NAMES[day.date.getDay()]}</Body>
-              <Muted>{formatDate(day.date)}</Muted>
-            </View>
-            {day.blocked ? <StatusBadge status="cancelled" /> : null}
-          </View>
-          {!day.blocked && day.rules.length === 0 ? <Muted>Not available</Muted> : null}
-          {day.rules.map((rule) => (
-            <View key={rule.id} style={styles.window}>
-              <Body strong>
-                {rule.startTime.slice(0, 5)} – {rule.endTime.slice(0, 5)}
-              </Body>
-            </View>
-          ))}
-          {day.overrides
-            .filter((item) => item.kind === "extra")
-            .map((item) => (
-              <View key={item.id} style={[styles.window, { backgroundColor: colors.doctorBg }]}>
-                <Body strong>
-                  Extra: {item.startTime?.slice(0, 5)} – {item.endTime?.slice(0, 5)}
-                </Body>
-              </View>
-            ))}
-          {day.appointments.map((row) => (
-            <Pressable
-              key={row.appointment.id}
-              style={styles.appointment}
-              onPress={() =>
-                router.push({
-                  pathname: "/(doctor)/encounter/[id]",
-                  params: { id: row.appointment.id },
-                })
-              }
-            >
-              <Body strong>{formatTime(row.appointment.startsAt)}</Body>
-              <Muted>{row.patient.name || row.patient.email}</Muted>
-              <StatusBadge status={row.appointment.status} />
-            </Pressable>
-          ))}
-        </Card>
-      ))}
-      <Button
-        label="Edit availability"
-        onPress={() => router.replace("/(doctor)/settings")}
-      />
-    </Screen>
+  const addOverride = useMutation({
+    mutationFn: (payload: ExceptionPayload) =>
+      apiFetch("/api/doctor/availability/overrides", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+    onSuccess: () => {
+      setExceptionMode(null);
+      refresh();
+    },
+  });
+
+  const deleteOverride = useMutation({
+    mutationFn: (id: string) =>
+      apiFetch(`/api/doctor/availability/overrides/${id}`, { method: "DELETE" }),
+    onSuccess: refresh,
+  });
+
+  const slotsLine = useMemo(
+    () => bookableSlotsNext7Days(rules, overrides, appointments, slotMinutes, new Date(now)),
+    [rules, overrides, appointments, slotMinutes, now]
   );
-}
 
-function HealthStat({ label, value }: { label: string; value: number }) {
+  // Booked-visit dots per weekday over the next 7 days.
+  const bookedByWeekday = useMemo(() => {
+    const map: Record<number, number[]> = {};
+    const horizon = now + 7 * 86400_000;
+    for (const row of appointments) {
+      if (!["confirmed", "pending_payment"].includes(row.appointment.status)) continue;
+      const t = new Date(row.appointment.startsAt).getTime();
+      if (t < now || t > horizon) continue;
+      const wd = new Date(row.appointment.startsAt).getDay();
+      (map[wd] ??= []).push(apptMinutes(row));
+    }
+    return map;
+  }, [appointments, now]);
+
+  const todayKey = useMemo(() => new Date(now).toISOString().slice(0, 10), [now]);
+  const upcomingOverrides = useMemo(
+    () =>
+      [...overrides].filter((o) => o.date >= todayKey).sort((a, b) => a.date.localeCompare(b.date)),
+    [overrides, todayKey]
+  );
+
+  if (query.isLoading || profileQuery.isLoading) return <Loading label="Opening your schedule…" />;
+
+  const hasRules = rules.length > 0;
+
   return (
-    <View style={styles.healthStat}>
-      <Text style={styles.healthValue}>{value}</Text>
-      <Text style={styles.healthLabel}>{label}</Text>
+    <View style={styles.root}>
+      <StatusBar style="light" />
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        showsVerticalScrollIndicator={false}
+        automaticallyAdjustContentInsets={false}
+        contentInsetAdjustmentBehavior="never"
+        refreshControl={
+          <RefreshControl refreshing={query.isRefetching} onRefresh={refresh} tintColor={colors.doctor} />
+        }
+      >
+        <HeroHeader
+          variant="doctor"
+          eyebrow={`CLINIC SCHEDULE · ${query.data?.timezone ?? "Asia/Kolkata"}`}
+          title="Your week"
+          leading={
+            <Pressable
+              accessibilityLabel="Go back"
+              accessibilityRole="button"
+              style={auroraHeaderStyles.glassAction}
+              onPress={() => router.back()}
+            >
+              <MaterialCommunityIcons name="arrow-left" size={22} color="#fff" />
+            </Pressable>
+          }
+        >
+          <View style={styles.heroChip}>
+            <MaterialCommunityIcons name="calendar-check" size={15} color="#fff" />
+            <Text style={styles.heroChipText}>
+              ~{slotsLine} bookable slot{slotsLine === 1 ? "" : "s"} · next 7 days
+            </Text>
+          </View>
+        </HeroHeader>
+
+        <View style={styles.body}>
+          {query.error ? <ErrorState message={query.error.message} onRetry={refresh} /> : null}
+
+          {!hasRules ? (
+            <FadeInView>
+              <SectionHeader title="Set up your week" />
+              <Card>
+                <Muted>Pick a starting point — you can fine-tune any day afterwards.</Muted>
+                <View style={styles.templateList}>
+                  {TEMPLATES.map((t) => (
+                    <PressableScale
+                      key={t.key}
+                      onPress={() => applyHours.mutate({ days: t.days, windows: t.windows })}
+                      style={styles.template}
+                    >
+                      <View style={styles.templateIcon}>
+                        <MaterialCommunityIcons name="calendar-text" size={20} color={colors.doctor} />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.templateTitle}>{t.title}</Text>
+                        <Text style={styles.templateSub}>{t.sub}</Text>
+                      </View>
+                      <MaterialCommunityIcons name="chevron-right" size={20} color={colors.textFaint} />
+                    </PressableScale>
+                  ))}
+                </View>
+                <Button
+                  label="Start from scratch"
+                  tone="secondary"
+                  icon="plus"
+                  onPress={() => setEditorDay(1)}
+                />
+              </Card>
+            </FadeInView>
+          ) : (
+            <FadeInView>
+              <SectionHeader title="Weekly pattern" />
+              <Card style={{ gap: 0 }}>
+                {WEEK_ORDER.map((wd, i) => {
+                  const windows = rulesToWindows(rules, wd);
+                  return (
+                    <PressableScale
+                      key={wd}
+                      haptic="light"
+                      scaleTo={0.99}
+                      onPress={() => setEditorDay(wd)}
+                      style={[styles.dayRow, i > 0 && styles.dayRowBorder]}
+                    >
+                      <Text style={styles.dayName}>{WEEKDAY_LABELS[wd]}</Text>
+                      <View style={{ flex: 1, gap: 4 }}>
+                        <DayRail
+                          windows={windows}
+                          bookedMinutes={bookedByWeekday[wd]}
+                          height={30}
+                        />
+                        {windows.length === 0 ? (
+                          <Text style={styles.closed}>Closed</Text>
+                        ) : null}
+                      </View>
+                      <MaterialCommunityIcons name="pencil-outline" size={17} color={colors.textFaint} />
+                    </PressableScale>
+                  );
+                })}
+              </Card>
+              <View style={styles.legend}>
+                <View style={styles.legendItem}>
+                  <View style={styles.legendBar} />
+                  <Text style={styles.legendText}>Available</Text>
+                </View>
+                <View style={styles.legendItem}>
+                  <View style={styles.legendDot} />
+                  <Text style={styles.legendText}>Booked visit</Text>
+                </View>
+              </View>
+              <View style={styles.actionRow}>
+                <View style={{ flex: 1 }}>
+                  <Button
+                    label="Time off"
+                    tone="secondary"
+                    icon="calendar-remove-outline"
+                    onPress={() => setExceptionMode("off")}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Button label="Add hours" icon="plus" onPress={() => setEditorDay(1)} />
+                </View>
+              </View>
+            </FadeInView>
+          )}
+
+          {hasRules ? (
+            <FadeInView index={1}>
+              <SectionHeader
+                title="Time off & extra clinics"
+                action={
+                  <Pressable accessibilityRole="button" onPress={() => setExceptionMode("extra")}>
+                    <Text style={styles.link}>＋ One-off clinic</Text>
+                  </Pressable>
+                }
+              />
+              {upcomingOverrides.length === 0 ? (
+                <Card>
+                  <Muted>No exceptions coming up. Your weekly pattern applies as-is.</Muted>
+                </Card>
+              ) : (
+                <Card style={{ gap: 0 }}>
+                  {upcomingOverrides.map((o, i) => (
+                    <View key={o.id} style={[styles.exceptionRow, i > 0 && styles.dayRowBorder]}>
+                      <View
+                        style={[
+                          styles.exceptionIcon,
+                          { backgroundColor: o.kind === "blocked" ? colors.dangerBg : colors.doctorBg },
+                        ]}
+                      >
+                        <MaterialCommunityIcons
+                          name={o.kind === "blocked" ? "calendar-remove" : "calendar-plus"}
+                          size={18}
+                          color={o.kind === "blocked" ? colors.danger : colors.doctor}
+                        />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.exceptionTitle}>{formatDate(`${o.date}T12:00:00`)}</Text>
+                        <Text style={styles.exceptionSub}>
+                          {o.kind === "blocked"
+                            ? o.startTime
+                              ? `Off ${o.startTime.slice(0, 5)}–${o.endTime?.slice(0, 5)}`
+                              : "Off all day"
+                            : `Extra ${o.startTime?.slice(0, 5)}–${o.endTime?.slice(0, 5)}`}
+                          {o.reason ? ` · ${o.reason}` : ""}
+                        </Text>
+                      </View>
+                      <Pressable
+                        accessibilityLabel="Remove"
+                        hitSlop={8}
+                        onPress={() => deleteOverride.mutate(o.id)}
+                      >
+                        <MaterialCommunityIcons name="close" size={18} color={colors.textMuted} />
+                      </Pressable>
+                    </View>
+                  ))}
+                </Card>
+              )}
+            </FadeInView>
+          ) : null}
+
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => router.push("/(doctor)/settings")}
+            style={styles.slotNote}
+          >
+            <MaterialCommunityIcons name="timer-outline" size={17} color={colors.textMuted} />
+            <Text style={styles.slotNoteText}>
+              {slotMinutes}-minute consultations · change in Settings
+            </Text>
+            <MaterialCommunityIcons name="chevron-right" size={18} color={colors.textFaint} />
+          </Pressable>
+        </View>
+      </ScrollView>
+
+      <HoursEditorSheet
+        key={`hours-${editorDay}`}
+        visible={editorDay !== null}
+        slotMinutes={slotMinutes}
+        rules={rules}
+        appointments={appointments}
+        initialWeekday={editorDay ?? 1}
+        initialWindows={editorDay !== null ? rulesToWindows(rules, editorDay) : []}
+        onClose={() => setEditorDay(null)}
+        onApply={(days, windows) => applyHours.mutate({ days, windows })}
+      />
+      <ExceptionSheet
+        key={`exc-${exceptionMode}`}
+        visible={exceptionMode !== null}
+        mode={exceptionMode ?? "off"}
+        appointments={appointments}
+        onClose={() => setExceptionMode(null)}
+        onApply={(payload) => addOverride.mutate(payload)}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  weekNav: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  between: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: 10,
+  root: { flex: 1, backgroundColor: colors.bg },
+  scroll: { paddingBottom: 40 },
+  body: {
+    width: "100%",
+    maxWidth: 640,
+    alignSelf: "center",
+    paddingHorizontal: space.md + 2,
+    paddingTop: 16,
+    gap: 16,
   },
-  window: {
-    borderRadius: radius.md,
-    backgroundColor: colors.accent,
-    paddingHorizontal: 11,
+  heroChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+    alignSelf: "flex-start",
+    backgroundColor: colors.glass,
+    borderWidth: 1,
+    borderColor: colors.glassBorder,
+    borderRadius: radius.pill,
+    paddingHorizontal: 13,
     paddingVertical: 8,
   },
-  appointment: {
-    borderRadius: radius.md,
+  heroChipText: { color: "#fff", fontFamily: fonts.bodySemibold, fontSize: 12.5 },
+  templateList: { gap: 10, marginVertical: 4 },
+  template: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
     borderWidth: 1,
-    borderColor: colors.border,
-    padding: 11,
-    gap: 4,
-    backgroundColor: colors.bg,
+    borderColor: colors.cardBorder,
+    borderRadius: radius.lg,
+    padding: 13,
+    backgroundColor: colors.surface,
   },
-  healthRow: { flexDirection: "row", alignItems: "center", gap: 10 },
-  healthStats: { flexDirection: "row", gap: 9 },
-  healthStat: {
-    flex: 1,
+  templateIcon: {
+    width: 42,
+    height: 42,
     borderRadius: radius.md,
+    backgroundColor: colors.doctorBg,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  templateTitle: { fontFamily: fonts.heading, fontSize: 15, color: colors.text },
+  templateSub: { fontFamily: fonts.body, fontSize: 12.5, color: colors.textMuted, marginTop: 1 },
+  dayRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 12 },
+  dayRowBorder: { borderTopWidth: 1, borderTopColor: colors.hairline },
+  dayName: { width: 34, fontFamily: fonts.bodySemibold, fontSize: 13, color: colors.text },
+  closed: { fontFamily: fonts.body, fontSize: 11.5, color: colors.textFaint },
+  legend: { flexDirection: "row", gap: 20, paddingHorizontal: 4, marginTop: -2 },
+  legendItem: { flexDirection: "row", alignItems: "center", gap: 8 },
+  legendBar: { width: 22, height: 13, borderRadius: 4, backgroundColor: colors.doctor },
+  legendDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: "#fff",
+    borderWidth: 1.5,
+    borderColor: colors.doctorDark,
+  },
+  legendText: { fontFamily: fonts.bodyMedium, fontSize: 13, color: colors.textMuted },
+  actionRow: { flexDirection: "row", gap: 10 },
+  link: { color: colors.doctor, fontFamily: fonts.bodySemibold, fontSize: 13 },
+  exceptionRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 12 },
+  exceptionIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.md,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  exceptionTitle: { fontFamily: fonts.bodySemibold, fontSize: 14, color: colors.text },
+  exceptionSub: { fontFamily: fonts.body, fontSize: 12.5, color: colors.textMuted, marginTop: 1 },
+  slotNote: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
     backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: colors.border,
-    padding: 10,
+    borderColor: colors.cardBorder,
+    borderRadius: radius.md,
+    paddingHorizontal: 14,
+    paddingVertical: 13,
   },
-  healthValue: { color: colors.text, fontFamily: fonts.display, fontSize: 18 },
-  healthLabel: { color: colors.textMuted, fontFamily: fonts.body, fontSize: 11 },
+  slotNoteText: { flex: 1, fontFamily: fonts.bodyMedium, fontSize: 13, color: colors.textMuted },
 });

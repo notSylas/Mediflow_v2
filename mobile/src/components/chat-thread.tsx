@@ -10,7 +10,7 @@ import {
   Alert,
   Dimensions,
   FlatList,
-  KeyboardAvoidingView,
+  Keyboard,
   Modal,
   Platform,
   Pressable,
@@ -24,12 +24,13 @@ import { WebView } from "react-native-webview";
 import { LinearGradient } from "expo-linear-gradient";
 import { StatusBar } from "expo-status-bar";
 import { IconButton } from "@/components/ui";
+import { PressableScale } from "@/components/motion";
 import { ApiError, apiFetch, apiUpload } from "@/lib/api";
 import { API_URL, authClient } from "@/lib/auth";
 import { useChatSocket } from "@/lib/use-chat-socket";
 import { useToast } from "@/components/toast";
 import { formatBytes, formatTime } from "@/lib/format";
-import { colors, fonts, gradients, radius, shadow, space } from "@/lib/theme";
+import { colors, fonts, gradients, radius, shadow, shadowSoft, space } from "@/lib/theme";
 import type { ChatAttachment, ChatMessage, MessagesPage } from "@/lib/chat-types";
 
 export function ChatThread({
@@ -60,6 +61,10 @@ export function ChatThread({
     null
   );
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  // Exact keyboard height (px) from the OS — drives the composer lift directly
+  // instead of relying on KeyboardAvoidingView, which is unreliable on Android
+  // edge-to-edge.
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
   const listRef = useRef<FlatList<ChatMessage>>(null);
   const lastIdRef = useRef<string | null>(null);
 
@@ -112,6 +117,20 @@ export function ChatThread({
       requestAnimationFrame(() => listRef.current?.scrollToEnd({ animated: false }));
     }
   }, [messages]);
+
+  useEffect(() => {
+    const showEvent = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+    const hideEvent = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+    const show = Keyboard.addListener(showEvent, (e) => {
+      setKeyboardHeight(e.endCoordinates?.height ?? 0);
+      requestAnimationFrame(() => listRef.current?.scrollToEnd({ animated: true }));
+    });
+    const hide = Keyboard.addListener(hideEvent, () => setKeyboardHeight(0));
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
 
   const loadOlder = async () => {
     if (!cursor || loadingMore) return;
@@ -295,18 +314,22 @@ export function ChatThread({
 
   const headerGradient =
     currentRole === "doctor" ? gradients.doctor : gradients.patient;
-  // The gradient's darkest stop — backs the iOS shadow so it casts the rounded
-  // header shape rather than nothing (transparent views cast no shadow).
-  const headerShadowColor = currentRole === "doctor" ? "#403a9c" : "#045d56";
+  const tint = currentRole === "doctor" ? colors.doctor : colors.primary;
+  // When the keyboard lifts the composer (via KeyboardAvoidingView) we only
+  // want a small gap beneath it. With the keyboard down we reserve space for the
+  // floating tab bar plus the safe-area inset.
+  // Lift the composer exactly above the keyboard; when closed, reserve room for
+  // the floating tab bar + safe-area inset.
+  const composerBottomPadding =
+    keyboardHeight > 0
+      ? keyboardHeight + 10
+      : Math.max(10, insets.bottom) + FLOATING_TAB_BAR_RESERVE;
+  const headerShadowColor = colors.bg;
 
   return (
     <SafeAreaView style={styles.safe} edges={[]}>
       <StatusBar style="light" />
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 8 : 0}
-      >
+      <View style={{ flex: 1 }}>
         <View style={[styles.headerShadow, { backgroundColor: headerShadowColor }]}>
           <View style={styles.headerClip}>
             <LinearGradient
@@ -338,7 +361,7 @@ export function ChatThread({
 
         {loading ? (
           <View style={styles.center}>
-            <ActivityIndicator color={colors.primary} />
+            <ActivityIndicator color={tint} />
           </View>
         ) : messages.length === 0 ? (
           <View style={styles.center}>
@@ -358,6 +381,7 @@ export function ChatThread({
             contentContainerStyle={styles.listContent}
             keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}
             keyboardShouldPersistTaps="handled"
+            onScrollBeginDrag={Keyboard.dismiss}
             maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
             ListHeaderComponent={
               hasMore ? (
@@ -374,15 +398,24 @@ export function ChatThread({
                 </Pressable>
               ) : null
             }
-            renderItem={({ item }) => (
-              <Bubble
-                message={item}
-                mine={item.senderRole === currentRole}
-                onPreviewImage={setPreview}
-                onOpenFile={openFile}
-                downloadingId={downloadingId}
-              />
-            )}
+            renderItem={({ item, index }) => {
+              const previous = index > 0 ? messages[index - 1] : undefined;
+              return (
+                <View style={styles.messageGroup}>
+                  {shouldShowDateSeparator(item, previous) ? (
+                    <DateSeparator value={item.createdAt} />
+                  ) : null}
+                  <Bubble
+                    message={item}
+                    mine={item.senderRole === currentRole}
+                    onPreviewImage={setPreview}
+                    onOpenFile={openFile}
+                    downloadingId={downloadingId}
+                    accent={tint}
+                  />
+                </View>
+              );
+            }}
           />
         )}
 
@@ -390,10 +423,7 @@ export function ChatThread({
           style={[
             styles.composerWrap,
             {
-              paddingBottom:
-                Platform.OS === "ios"
-                  ? Math.max(8, insets.bottom)
-                  : Math.max(10, insets.bottom),
+              paddingBottom: composerBottomPadding,
             },
           ]}
         >
@@ -417,18 +447,19 @@ export function ChatThread({
             </View>
           ) : null}
           <View style={styles.composer}>
-            <Pressable
+            <PressableScale
               onPress={pickFile}
               disabled={uploading}
               accessibilityLabel="Attach a file"
-              style={({ pressed }) => [styles.attachBtn, pressed && { opacity: 0.6 }]}
+              scaleTo={0.94}
+              style={styles.attachBtn}
             >
               {uploading ? (
-                <ActivityIndicator color={colors.primary} size="small" />
+                <ActivityIndicator color={tint} size="small" />
               ) : (
                 <MaterialCommunityIcons name="paperclip" size={22} color={colors.text} />
               )}
-            </Pressable>
+            </PressableScale>
             <TextInput
               value={draft}
               onChangeText={setDraft}
@@ -438,14 +469,15 @@ export function ChatThread({
               textAlignVertical="top"
               style={styles.input}
             />
-            <Pressable
+            <PressableScale
               onPress={send}
               disabled={(!draft.trim() && !pendingFile) || sending}
               accessibilityLabel="Send"
-              style={({ pressed }) => [
+              scaleTo={0.94}
+              style={[
                 styles.sendBtn,
+                { backgroundColor: tint },
                 ((!draft.trim() && !pendingFile) || sending) && { opacity: 0.4 },
-                pressed && { opacity: 0.8 },
               ]}
             >
               {sending ? (
@@ -453,10 +485,10 @@ export function ChatThread({
               ) : (
                 <MaterialCommunityIcons name="send" size={20} color={colors.primaryFg} />
               )}
-            </Pressable>
+            </PressableScale>
           </View>
         </View>
-      </KeyboardAvoidingView>
+      </View>
 
       <Modal
         visible={preview !== null}
@@ -551,6 +583,8 @@ export function ChatThread({
   );
 }
 
+const FLOATING_TAB_BAR_RESERVE = 92;
+
 /** Header map for the cookie-protected attachment endpoint, or undefined. */
 function cookieHeader(): Record<string, string> | undefined {
   const cookie = authClient.getCookie();
@@ -567,18 +601,70 @@ function displayName(filename: string): string {
   }
 }
 
+function shouldShowDateSeparator(
+  message: ChatMessage,
+  previous: ChatMessage | undefined
+): boolean {
+  if (!previous) return true;
+  return !sameCalendarDay(message.createdAt, previous.createdAt);
+}
+
+function sameCalendarDay(left: string, right: string): boolean {
+  const leftDate = new Date(left);
+  const rightDate = new Date(right);
+  if (Number.isNaN(leftDate.getTime()) || Number.isNaN(rightDate.getTime())) {
+    return false;
+  }
+  return (
+    leftDate.getFullYear() === rightDate.getFullYear() &&
+    leftDate.getMonth() === rightDate.getMonth() &&
+    leftDate.getDate() === rightDate.getDate()
+  );
+}
+
+function formatChatDate(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Unknown date";
+
+  const today = new Date();
+  const dayStart = (input: Date) =>
+    new Date(input.getFullYear(), input.getMonth(), input.getDate()).getTime();
+  const diffDays = Math.round((dayStart(today) - dayStart(date)) / 86_400_000);
+  if (diffDays === 0) return "Today";
+  if (diffDays === 1) return "Yesterday";
+
+  return new Intl.DateTimeFormat(undefined, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    year: date.getFullYear() === today.getFullYear() ? undefined : "numeric",
+  }).format(date);
+}
+
+function DateSeparator({ value }: { value: string }) {
+  return (
+    <View style={styles.dateSeparator}>
+      <View style={styles.dateLine} />
+      <Text style={styles.dateText}>{formatChatDate(value)}</Text>
+      <View style={styles.dateLine} />
+    </View>
+  );
+}
+
 function Bubble({
   message,
   mine,
   onPreviewImage,
   onOpenFile,
   downloadingId,
+  accent,
 }: {
   message: ChatMessage;
   mine: boolean;
   onPreviewImage: (att: ChatAttachment) => void;
   onOpenFile: (att: ChatAttachment) => void;
   downloadingId: string | null;
+  accent: string;
 }) {
   const attachment = message.attachment;
   const isImage = attachment?.mimeType.startsWith("image/");
@@ -587,7 +673,12 @@ function Bubble({
 
   return (
     <View style={[styles.row, mine ? styles.rowMine : styles.rowTheirs]}>
-      <View style={[styles.bubble, mine ? styles.bubbleMine : styles.bubbleTheirs]}>
+      <View
+        style={[
+          styles.bubble,
+          mine ? [styles.bubbleMine, { backgroundColor: accent }] : styles.bubbleTheirs,
+        ]}
+      >
         {attachment ? (
           isImage ? (
             <Pressable
@@ -665,18 +756,11 @@ function Bubble({
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   headerShadow: {
-    borderBottomLeftRadius: radius.lg,
-    borderBottomRightRadius: radius.lg,
-    ...shadow,
-    shadowOpacity: 0.2,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.hairline,
     zIndex: 10,
   },
   headerClip: {
-    borderBottomLeftRadius: radius.lg,
-    borderBottomRightRadius: radius.lg,
     overflow: "hidden",
   },
   header: {
@@ -692,27 +776,43 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(255,255,255,0.18)",
+    backgroundColor: colors.glass,
+    borderWidth: 1,
+    borderColor: colors.glassBorder,
   },
   headerTitle: {
     fontFamily: fonts.heading,
     fontSize: 18,
     color: "#ffffff",
-    letterSpacing: -0.2,
+    letterSpacing: -0.3,
   },
   disclaimer: {
     fontFamily: fonts.body,
     fontSize: 11.5,
-    color: "rgba(255,255,255,0.85)",
+    color: "rgba(255,255,255,0.82)",
     lineHeight: 15,
     marginTop: 2,
   },
   center: { flex: 1, alignItems: "center", justifyContent: "center", gap: 10 },
   empty: { fontSize: 14, color: colors.textMuted },
   list: { flex: 1 },
-  listContent: { padding: space.md, gap: 8 },
+  listContent: { padding: space.md, paddingBottom: space.lg, gap: 8 },
   loadMore: { alignItems: "center", paddingVertical: 8, marginBottom: 4 },
-  loadMoreText: { fontSize: 13, color: colors.textMuted, fontWeight: "600" },
+  loadMoreText: { fontSize: 13, color: colors.textMuted, fontFamily: fonts.bodySemibold },
+  messageGroup: { gap: 8 },
+  dateSeparator: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginVertical: 6,
+  },
+  dateLine: { flex: 1, height: 1, backgroundColor: colors.border },
+  dateText: {
+    fontFamily: fonts.bodySemibold,
+    fontSize: 11,
+    color: colors.textMuted,
+    letterSpacing: 0.2,
+  },
   row: { flexDirection: "row" },
   rowMine: { justifyContent: "flex-end" },
   rowTheirs: { justifyContent: "flex-start" },
@@ -722,6 +822,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     gap: 4,
+    ...shadow,
+    shadowOpacity: 0.07,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
   },
   bubbleMine: { backgroundColor: colors.primary, borderBottomRightRadius: 4 },
   bubbleTheirs: {
@@ -761,7 +866,7 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingHorizontal: space.md,
   },
-  previewName: { flex: 1, color: "#fff", fontSize: 14, fontWeight: "600" },
+  previewName: { flex: 1, color: "#fff", fontSize: 14, fontFamily: fonts.bodySemibold },
   previewAction: {
     width: 40,
     height: 40,
@@ -790,7 +895,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bg,
   },
   docBody: { flex: 1, gap: 2 },
-  docName: { fontSize: 14, fontWeight: "600", color: colors.text, lineHeight: 19 },
+  docName: { fontSize: 14, fontFamily: fonts.bodySemibold, color: colors.text, lineHeight: 19 },
   docSub: { fontSize: 11, color: colors.textMuted },
   docAction: {
     width: 28,
@@ -809,7 +914,7 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
     backgroundColor: colors.card,
   },
-  pdfTitle: { flex: 1, fontSize: 15, fontWeight: "700", color: colors.text },
+  pdfTitle: { flex: 1, fontSize: 15, fontFamily: fonts.bodySemibold, color: colors.text },
   pdfWeb: { flex: 1, backgroundColor: colors.bg },
   pdfLoading: {
     ...StyleSheet.absoluteFillObject,
@@ -818,11 +923,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bg,
   },
   composerWrap: {
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    backgroundColor: colors.card,
-    paddingHorizontal: space.sm,
-    paddingTop: 8,
+    backgroundColor: "rgba(244,247,247,0.96)",
+    paddingHorizontal: space.md,
+    paddingTop: 10,
     gap: 8,
   },
   uploadError: { fontSize: 12, color: colors.danger, paddingHorizontal: 4 },
@@ -830,40 +933,62 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    backgroundColor: colors.bg,
-    borderRadius: radius.md,
-    paddingHorizontal: 10,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+    paddingHorizontal: 12,
     paddingVertical: 8,
+    ...shadowSoft,
   },
   pendingName: { flex: 1, fontSize: 13, color: colors.text },
-  composer: { flexDirection: "row", alignItems: "flex-end", gap: 8 },
+  composer: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    gap: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.xl,
+    backgroundColor: colors.card,
+    padding: 8,
+    ...shadow,
+    shadowOpacity: 0.09,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 7 },
+    elevation: 4,
+  },
   attachBtn: {
     width: 42,
     height: 42,
-    borderRadius: radius.md,
+    borderRadius: radius.pill,
     alignItems: "center",
     justifyContent: "center",
+    backgroundColor: colors.accent,
+    borderWidth: 1,
+    borderColor: "#c4e9e3",
   },
   input: {
     flex: 1,
     minHeight: 42,
     maxHeight: 120,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    paddingHorizontal: 14,
+    borderWidth: 0,
+    borderRadius: radius.xl,
+    paddingHorizontal: 12,
     paddingTop: Platform.OS === "ios" ? 11 : 8,
     paddingBottom: Platform.OS === "ios" ? 11 : 8,
     fontSize: 15,
+    lineHeight: 21,
     color: colors.text,
-    backgroundColor: colors.bg,
+    backgroundColor: colors.surface,
   },
   sendBtn: {
     width: 42,
     height: 42,
-    borderRadius: radius.md,
+    borderRadius: radius.pill,
     backgroundColor: colors.primary,
     alignItems: "center",
     justifyContent: "center",
+    ...shadowSoft,
+    shadowOpacity: 0.12,
   },
 });

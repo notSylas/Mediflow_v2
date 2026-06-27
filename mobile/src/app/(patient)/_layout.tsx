@@ -1,11 +1,18 @@
-import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Redirect, Tabs } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
+import { GlassTabBar, type TabIconMap } from "@/components/glass-tab-bar";
 import { Loading } from "@/components/ui";
 import { useSession } from "@/lib/auth";
 import { apiFetch } from "@/lib/api";
-import { colors } from "@/lib/theme";
 import type { Conversation } from "@/lib/chat-types";
+
+const ICONS: TabIconMap = {
+  index: "home-variant",
+  appointments: "calendar-check",
+  prescriptions: "pill",
+  messages: "message-text",
+  profile: "account",
+};
 
 export default function PatientLayout() {
   const { data: session, isPending } = useSession();
@@ -26,76 +33,21 @@ export default function PatientLayout() {
 
   return (
     <Tabs
-      screenOptions={{
-        headerShown: false,
-        tabBarHideOnKeyboard: true,
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.textMuted,
-        tabBarStyle: {
-          height: 76,
-          paddingTop: 8,
-          paddingBottom: 12,
-          borderTopColor: colors.border,
-          backgroundColor: colors.card,
-        },
-        tabBarLabelStyle: { fontSize: 10, fontWeight: "600" },
-      }}
+      screenOptions={{ headerShown: false }}
+      tabBar={(props) => <GlassTabBar {...props} variant="patient" icons={ICONS} />}
     >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: "Home",
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="home-heart" color={color} size={size} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="appointments"
-        options={{
-          title: "Visits",
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="calendar-check" color={color} size={size} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="prescriptions"
-        options={{
-          title: "Rx",
-          tabBarAccessibilityLabel: "Prescriptions",
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="pill" color={color} size={size} />
-          ),
-        }}
-      />
+      <Tabs.Screen name="index" options={{ title: "Home" }} />
+      <Tabs.Screen name="appointments" options={{ title: "Visits" }} />
+      <Tabs.Screen name="prescriptions" options={{ title: "Rx" }} />
       <Tabs.Screen
         name="messages"
-        options={{
-          title: "Messages",
-          tabBarBadge: unread > 0 ? unread : undefined,
-          tabBarBadgeStyle: { backgroundColor: colors.danger, fontSize: 10 },
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="chat-outline" color={color} size={size} />
-          ),
-        }}
+        options={{ title: "Chat", tabBarBadge: unread > 0 ? unread : undefined }}
       />
-      <Tabs.Screen
-        name="profile"
-        options={{
-          title: "Profile",
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="account-heart" color={color} size={size} />
-          ),
-        }}
-      />
+      <Tabs.Screen name="profile" options={{ title: "Profile" }} />
       <Tabs.Screen name="book/index" options={{ href: null }} />
       <Tabs.Screen name="appointments/[id]" options={{ href: null }} />
       <Tabs.Screen name="receipt/[id]" options={{ href: null }} />
-      <Tabs.Screen
-        name="settings"
-        options={{ href: null, tabBarStyle: { display: "none" } }}
-      />
+      <Tabs.Screen name="settings" options={{ href: null }} />
     </Tabs>
   );
 }

@@ -1,7 +1,7 @@
 import { router } from "expo-router";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { colors, radius } from "@/lib/theme";
+import { colors, fonts, radius } from "@/lib/theme";
 
 /** Terms / Privacy links for settings screens — keeps the legal pages reachable
  *  from inside the authenticated app. */
@@ -51,6 +51,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
   },
-  label: { flex: 1, fontSize: 15, color: colors.text, fontWeight: "500" },
+  label: { flex: 1, fontSize: 15, color: colors.text, fontFamily: fonts.bodyMedium },
   divider: { height: 1, backgroundColor: colors.border, marginLeft: 48 },
 });

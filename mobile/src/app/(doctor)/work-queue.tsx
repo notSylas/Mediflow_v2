@@ -77,7 +77,7 @@ export default function DoctorWorkQueue() {
           style={auroraHeaderStyles.headerAction}
           onPress={() => router.back()}
         >
-          <MaterialCommunityIcons name="arrow-left" size={22} color="#fff" />
+          <MaterialCommunityIcons name="arrow-left" size={22} color={colors.doctor} />
         </Pressable>
       }
       refreshing={query.isRefetching}

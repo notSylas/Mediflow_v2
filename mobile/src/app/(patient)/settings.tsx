@@ -99,7 +99,7 @@ export default function PatientSettings() {
           style={auroraHeaderStyles.headerAction}
           onPress={() => router.back()}
         >
-          <MaterialCommunityIcons name="arrow-left" size={22} color="#fff" />
+          <MaterialCommunityIcons name="arrow-left" size={22} color={colors.primary} />
         </Pressable>
       }
     >

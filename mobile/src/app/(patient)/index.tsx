@@ -13,7 +13,7 @@ import {
   Text,
   View,
 } from "react-native";
-import { AuroraHeader, auroraHeaderStyles } from "@/components/aurora-header";
+import { HeroHeader, auroraHeaderStyles } from "@/components/aurora-header";
 import { FadeInView, PressableScale } from "@/components/motion";
 import {
   Avatar,
@@ -22,6 +22,7 @@ import {
   Card,
   ErrorState,
   Loading,
+  Mono,
   Muted,
   ProgressBar,
   SectionHeader,
@@ -40,10 +41,10 @@ import type { Conversation } from "@/lib/chat-types";
 import type { ActiveMedication, PatientHomeData } from "@/lib/types";
 
 const SLOT_OF_DAY = [
-  { key: "morning", label: "Morning", icon: "weather-sunset-up" },
-  { key: "afternoon", label: "Afternoon", icon: "weather-sunny" },
-  { key: "evening", label: "Evening", icon: "weather-sunset-down" },
-  { key: "night", label: "Night", icon: "weather-night" },
+  { key: "morning", label: "Morning", icon: "weather-sunset-up", bg: "#fff1dd", fg: "#b9760f" },
+  { key: "afternoon", label: "Afternoon", icon: "weather-sunny", bg: "#fff1dd", fg: "#b9760f" },
+  { key: "evening", label: "Evening", icon: "weather-sunset-down", bg: "#eaf0ff", fg: "#2a4cc7" },
+  { key: "night", label: "Night", icon: "weather-night", bg: "#efe9fc", fg: "#6d3bd4" },
 ] as const;
 
 export default function PatientHome() {
@@ -176,6 +177,22 @@ export default function PatientHome() {
     });
   }
 
+  const kicker = next
+    ? "YOUR NEXT VISIT"
+    : isReturning
+      ? "READY FOR A FOLLOW-UP?"
+      : "CARE, WHEN YOU NEED IT";
+  const passTitle = next
+    ? formatDateTime(next.appointment.startsAt)
+    : isReturning
+      ? "Book a follow-up visit"
+      : "Book a private consultation";
+  const passMeta = next
+    ? `${doctorLabel} · ${countdown ?? relativeStart(next.appointment.startsAt)}`
+    : soonestSlot
+      ? `Next available: ${formatDateTime(soonestSlot)}`
+      : `${doctorLabel} · ${data.doctor?.slotMinutes ?? 20} minutes`;
+
   return (
     <View style={styles.root}>
       <StatusBar style="light" />
@@ -192,7 +209,7 @@ export default function PatientHome() {
           />
         }
       >
-        <AuroraHeader
+        <HeroHeader
           variant="patient"
           eyebrow={dateLabel}
           title={`${greeting}${firstName ? `, ${firstName}` : ""}`}
@@ -200,51 +217,44 @@ export default function PatientHome() {
             <Pressable
               accessibilityLabel="Open account settings"
               accessibilityRole="button"
-              style={auroraHeaderStyles.headerAction}
+              style={auroraHeaderStyles.glassAction}
               onPress={() => router.push("/(patient)/settings")}
             >
               <MaterialCommunityIcons name="cog-outline" size={22} color="#fff" />
             </Pressable>
           }
         >
-          <View style={styles.heroPanel}>
-            <View style={styles.heroCopy}>
-              <Text style={styles.heroKicker}>
-                {next
-                  ? "YOUR NEXT VISIT"
-                  : isReturning
-                    ? "READY FOR A FOLLOW-UP?"
-                    : "CARE, WHEN YOU NEED IT"}
-              </Text>
-              <Text style={styles.heroTitle}>
-                {next
-                  ? formatDateTime(next.appointment.startsAt)
-                  : isReturning
-                    ? "Book a follow-up visit"
-                    : "Book a private video consultation"}
-              </Text>
-              <Text style={styles.heroMeta}>
-                {next
-                  ? `${doctorLabel} · ${countdown ?? relativeStart(next.appointment.startsAt)}`
-                  : soonestSlot
-                    ? `Next available: ${formatDateTime(soonestSlot)}`
-                    : `${doctorLabel} · ${data.doctor?.slotMinutes ?? 20} minutes`}
-              </Text>
+          <View style={styles.pass}>
+            <Text style={styles.passKicker}>{kicker}</Text>
+            <Text style={styles.passTitle}>
+              {next ? <Mono style={styles.passTitleMono}>{passTitle}</Mono> : passTitle}
+            </Text>
+            <Text style={styles.passMeta}>{passMeta}</Text>
+            <View style={styles.passActions}>
+              <PressableScale
+                accessibilityRole="button"
+                style={styles.passCta}
+                onPress={openNext}
+              >
+                <MaterialCommunityIcons
+                  name={canJoin ? "video" : "arrow-right"}
+                  size={18}
+                  color={colors.primaryDark}
+                />
+                <Text style={styles.passCtaText}>{heroCta}</Text>
+              </PressableScale>
+              <PressableScale
+                accessibilityRole="button"
+                accessibilityLabel="Messages"
+                style={styles.passGhost}
+                onPress={() => router.push("/(patient)/messages")}
+              >
+                <MaterialCommunityIcons name="message-text-outline" size={20} color="#fff" />
+                {unread > 0 ? <View style={styles.passDot} /> : null}
+              </PressableScale>
             </View>
-            <PressableScale
-              accessibilityRole="button"
-              style={styles.heroButton}
-              onPress={openNext}
-            >
-              <Text style={styles.heroButtonText}>{heroCta}</Text>
-              <MaterialCommunityIcons
-                name={canJoin ? "video" : "arrow-right"}
-                size={18}
-                color={colors.primaryDark}
-              />
-            </PressableScale>
           </View>
-        </AuroraHeader>
+        </HeroHeader>
 
         <View style={styles.body}>
           {data.followUp ? (
@@ -288,7 +298,7 @@ export default function PatientHome() {
           ) : null}
 
           {reminders.length > 0 ? (
-            <FadeInView index={0}>
+            <FadeInView index={1}>
               <SectionHeader title="Needs your attention" />
               <View style={styles.stack}>
                 {reminders.map((item) => (
@@ -301,7 +311,7 @@ export default function PatientHome() {
           {data.activeMedications.some(
             (m) => m.morning || m.afternoon || m.evening || m.night
           ) ? (
-            <FadeInView index={0}>
+            <FadeInView index={2}>
               <SectionHeader
                 title="Medications today"
                 action={
@@ -320,7 +330,7 @@ export default function PatientHome() {
                   return (
                     <View key={slot.key}>
                       {i > 0 ? <View style={styles.medDivider} /> : null}
-                      <MedSlotRow icon={slot.icon} label={slot.label} meds={meds} />
+                      <MedSlotRow slot={slot} meds={meds} />
                     </View>
                   );
                 })}
@@ -328,7 +338,7 @@ export default function PatientHome() {
             </FadeInView>
           ) : null}
 
-          <FadeInView index={0}>
+          <FadeInView index={3}>
             <SectionHeader title="Your care team" />
             <Card>
               <View style={styles.row}>
@@ -374,7 +384,12 @@ export default function PatientHome() {
                 </Text>
               ) : null}
               <View style={styles.doctorMeta}>
-                <Meta icon="cash" value={formatMoney(data.doctor?.feeInPaise)} label="per visit" />
+                <Meta
+                  icon="cash"
+                  value={formatMoney(data.doctor?.feeInPaise)}
+                  label="per visit"
+                  mono
+                />
                 <View style={styles.metaDivider} />
                 <Meta
                   icon="clock-outline"
@@ -385,36 +400,8 @@ export default function PatientHome() {
             </Card>
           </FadeInView>
 
-          {next?.appointment.status === "confirmed" ? (
-            <FadeInView index={1}>
-              <SectionHeader title="Get ready for your visit" />
-              <Card>
-                <PrepItem
-                  done={data.profileCompleteness === 100}
-                  label="Complete your medical profile"
-                  onPress={() => router.push("/(patient)/profile")}
-                />
-                <View style={styles.prepDivider} />
-                <PrepItem
-                  done={Boolean(next.report)}
-                  label="Upload a recent report (optional)"
-                  onPress={() =>
-                    router.push({
-                      pathname: "/(patient)/appointments/[id]",
-                      params: { id: next.appointment.id },
-                    })
-                  }
-                />
-                <View style={styles.prepDivider} />
-                <PrepItem label="Test your camera and microphone" />
-                <View style={styles.prepDivider} />
-                <PrepItem label="Find a quiet, well-lit space" />
-              </Card>
-            </FadeInView>
-          ) : null}
-
           {data.profileCompleteness < 100 ? (
-            <FadeInView index={2}>
+            <FadeInView index={4}>
               <SectionHeader title="Before your next visit" />
               <Card tone="accent">
                 <View style={[styles.row, styles.profilePrompt]}>
@@ -432,89 +419,13 @@ export default function PatientHome() {
                 </View>
                 <View style={styles.profileProgressRow}>
                   <Text style={styles.progressLabel}>Profile completion</Text>
-                  <Text style={styles.completion}>{data.profileCompleteness}%</Text>
+                  <Mono style={styles.completion}>{data.profileCompleteness}%</Mono>
                 </View>
                 <ProgressBar value={data.profileCompleteness} />
                 <Button
                   label="Continue profile"
                   tone="secondary"
                   onPress={() => router.push("/(patient)/profile")}
-                />
-              </Card>
-            </FadeInView>
-          ) : null}
-
-          {data.recentPrescriptions.length > 0 ? (
-            <FadeInView index={2}>
-              <SectionHeader
-                title="Recent prescriptions"
-                action={
-                  <Pressable
-                    accessibilityRole="button"
-                    onPress={() => router.push("/(patient)/prescriptions")}
-                  >
-                    <Text style={styles.sectionLink}>View all</Text>
-                  </Pressable>
-                }
-              />
-              <View style={styles.stack}>
-                {data.recentPrescriptions.slice(0, 2).map((row) => (
-                  <PressableScale
-                    key={row.prescription.id}
-                    accessibilityRole="button"
-                    onPress={() =>
-                      router.push({
-                        pathname: "/(patient)/appointments/[id]",
-                        params: { id: row.appointment.id },
-                      })
-                    }
-                  >
-                    <Card>
-                      <View style={styles.row}>
-                        <View style={styles.rxIcon}>
-                          <MaterialCommunityIcons name="pill" size={20} color={colors.doctor} />
-                        </View>
-                        <View style={styles.grow}>
-                          <Body strong>{row.prescription.diagnosis || "Consultation"}</Body>
-                          <Muted>
-                            {row.medicines.length} medicine
-                            {row.medicines.length === 1 ? "" : "s"}
-                            {row.prescription.issuedAt
-                              ? ` · ${formatDate(row.prescription.issuedAt)}`
-                              : ""}
-                          </Muted>
-                        </View>
-                        <MaterialCommunityIcons
-                          name="chevron-right"
-                          size={20}
-                          color={colors.textMuted}
-                        />
-                      </View>
-                    </Card>
-                  </PressableScale>
-                ))}
-              </View>
-            </FadeInView>
-          ) : completed === 0 && !next ? (
-            <FadeInView index={3}>
-              <SectionHeader title="How MediFlow works" />
-              <Card>
-                <CareStep
-                  icon="calendar-check-outline"
-                  title="Choose a time"
-                  message="Pick an available slot and pay securely."
-                />
-                <View style={styles.stepDivider} />
-                <CareStep
-                  icon="video-outline"
-                  title="Meet your doctor"
-                  message="Join the private video consultation from the app."
-                />
-                <View style={styles.stepDivider} />
-                <CareStep
-                  icon="file-document-check-outline"
-                  title="Keep your care record"
-                  message="Review visit details and issued prescriptions anytime."
                 />
               </Card>
             </FadeInView>
@@ -556,21 +467,19 @@ function countdownLabel(startsAt: string, now: number): string | null {
 }
 
 function MedSlotRow({
-  icon,
-  label,
+  slot,
   meds,
 }: {
-  icon: keyof typeof MaterialCommunityIcons.glyphMap;
-  label: string;
+  slot: (typeof SLOT_OF_DAY)[number];
   meds: ActiveMedication[];
 }) {
   return (
     <View style={styles.medSlot}>
-      <View style={styles.medSlotIcon}>
-        <MaterialCommunityIcons name={icon} size={18} color={colors.primary} />
+      <View style={[styles.medSlotIcon, { backgroundColor: slot.bg }]}>
+        <MaterialCommunityIcons name={slot.icon} size={18} color={slot.fg} />
       </View>
       <View style={{ flex: 1 }}>
-        <Text style={styles.medSlotLabel}>{label}</Text>
+        <Text style={styles.medSlotLabel}>{slot.label.toUpperCase()}</Text>
         {meds.map((m, i) => (
           <Text key={`${m.name}-${i}`} style={styles.medName}>
             {m.name}
@@ -618,39 +527,21 @@ function Meta({
   icon,
   value,
   label,
+  mono,
 }: {
   icon: keyof typeof MaterialCommunityIcons.glyphMap;
   value: string;
   label: string;
+  mono?: boolean;
 }) {
   return (
     <View style={styles.meta}>
       <MaterialCommunityIcons name={icon} size={18} color={colors.primary} />
       <View>
-        <Text style={styles.metaValue}>{value}</Text>
+        <Text style={[styles.metaValue, mono && { fontFamily: fonts.monoSemibold }]}>
+          {value}
+        </Text>
         <Text style={styles.metaLabel}>{label}</Text>
-      </View>
-    </View>
-  );
-}
-
-function CareStep({
-  icon,
-  title,
-  message,
-}: {
-  icon: keyof typeof MaterialCommunityIcons.glyphMap;
-  title: string;
-  message: string;
-}) {
-  return (
-    <View style={styles.step}>
-      <View style={styles.stepIcon}>
-        <MaterialCommunityIcons name={icon} size={20} color={colors.primary} />
-      </View>
-      <View style={styles.grow}>
-        <Body strong>{title}</Body>
-        <Muted>{message}</Muted>
       </View>
     </View>
   );
@@ -680,122 +571,101 @@ function ReminderRow({ item }: { item: ReminderItem }) {
             <Body strong>{item.title}</Body>
             <Muted>{item.message}</Muted>
           </View>
-          <MaterialCommunityIcons name="chevron-right" size={20} color={colors.textMuted} />
+          <MaterialCommunityIcons name="chevron-right" size={20} color={colors.textFaint} />
         </View>
       </Card>
     </PressableScale>
   );
 }
 
-function PrepItem({
-  label,
-  done,
-  onPress,
-}: {
-  label: string;
-  done?: boolean;
-  onPress?: () => void;
-}) {
-  const content = (
-    <View style={styles.prepRow}>
-      <MaterialCommunityIcons
-        name={done ? "check-circle" : "circle-outline"}
-        size={22}
-        color={done ? colors.success : colors.textMuted}
-      />
-      <Text style={[styles.prepLabel, done && styles.prepLabelDone]}>{label}</Text>
-      {onPress ? (
-        <MaterialCommunityIcons name="chevron-right" size={18} color={colors.textMuted} />
-      ) : null}
-    </View>
-  );
-  if (onPress) {
-    return (
-      <Pressable
-        accessibilityRole="button"
-        onPress={onPress}
-        style={({ pressed }) => pressed && { opacity: 0.6 }}
-      >
-        {content}
-      </Pressable>
-    );
-  }
-  return content;
-}
-
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
   fallback: { flex: 1, justifyContent: "center", padding: space.md },
-  scroll: { paddingBottom: 120 },
+  scroll: { paddingBottom: 126 },
   body: {
     width: "100%",
     maxWidth: 640,
     alignSelf: "center",
-    paddingHorizontal: space.md,
-    paddingTop: space.md,
-    gap: space.md,
+    paddingHorizontal: space.md + 2,
+    paddingTop: 18,
+    gap: 16,
   },
-  heroPanel: {
+  // Glass "wallet pass" on the gradient hero.
+  pass: {
     borderRadius: radius.xl,
+    backgroundColor: colors.glass,
+    borderWidth: 1,
+    borderColor: colors.glassBorder,
+    padding: 18,
+    gap: 5,
+  },
+  passKicker: {
+    color: "rgba(255,255,255,0.82)",
+    fontFamily: fonts.bodySemibold,
+    fontSize: 11,
+    letterSpacing: 1.4,
+  },
+  passTitle: {
+    color: "#fff",
+    fontFamily: fonts.heading,
+    fontSize: 21,
+    lineHeight: 27,
+    letterSpacing: -0.4,
+    marginTop: 6,
+  },
+  passTitleMono: {
+    color: "#fff",
+    fontFamily: fonts.monoSemibold,
+    fontSize: 20,
+  },
+  passMeta: {
+    color: "rgba(255,255,255,0.86)",
+    fontFamily: fonts.body,
+    fontSize: 13,
+    lineHeight: 19,
+    marginTop: 3,
+  },
+  passActions: { flexDirection: "row", gap: 10, marginTop: 14 },
+  passCta: {
+    flex: 1,
+    minHeight: 48,
+    borderRadius: radius.lg,
+    backgroundColor: "#fff",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  passCtaText: {
+    color: colors.primaryDark,
+    fontFamily: fonts.semibold,
+    fontSize: 15,
+    letterSpacing: -0.2,
+  },
+  passGhost: {
+    width: 48,
+    minHeight: 48,
+    borderRadius: radius.lg,
     backgroundColor: "rgba(255,255,255,0.16)",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.18)",
-    padding: 14,
-    gap: 13,
-  },
-  heroCopy: { gap: 3 },
-  heroKicker: {
-    color: "rgba(255,255,255,0.78)",
-    fontFamily: fonts.bodySemibold,
-    fontSize: 10,
-    letterSpacing: 1,
-  },
-  heroTitle: {
-    color: "#ffffff",
-    fontFamily: fonts.heading,
-    fontSize: 18,
-    lineHeight: 24,
-  },
-  heroMeta: {
-    color: "rgba(255,255,255,0.88)",
-    fontFamily: fonts.body,
-    fontSize: 12,
-    lineHeight: 18,
-  },
-  heroButton: {
-    minHeight: 44,
-    borderRadius: radius.md,
-    backgroundColor: "#ffffff",
-    paddingHorizontal: 14,
-    flexDirection: "row",
+    borderColor: colors.glassBorder,
     alignItems: "center",
-    justifyContent: "space-between",
+    justifyContent: "center",
   },
-  heroButtonText: {
-    color: colors.primaryDark,
-    fontFamily: fonts.bodySemibold,
-    fontSize: 14,
+  passDot: {
+    position: "absolute",
+    top: 11,
+    right: 12,
+    width: 9,
+    height: 9,
+    borderRadius: 5,
+    backgroundColor: colors.danger,
+    borderWidth: 1.5,
+    borderColor: "#fff",
   },
-  row: { flexDirection: "row", alignItems: "center", gap: 11 },
+  row: { flexDirection: "row", alignItems: "center", gap: 12 },
   grow: { flex: 1, gap: 2 },
-  between: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 10,
-  },
   nameRow: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 7 },
-  continuityBadge: {
-    borderRadius: radius.pill,
-    backgroundColor: colors.successBg,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-  },
-  continuityText: {
-    color: colors.success,
-    fontFamily: fonts.bodySemibold,
-    fontSize: 10,
-  },
   verifiedBadge: {
     flexDirection: "row",
     alignItems: "center",
@@ -806,12 +676,7 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
   },
   verifiedText: { color: colors.success, fontFamily: fonts.bodySemibold, fontSize: 10 },
-  doctorPhoto: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    backgroundColor: colors.accent,
-  },
+  doctorPhoto: { width: 48, height: 48, borderRadius: 24, backgroundColor: colors.accent },
   qualifications: {
     color: colors.textMuted,
     fontFamily: fonts.bodyMedium,
@@ -825,10 +690,10 @@ const styles = StyleSheet.create({
     gap: 5,
     borderRadius: radius.pill,
     backgroundColor: colors.accent,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingHorizontal: 11,
+    paddingVertical: 6,
   },
-  trustChipText: { color: colors.primaryDark, fontFamily: fonts.bodySemibold, fontSize: 11 },
+  trustChipText: { color: colors.accentFg, fontFamily: fonts.bodySemibold, fontSize: 11 },
   doctorBio: {
     color: colors.textMuted,
     fontFamily: fonts.body,
@@ -839,16 +704,16 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     borderRadius: radius.md,
-    backgroundColor: colors.bg,
-    padding: 12,
+    backgroundColor: colors.surfaceMuted,
+    padding: 14,
   },
-  meta: { flex: 1, flexDirection: "row", alignItems: "center", gap: 8 },
+  meta: { flex: 1, flexDirection: "row", alignItems: "center", gap: 9 },
   metaDivider: { width: 1, height: 34, backgroundColor: colors.border, marginHorizontal: 10 },
-  metaValue: { color: colors.text, fontFamily: fonts.bodySemibold, fontSize: 13 },
-  metaLabel: { color: colors.textMuted, fontFamily: fonts.body, fontSize: 10 },
+  metaValue: { color: colors.text, fontFamily: fonts.bodySemibold, fontSize: 14 },
+  metaLabel: { color: colors.textFaint, fontFamily: fonts.body, fontSize: 10.5, marginTop: 1 },
   checkIcon: {
-    width: 42,
-    height: 42,
+    width: 44,
+    height: 44,
     borderRadius: radius.md,
     backgroundColor: colors.card,
     alignItems: "center",
@@ -860,76 +725,39 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
   },
-  progressLabel: {
-    color: colors.textMuted,
-    fontFamily: fonts.bodySemibold,
-    fontSize: 11,
-  },
-  completion: {
-    color: colors.primaryDark,
-    fontFamily: fonts.heading,
-    fontSize: 13,
-  },
+  progressLabel: { color: colors.textMuted, fontFamily: fonts.bodySemibold, fontSize: 11.5 },
+  completion: { color: colors.primaryDark, fontFamily: fonts.monoSemibold, fontSize: 14 },
   sectionLink: { color: colors.primary, fontFamily: fonts.bodySemibold, fontSize: 13 },
   stack: { gap: 11 },
-  rxIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: radius.md,
-    backgroundColor: colors.doctorBg,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  step: { flexDirection: "row", alignItems: "center", gap: 12 },
-  stepIcon: {
+  reminderIcon: {
     width: 42,
     height: 42,
-    borderRadius: 21,
-    backgroundColor: colors.accent,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  stepDivider: {
-    height: 1,
-    backgroundColor: colors.border,
-    marginLeft: 54,
-    marginVertical: 2,
-  },
-  reminderIcon: {
-    width: 40,
-    height: 40,
     borderRadius: radius.md,
     alignItems: "center",
     justifyContent: "center",
   },
   followUpIcon: {
-    width: 40,
-    height: 40,
+    width: 42,
+    height: 42,
     borderRadius: radius.md,
     backgroundColor: colors.card,
     alignItems: "center",
     justifyContent: "center",
   },
-  prepDivider: { height: 1, backgroundColor: colors.border, marginLeft: 34 },
-  prepRow: { flexDirection: "row", alignItems: "center", gap: 11 },
-  prepLabel: { flex: 1, color: colors.text, fontFamily: fonts.body, fontSize: 14 },
-  prepLabelDone: { color: colors.textMuted, textDecorationLine: "line-through" },
-  medDivider: { height: 1, backgroundColor: colors.border, marginVertical: 10 },
-  medSlot: { flexDirection: "row", alignItems: "flex-start", gap: 11 },
+  medDivider: { height: 1, backgroundColor: colors.border, marginVertical: 11 },
+  medSlot: { flexDirection: "row", alignItems: "flex-start", gap: 12 },
   medSlotIcon: {
-    width: 34,
-    height: 34,
+    width: 36,
+    height: 36,
     borderRadius: radius.md,
-    backgroundColor: colors.accent,
     alignItems: "center",
     justifyContent: "center",
   },
   medSlotLabel: {
-    color: colors.textMuted,
+    color: colors.textFaint,
     fontFamily: fonts.bodySemibold,
-    fontSize: 11,
-    letterSpacing: 0.3,
-    textTransform: "uppercase",
+    fontSize: 10.5,
+    letterSpacing: 0.5,
     marginBottom: 3,
   },
   medName: { color: colors.text, fontFamily: fonts.bodyMedium, fontSize: 14, lineHeight: 21 },
@@ -938,11 +766,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 9,
     borderRadius: radius.md,
-    backgroundColor: colors.dangerBg,
+    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: "#f2caca",
-    paddingHorizontal: 13,
-    paddingVertical: 11,
+    borderColor: "#f3cfcf",
+    paddingHorizontal: 14,
+    paddingVertical: 12,
   },
-  emergencyText: { flex: 1, color: colors.danger, fontFamily: fonts.bodySemibold, fontSize: 12 },
+  emergencyText: { flex: 1, color: colors.danger, fontFamily: fonts.bodyMedium, fontSize: 12 },
 });

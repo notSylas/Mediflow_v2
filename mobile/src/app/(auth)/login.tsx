@@ -11,8 +11,9 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { LinearGradient } from "expo-linear-gradient";
 import { authClient } from "@/lib/auth";
-import { colors, fonts, space } from "@/lib/theme";
+import { colors, fonts, gradients, shadowGlow, space } from "@/lib/theme";
 import { Card, Field, Muted, PrimaryButton } from "@/components/ui";
 import { FadeInView } from "@/components/motion";
 
@@ -54,9 +55,14 @@ export default function Login() {
         >
           <FadeInView style={styles.inner}>
             <View style={styles.hero}>
-              <View style={styles.mark}>
+              <LinearGradient
+                colors={gradients.patient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.mark}
+              >
                 <MaterialCommunityIcons name="heart-pulse" size={33} color={colors.primaryFg} />
-              </View>
+              </LinearGradient>
               <Text style={styles.heroTitle}>Care, without the waiting room</Text>
               <Text style={styles.heroSubtitle}>
                 Book your doctor, join securely, and keep prescriptions in one private place.
@@ -120,12 +126,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   mark: {
-    width: 62,
-    height: 62,
-    borderRadius: 20,
-    backgroundColor: colors.primary,
+    width: 64,
+    height: 64,
+    borderRadius: 21,
     alignItems: "center",
     justifyContent: "center",
+    ...shadowGlow,
   },
   cardTitle: { fontSize: 18, fontFamily: fonts.heading, color: colors.text },
   legal: { flexDirection: "row", justifyContent: "center", gap: 10, paddingVertical: 6 },

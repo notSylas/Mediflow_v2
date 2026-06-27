@@ -4,8 +4,8 @@ import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { DoctorAppointmentCard } from "@/components/clinical";
-import { AuroraHeader, auroraHeaderStyles } from "@/components/aurora-header";
-import { CountUp, FadeInView, PressableScale } from "@/components/motion";
+import { HeroHeader, auroraHeaderStyles } from "@/components/aurora-header";
+import { CountUp, FadeInView } from "@/components/motion";
 import {
   Body,
   Button,
@@ -14,16 +14,14 @@ import {
   ErrorState,
   Loading,
   Muted,
-  ProgressBar,
   SectionHeader,
-  StatusBadge,
 } from "@/components/ui";
 import { apiFetch } from "@/lib/api";
 import { formatMoney, formatTime, joinWindowOpen, relativeStart } from "@/lib/format";
 import { useSession } from "@/lib/auth";
 import { colors, fonts, radius, space } from "@/lib/theme";
 import type { DoctorConversationRow } from "@/lib/chat-types";
-import type { DoctorAppointmentRow, DoctorHomeData } from "@/lib/types";
+import type { DoctorHomeData } from "@/lib/types";
 
 export default function DoctorHome() {
   const { data: session } = useSession();
@@ -78,23 +76,8 @@ export default function DoctorHome() {
       new Date(a.appointment.startsAt).getTime() -
       new Date(b.appointment.startsAt).getTime()
   )[0];
-  const sortedToday = [...today].sort(
-    (a, b) =>
-      new Date(a.appointment.startsAt).getTime() -
-      new Date(b.appointment.startsAt).getTime()
-  );
   const canJoinNext =
     next && joinWindowOpen(next.appointment.startsAt, next.appointment.endsAt);
-  const todayCompleted = today.filter(
-    ({ appointment }) => appointment.status === "completed"
-  ).length;
-  const completionRate = today.length ? Math.round((todayCompleted / today.length) * 100) : 0;
-  const pendingVideoVisits = upcoming.filter(
-    ({ appointment }) => appointment.mode === "video"
-  ).length;
-  const asyncConsults = appointments.filter(
-    ({ appointment }) => appointment.mode === "async"
-  ).length;
   const triageFlags = appointments.filter(
     ({ appointment }) =>
       appointment.triageFlaggedAt &&
@@ -191,42 +174,6 @@ export default function DoctorHome() {
     });
   }
 
-  const quickActions: Array<{
-    icon: keyof typeof MaterialCommunityIcons.glyphMap;
-    title: string;
-    message: string;
-    value?: number;
-    onPress: () => void;
-  }> = [
-    {
-      icon: "clipboard-pulse-outline",
-      title: "Queue",
-      message: workQueueTotal ? "Review work" : "Clear",
-      value: workQueueTotal,
-      onPress: () => router.push("/(doctor)/work-queue"),
-    },
-    {
-      icon: "calendar-clock",
-      title: "Visits",
-      message: `${today.length} today`,
-      value: today.length,
-      onPress: () => router.push("/(doctor)/appointments"),
-    },
-    {
-      icon: "chat-outline",
-      title: "Messages",
-      message: unread ? "Reply now" : "Inbox clear",
-      value: unread,
-      onPress: () => router.push("/(doctor)/messages"),
-    },
-    {
-      icon: "account-group-outline",
-      title: "Patients",
-      message: "History",
-      onPress: () => router.push("/(doctor)/patients"),
-    },
-  ];
-
   return (
     <View style={styles.root}>
       <StatusBar style="light" />
@@ -243,16 +190,22 @@ export default function DoctorHome() {
           />
         }
       >
-        <AuroraHeader
+        <HeroHeader
           variant="doctor"
           eyebrow="Your clinic at a glance"
-          title={`${timeGreeting()},\n${heroName}`}
+          title={`${timeGreeting()}, ${heroName}`}
           action={
             <Pressable
-              style={auroraHeaderStyles.headerAction}
+              accessibilityLabel="Open schedule"
+              accessibilityRole="button"
+              style={auroraHeaderStyles.glassAction}
               onPress={() => router.push("/(doctor)/schedule")}
             >
-              <MaterialCommunityIcons name="calendar-month-outline" size={22} color="#fff" />
+              <MaterialCommunityIcons
+                name="calendar-month-outline"
+                size={22}
+                color="#fff"
+              />
             </Pressable>
           }
         >
@@ -261,7 +214,7 @@ export default function DoctorHome() {
             <HeroStat label="Upcoming" value={upcoming.length} />
             <HeroStat label="Collected" text={formatMoney(revenueInPaise)} />
           </View>
-        </AuroraHeader>
+        </HeroHeader>
 
         <View style={styles.body}>
           {setupIncomplete ? (
@@ -361,56 +314,6 @@ export default function DoctorHome() {
           ) : null}
 
           <FadeInView index={3}>
-            <SectionHeader title="Quick actions" />
-            <View style={styles.quickGrid}>
-              {quickActions.map((action) => (
-                <ActionCard key={action.title} {...action} />
-              ))}
-            </View>
-          </FadeInView>
-
-          <FadeInView index={4}>
-            <SectionHeader title="Clinic pulse" />
-            <Card>
-              <View style={styles.pulseGrid}>
-                <PulseMetric
-                  icon="check-circle-outline"
-                  label="Completed today"
-                  value={`${todayCompleted}/${today.length}`}
-                  tone="success"
-                />
-                <PulseMetric
-                  icon="video-outline"
-                  label="Video queue"
-                  value={pendingVideoVisits}
-                  tone="info"
-                />
-                <PulseMetric
-                  icon="file-document-edit-outline"
-                  label="Needs Rx"
-                  value={awaitingPrescription}
-                  tone={awaitingPrescription ? "warning" : "success"}
-                />
-                <PulseMetric
-                  icon="file-document-outline"
-                  label="Async consults"
-                  value={asyncConsults}
-                  tone="doctor"
-                />
-              </View>
-              {today.length > 0 ? (
-                <>
-                  <View style={styles.progressHeader}>
-                    <Muted>Today’s completion rate</Muted>
-                    <Text style={styles.progressCount}>{completionRate}%</Text>
-                  </View>
-                  <ProgressBar value={completionRate} />
-                </>
-              ) : null}
-            </Card>
-          </FadeInView>
-
-          <FadeInView index={5}>
             <SectionHeader
               title="Next patient"
               action={
@@ -453,7 +356,7 @@ export default function DoctorHome() {
             )}
           </FadeInView>
 
-          <FadeInView index={6}>
+          <FadeInView index={4}>
             <SectionHeader title="Earnings" />
             <Card>
               <View style={styles.earningsRow}>
@@ -481,38 +384,6 @@ export default function DoctorHome() {
             </Card>
           </FadeInView>
 
-          <FadeInView index={7}>
-            <SectionHeader title="Today's agenda" />
-            {today.length === 0 ? (
-              <Card>
-                <Muted>Nothing is scheduled today.</Muted>
-              </Card>
-            ) : (
-              <View style={{ gap: 11 }}>
-                <Card>
-                  <View style={styles.progressHeader}>
-                    <Muted>Visits completed</Muted>
-                    <Text style={styles.progressCount}>
-                      {todayCompleted} of {today.length}
-                    </Text>
-                  </View>
-                  <ProgressBar value={completionRate} />
-                </Card>
-                {sortedToday.map((row) => (
-                  <AgendaItem
-                    key={row.appointment.id}
-                    row={row}
-                    onPress={() =>
-                      router.push({
-                        pathname: "/(doctor)/encounter/[id]",
-                        params: { id: row.appointment.id },
-                      })
-                    }
-                  />
-                ))}
-              </View>
-            )}
-          </FadeInView>
         </View>
       </ScrollView>
     </View>
@@ -562,43 +433,6 @@ function HeroStat({
   );
 }
 
-function ActionCard({
-  icon,
-  title,
-  message,
-  value,
-  onPress,
-}: {
-  icon: keyof typeof MaterialCommunityIcons.glyphMap;
-  title: string;
-  message: string;
-  value?: number;
-  onPress: () => void;
-}) {
-  return (
-    <View style={styles.actionCell}>
-      <PressableScale accessibilityRole="button" onPress={onPress} style={styles.actionCard}>
-        <View style={styles.actionTop}>
-          <View style={styles.actionIcon}>
-            <MaterialCommunityIcons name={icon} size={20} color={colors.doctor} />
-          </View>
-          {value && value > 0 ? (
-            <View style={styles.actionBadge}>
-              <Text style={styles.actionBadgeText}>{value}</Text>
-            </View>
-          ) : null}
-        </View>
-        <Text style={styles.actionTitle} numberOfLines={1}>
-          {title}
-        </Text>
-        <Text style={styles.actionMessage} numberOfLines={1}>
-          {message}
-        </Text>
-      </PressableScale>
-    </View>
-  );
-}
-
 function FocusPill({
   label,
   tone,
@@ -610,74 +444,6 @@ function FocusPill({
   return (
     <View style={[styles.focusPill, { backgroundColor: palette.bg }]}>
       <Text style={[styles.focusPillText, { color: palette.fg }]}>{label}</Text>
-    </View>
-  );
-}
-
-function AgendaItem({
-  row,
-  onPress,
-}: {
-  row: DoctorAppointmentRow;
-  onPress: () => void;
-}) {
-  const patientName = row.patient.name || row.patient.email;
-  const active = row.appointment.status === "confirmed";
-  const needsRx =
-    row.appointment.status === "completed" && row.prescriptionStatus !== "issued";
-  return (
-    <PressableScale accessibilityRole="button" onPress={onPress} style={styles.agendaItem}>
-      <View style={styles.agendaTimeRail}>
-        <Text style={styles.agendaTime}>{formatTime(row.appointment.startsAt)}</Text>
-        <View
-          style={[
-            styles.agendaDot,
-            {
-              backgroundColor: active
-                ? colors.doctor
-                : needsRx
-                  ? colors.warning
-                  : colors.success,
-            },
-          ]}
-        />
-      </View>
-      <View style={{ flex: 1 }}>
-        <Text style={styles.agendaName} numberOfLines={1}>
-          {patientName}
-        </Text>
-        <Text style={styles.agendaMeta} numberOfLines={1}>
-          {row.appointment.mode === "async" ? "Async consult" : "Video consult"}
-          {row.appointment.visitReason ? ` · ${row.appointment.visitReason.replace(/-/g, " ")}` : ""}
-        </Text>
-        {needsRx ? (
-          <Text style={styles.agendaWarning}>Prescription pending</Text>
-        ) : null}
-      </View>
-      <StatusBadge status={row.appointment.status} />
-    </PressableScale>
-  );
-}
-
-function PulseMetric({
-  icon,
-  label,
-  value,
-  tone,
-}: {
-  icon: keyof typeof MaterialCommunityIcons.glyphMap;
-  label: string;
-  value: string | number;
-  tone: "doctor" | "warning" | "danger" | "info" | "success";
-}) {
-  const palette = toneColor(tone);
-  return (
-    <View style={styles.pulseMetric}>
-      <View style={[styles.pulseIcon, { backgroundColor: palette.bg }]}>
-        <MaterialCommunityIcons name={icon} size={17} color={palette.fg} />
-      </View>
-      <Text style={styles.pulseValue}>{value}</Text>
-      <Text style={styles.pulseLabel}>{label}</Text>
     </View>
   );
 }
@@ -711,48 +477,55 @@ function doctorHeroName(name?: string | null) {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
   fallback: { flex: 1, justifyContent: "center", padding: space.md },
-  scroll: { paddingBottom: 120 },
+  scroll: { paddingBottom: 126 },
   body: {
     width: "100%",
     maxWidth: 640,
     alignSelf: "center",
-    paddingHorizontal: space.md,
-    paddingTop: space.md,
-    gap: space.md,
+    paddingHorizontal: space.md + 2,
+    paddingTop: 14,
+    gap: 15,
   },
   heroStats: { flexDirection: "row", gap: 10 },
   heroStat: {
     flex: 1,
-    backgroundColor: "rgba(255,255,255,0.16)",
+    backgroundColor: colors.glass,
+    borderWidth: 1,
+    borderColor: colors.glassBorder,
     borderRadius: radius.lg,
-    paddingVertical: 12,
+    paddingVertical: 13,
     paddingHorizontal: 13,
-    gap: 1,
+    gap: 2,
   },
-  heroStatValue: { fontFamily: fonts.display, fontSize: 21, color: "#ffffff" },
+  heroStatValue: {
+    fontFamily: fonts.monoSemibold,
+    fontSize: 21,
+    letterSpacing: -0.6,
+    color: "#ffffff",
+  },
   heroStatLabel: {
-    fontFamily: fonts.body,
+    fontFamily: fonts.bodyMedium,
     fontSize: 12,
-    color: "rgba(255,255,255,0.88)",
+    color: "rgba(255,255,255,0.82)",
   },
   attentionRow: { flexDirection: "row", alignItems: "center", gap: 11 },
   attentionIcon: {
     width: 40,
     height: 40,
-    borderRadius: radius.md,
+    borderRadius: radius.lg,
     backgroundColor: colors.doctorBg,
     alignItems: "center",
     justifyContent: "center",
   },
   focusCard: {
-    borderColor: "rgba(91,85,214,0.22)",
-    backgroundColor: "#f6f5ff",
+    borderColor: "rgba(109,59,212,0.18)",
+    backgroundColor: colors.card,
   },
   focusTop: { flexDirection: "row", alignItems: "center", gap: 12 },
   focusIcon: {
     width: 52,
     height: 52,
-    borderRadius: radius.lg,
+    borderRadius: radius.xl,
     backgroundColor: colors.doctorBg,
     alignItems: "center",
     justifyContent: "center",
@@ -765,8 +538,8 @@ const styles = StyleSheet.create({
   },
   focusTitle: {
     color: colors.text,
-    fontFamily: fonts.display,
-    fontSize: 20,
+    fontFamily: fonts.heading,
+    fontSize: 19,
     letterSpacing: -0.2,
     marginTop: 1,
   },
@@ -784,120 +557,30 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
   },
   focusPillText: { fontFamily: fonts.bodySemibold, fontSize: 11 },
-  quickGrid: { flexDirection: "row", flexWrap: "wrap", gap: 11 },
-  actionCell: { width: "48%" },
-  actionCard: {
-    width: "100%",
-    minHeight: 118,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.card,
-    padding: 13,
-    gap: 8,
-  },
-  actionTop: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  actionIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: radius.md,
-    backgroundColor: colors.doctorBg,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  actionBadge: {
-    minWidth: 24,
-    height: 24,
-    borderRadius: 12,
-    paddingHorizontal: 7,
-    backgroundColor: colors.danger,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  actionBadgeText: { color: "#fff", fontFamily: fonts.bodySemibold, fontSize: 11 },
-  actionTitle: { color: colors.text, fontFamily: fonts.heading, fontSize: 15 },
-  actionMessage: {
-    color: colors.textMuted,
-    fontFamily: fonts.body,
-    fontSize: 12,
-    lineHeight: 16,
-  },
-  pulseGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
-  pulseMetric: {
-    width: "48%",
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.bg,
-    padding: 12,
-    gap: 5,
-  },
-  pulseIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: radius.sm,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  pulseValue: { color: colors.text, fontFamily: fonts.display, fontSize: 19 },
-  pulseLabel: {
-    color: colors.textMuted,
-    fontFamily: fonts.body,
-    fontSize: 11,
-    lineHeight: 15,
-  },
   earningsRow: { flexDirection: "row", alignItems: "center" },
   earningStat: { flex: 1, alignItems: "center", gap: 2 },
-  earningValue: { color: colors.text, fontFamily: fonts.display, fontSize: 17 },
+  earningValue: {
+    color: colors.text,
+    fontFamily: fonts.monoSemibold,
+    fontSize: 16,
+    letterSpacing: -0.5,
+  },
   earningLabel: { color: colors.textMuted, fontFamily: fonts.body, fontSize: 11 },
   earningsDivider: { width: 1, height: 34, backgroundColor: colors.border },
   paymentStats: { flexDirection: "row", gap: 9 },
   paymentStat: {
     flex: 1,
-    borderRadius: radius.md,
-    backgroundColor: colors.bg,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surfaceMuted,
     borderWidth: 1,
     borderColor: colors.border,
     padding: 10,
   },
-  paymentValue: { color: colors.text, fontFamily: fonts.display, fontSize: 18 },
+  paymentValue: {
+    color: colors.text,
+    fontFamily: fonts.monoSemibold,
+    fontSize: 18,
+    letterSpacing: -0.5,
+  },
   paymentLabel: { color: colors.textMuted, fontFamily: fonts.body, fontSize: 11 },
-  agendaItem: {
-    width: "100%",
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.card,
-    padding: 13,
-  },
-  agendaTimeRail: { width: 54, alignItems: "center", gap: 6 },
-  agendaTime: { color: colors.text, fontFamily: fonts.bodySemibold, fontSize: 12 },
-  agendaDot: { width: 11, height: 11, borderRadius: 6 },
-  agendaName: { color: colors.text, fontFamily: fonts.heading, fontSize: 15 },
-  agendaMeta: {
-    color: colors.textMuted,
-    fontFamily: fonts.body,
-    fontSize: 12,
-    lineHeight: 17,
-    marginTop: 2,
-  },
-  agendaWarning: {
-    color: colors.warning,
-    fontFamily: fonts.bodySemibold,
-    fontSize: 11,
-    marginTop: 4,
-  },
-  progressHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  progressCount: { color: colors.text, fontFamily: fonts.bodySemibold, fontSize: 13 },
 });

@@ -1,8 +1,9 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
+import { PressableScale } from "@/components/motion";
 import { Avatar, Body, Card, Caption, Muted, StatusBadge } from "@/components/ui";
 import { formatDateTime, formatMoney } from "@/lib/format";
-import { colors, radius } from "@/lib/theme";
+import { colors, fonts, radius } from "@/lib/theme";
 import type {
   DoctorAppointmentRow,
   Medicine,
@@ -17,7 +18,7 @@ export function PatientAppointmentCard({
   onPress: () => void;
 }) {
   return (
-    <Pressable onPress={onPress}>
+    <PressableScale accessibilityRole="button" onPress={onPress}>
       <Card>
         <View style={styles.between}>
           <View style={styles.icon}>
@@ -36,7 +37,7 @@ export function PatientAppointmentCard({
           <Text style={styles.link}>View details</Text>
         </View>
       </Card>
-    </Pressable>
+    </PressableScale>
   );
 }
 
@@ -51,7 +52,7 @@ export function DoctorAppointmentCard({
   const needsRx =
     row.appointment.status === "completed" && row.prescriptionStatus !== "issued";
   return (
-    <Pressable onPress={onPress}>
+    <PressableScale accessibilityRole="button" onPress={onPress}>
       <Card>
         <View style={styles.row}>
           <Avatar name={patientName} doctor />
@@ -84,7 +85,7 @@ export function DoctorAppointmentCard({
           ) : null}
         </View>
       </Card>
-    </Pressable>
+    </PressableScale>
   );
 }
 
@@ -151,14 +152,14 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   icon: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
+    width: 42,
+    height: 42,
+    borderRadius: radius.md,
     backgroundColor: colors.accent,
     alignItems: "center",
     justifyContent: "center",
   },
-  link: { color: colors.primary, fontSize: 13, fontWeight: "700" },
+  link: { color: colors.primary, fontSize: 13, fontFamily: fonts.bodySemibold },
   tagRow: { flexDirection: "row", flexWrap: "wrap", gap: 7 },
   miniTag: {
     flexDirection: "row",
@@ -168,12 +169,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 9,
     paddingVertical: 5,
   },
-  miniTagText: { fontSize: 11, fontWeight: "700" },
+  miniTagText: { fontSize: 11, fontFamily: fonts.bodySemibold },
   medicine: {
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: "#fbfcfc",
+    borderColor: colors.borderStrong,
+    backgroundColor: colors.surface,
     padding: 12,
     gap: 7,
   },

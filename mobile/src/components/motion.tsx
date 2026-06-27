@@ -34,9 +34,10 @@ export function FadeInView({
   useEffect(() => {
     const animation = Animated.timing(progress, {
       toValue: 1,
-      duration: 460,
-      delay: delay + index * 70,
-      easing: Easing.out(Easing.cubic),
+      duration: 420,
+      delay: delay + Math.min(index, 6) * 70,
+      // Spring-ish ease matching the web's cubic-bezier(.2,.8,.2,1).
+      easing: Easing.bezier(0.2, 0.8, 0.2, 1),
       useNativeDriver: true,
     });
     animation.start();
@@ -53,6 +54,12 @@ export function FadeInView({
               translateY: progress.interpolate({
                 inputRange: [0, 1],
                 outputRange: [distance, 0],
+              }),
+            },
+            {
+              scale: progress.interpolate({
+                inputRange: [0, 1],
+                outputRange: [0.98, 1],
               }),
             },
           ],
@@ -89,8 +96,8 @@ export function PressableScale({
     Animated.spring(scale, {
       toValue: value,
       useNativeDriver: true,
-      speed: 40,
-      bounciness: 6,
+      speed: 34,
+      bounciness: 2,
     }).start();
 
   return (
@@ -117,7 +124,7 @@ export function PressableScale({
  */
 export function CountUp({
   value,
-  duration = 900,
+  duration = 650,
   format = (n) => String(n),
   style,
 }: {

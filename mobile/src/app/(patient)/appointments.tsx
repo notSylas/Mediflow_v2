@@ -78,7 +78,7 @@ export default function PatientAppointments() {
           style={auroraHeaderStyles.headerAction}
           onPress={() => router.push("/(patient)/book")}
         >
-          <MaterialCommunityIcons name="calendar-plus" size={21} color="#fff" />
+          <MaterialCommunityIcons name="calendar-plus" size={21} color={colors.primary} />
         </Pressable>
       }
       refreshing={query.isRefetching}

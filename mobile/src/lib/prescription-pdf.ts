@@ -72,8 +72,8 @@ function buildHtml(
   <style>
     * { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; color: #172126; }
     body { margin: 0; padding: 40px; }
-    .head { display: flex; justify-content: space-between; border-bottom: 3px solid #07877d; padding-bottom: 16px; }
-    .brand { color: #07877d; font-size: 22px; font-weight: 800; }
+    .head { display: flex; justify-content: space-between; border-bottom: 3px solid #2a4cc7; padding-bottom: 16px; }
+    .brand { color: #2a4cc7; font-size: 22px; font-weight: 800; }
     .doctor { text-align: right; }
     .doctor .name { font-size: 16px; font-weight: 700; }
     .muted { color: #66747b; font-size: 12px; }

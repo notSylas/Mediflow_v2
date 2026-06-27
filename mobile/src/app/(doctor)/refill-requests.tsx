@@ -19,6 +19,7 @@ import { Pressable } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { apiFetch } from "@/lib/api";
 import { formatRelativeDay } from "@/lib/format-chat";
+import { colors } from "@/lib/theme";
 
 interface RefillRequest {
   id: string;
@@ -86,7 +87,7 @@ export default function RefillRequests() {
           style={auroraHeaderStyles.headerAction}
           onPress={() => router.back()}
         >
-          <MaterialCommunityIcons name="arrow-left" size={22} color="#fff" />
+          <MaterialCommunityIcons name="arrow-left" size={22} color={colors.doctor} />
         </Pressable>
       }
       refreshing={query.isRefetching}

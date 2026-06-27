@@ -1,6 +1,7 @@
 import { RefreshControl, ScrollView, StyleSheet, View } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { AuroraHeader } from "@/components/aurora-header";
+import { ScreenGlow } from "@/components/ui";
 import { colors, space } from "@/lib/theme";
 
 /**
@@ -40,7 +41,8 @@ export function AuroraScreen({
   const tint = variant === "doctor" ? colors.doctor : colors.primary;
   return (
     <View style={styles.root}>
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
+      <ScreenGlow variant={variant} />
       <ScrollView
         contentContainerStyle={styles.scroll}
         automaticallyAdjustContentInsets={false}
@@ -77,17 +79,17 @@ export function AuroraScreen({
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
-  scroll: { paddingBottom: 120 },
+  scroll: { paddingBottom: 116 },
   body: {
     width: "100%",
     maxWidth: 640,
     alignSelf: "center",
-    paddingHorizontal: space.md,
-    paddingTop: space.md,
-    gap: space.md,
+    paddingHorizontal: space.md + 2,
+    paddingTop: 14,
+    gap: 14,
   },
   footer: {
-    paddingHorizontal: space.md,
+    paddingHorizontal: space.md + 2,
     paddingTop: 10,
     paddingBottom: 12,
     borderTopWidth: 1,

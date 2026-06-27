@@ -13,7 +13,7 @@ import {
   StatusBadge,
 } from "@/components/ui";
 import { apiFetch } from "@/lib/api";
-import { colors, radius } from "@/lib/theme";
+import { colors, fonts, radius } from "@/lib/theme";
 import type { ConsultNote, Medicine, Prescription } from "@/lib/types";
 
 const SOAP_FIELDS = [
@@ -575,7 +575,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   twoCol: { flexDirection: "row", gap: 10, alignItems: "flex-start" },
-  status: { fontSize: 12, color: colors.textMuted, fontWeight: "600" },
+  status: { fontSize: 12, color: colors.textMuted, fontFamily: fonts.bodySemibold },
   medicine: {
     borderRadius: radius.md,
     borderWidth: 1,
@@ -584,7 +584,7 @@ const styles = StyleSheet.create({
     gap: 9,
     backgroundColor: "#fbfcfc",
   },
-  remove: { color: colors.danger, fontSize: 13, fontWeight: "700" },
+  remove: { color: colors.danger, fontSize: 13, fontFamily: fonts.bodySemibold },
   snippetGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   snippetChip: {
     borderRadius: radius.pill,
@@ -594,12 +594,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 11,
     paddingVertical: 8,
   },
-  snippetText: { color: colors.text, fontSize: 12, fontWeight: "700" },
+  snippetText: { color: colors.text, fontSize: 12, fontFamily: fonts.bodySemibold },
   templateChip: {
     borderRadius: radius.pill,
     backgroundColor: colors.doctorBg,
     paddingHorizontal: 11,
     paddingVertical: 8,
   },
-  templateText: { color: colors.doctor, fontSize: 12, fontWeight: "700" },
+  templateText: { color: colors.doctor, fontSize: 12, fontFamily: fonts.bodySemibold },
 });

@@ -20,7 +20,6 @@ import {
   Body,
   Button,
   Card,
-  ChoiceChips,
   ErrorState,
   Field,
   Loading,
@@ -29,25 +28,10 @@ import {
 } from "@/components/ui";
 import { AuroraScreen } from "@/components/aurora-screen";
 import { LegalLinks } from "@/components/legal-links";
-import { DateField, TimeField } from "@/components/pickers";
 import { apiFetch } from "@/lib/api";
 import { authClient, useSession } from "@/lib/auth";
 import { colors, fonts, radius } from "@/lib/theme";
-import type {
-  AvailabilityOverride,
-  AvailabilityRule,
-  DoctorProfile,
-} from "@/lib/types";
-
-const DAYS = [
-  { label: "Sun", value: "0" },
-  { label: "Mon", value: "1" },
-  { label: "Tue", value: "2" },
-  { label: "Wed", value: "3" },
-  { label: "Thu", value: "4" },
-  { label: "Fri", value: "5" },
-  { label: "Sat", value: "6" },
-];
+import type { DoctorProfile } from "@/lib/types";
 
 export default function DoctorSettings() {
   const client = useQueryClient();
@@ -77,15 +61,6 @@ export default function DoctorSettings() {
     queryKey: ["doctor", "profile"],
     queryFn: () => apiFetch<DoctorProfile>("/api/doctor/profile"),
   });
-  const rulesQuery = useQuery({
-    queryKey: ["doctor", "availability", "rules"],
-    queryFn: () => apiFetch<AvailabilityRule[]>("/api/doctor/availability/rules"),
-  });
-  const overridesQuery = useQuery({
-    queryKey: ["doctor", "availability", "overrides"],
-    queryFn: () =>
-      apiFetch<AvailabilityOverride[]>("/api/doctor/availability/overrides"),
-  });
   const [profileEdits, setProfileEdits] = useState<
     Partial<{
       specialty: string;
@@ -100,15 +75,6 @@ export default function DoctorSettings() {
       timezone: string;
     }>
   >({});
-  const [weekday, setWeekday] = useState("1");
-  const [startTime, setStartTime] = useState("09:00");
-  const [endTime, setEndTime] = useState("13:00");
-  const [overrideDate, setOverrideDate] = useState("");
-  const [overrideKind, setOverrideKind] = useState("blocked");
-  const [overrideStart, setOverrideStart] = useState("");
-  const [overrideEnd, setOverrideEnd] = useState("");
-  const [overrideReason, setOverrideReason] = useState("");
-
   const profile = {
     specialty: profileQuery.data?.specialty ?? "",
     bio: profileQuery.data?.bio ?? "",
@@ -152,52 +118,7 @@ export default function DoctorSettings() {
     },
   });
 
-  const addRule = useMutation({
-    mutationFn: () =>
-      apiFetch<AvailabilityRule>("/api/doctor/availability/rules", {
-        method: "POST",
-        body: JSON.stringify({
-          weekday: Number(weekday),
-          startTime,
-          endTime,
-        }),
-      }),
-    onSuccess: () => void rulesQuery.refetch(),
-  });
-
-  const addOverride = useMutation({
-    mutationFn: () =>
-      apiFetch<AvailabilityOverride>("/api/doctor/availability/overrides", {
-        method: "POST",
-        body: JSON.stringify({
-          date: overrideDate,
-          kind: overrideKind,
-          startTime: overrideStart || null,
-          endTime: overrideEnd || null,
-          reason: overrideReason.trim() || null,
-        }),
-      }),
-    onSuccess: () => {
-      setOverrideDate("");
-      setOverrideReason("");
-      void overridesQuery.refetch();
-    },
-  });
-
-  const remove = (path: string, refresh: () => unknown) =>
-    Alert.alert("Delete this availability entry?", "Patients will no longer see this window.", [
-      { text: "Keep", style: "cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: async () => {
-          await apiFetch(path, { method: "DELETE" });
-          await refresh();
-        },
-      },
-    ]);
-
-  if (profileQuery.isLoading || rulesQuery.isLoading || overridesQuery.isLoading) {
+  if (profileQuery.isLoading) {
     return <Loading />;
   }
 
@@ -403,104 +324,21 @@ export default function DoctorSettings() {
         />
       </Card>
 
-      <SectionHeader title="Weekly availability" />
-      <Card>
-        <ChoiceChips options={DAYS} value={weekday} onChange={setWeekday} />
-        <View style={styles.row}>
-          <TimeField label="Start" value={startTime} onChange={setStartTime} />
-          <TimeField label="End" value={endTime} onChange={setEndTime} />
+      <SectionHeader title="Patient booking hours" />
+      <Pressable
+        accessibilityRole="button"
+        onPress={() => router.push("/(doctor)/schedule")}
+        style={({ pressed }) => [styles.navCard, pressed && { opacity: 0.7 }]}
+      >
+        <View style={styles.navIcon}>
+          <MaterialCommunityIcons name="calendar-clock" size={22} color={colors.doctor} />
         </View>
-        {addRule.error ? <ErrorState message={addRule.error.message} /> : null}
-        <Button
-          label="Add weekly window"
-          loading={addRule.isPending}
-          onPress={() => addRule.mutate()}
-        />
-        {rulesQuery.data?.map((rule) => (
-          <View key={rule.id} style={styles.entry}>
-            <View style={{ flex: 1 }}>
-              <Body strong>{DAYS.find((day) => day.value === String(rule.weekday))?.label}</Body>
-              <Muted>
-                {rule.startTime.slice(0, 5)} – {rule.endTime.slice(0, 5)}
-              </Muted>
-            </View>
-            <Button
-              label="Delete"
-              compact
-              tone="ghost"
-              onPress={() =>
-                remove(`/api/doctor/availability/rules/${rule.id}`, () => rulesQuery.refetch())
-              }
-            />
-          </View>
-        ))}
-      </Card>
-
-      <SectionHeader title="Date overrides" />
-      <Card>
-        <DateField
-          label="Date"
-          value={overrideDate}
-          onChange={setOverrideDate}
-          minimumDate={new Date()}
-        />
-        <ChoiceChips
-          options={[
-            { label: "Block time", value: "blocked" },
-            { label: "Add extra time", value: "extra" },
-          ]}
-          value={overrideKind}
-          onChange={setOverrideKind}
-        />
-        <View style={styles.row}>
-          <TimeField
-            label="Start (optional)"
-            value={overrideStart}
-            onChange={setOverrideStart}
-          />
-          <TimeField label="End (optional)" value={overrideEnd} onChange={setOverrideEnd} />
+        <View style={{ flex: 1 }}>
+          <Body strong>Manage availability</Body>
+          <Muted>Set your weekly hours, time off, and one-off clinics.</Muted>
         </View>
-        <Field
-          label="Reason"
-          value={overrideReason}
-          onChangeText={setOverrideReason}
-          placeholder="Holiday, conference, extra clinic…"
-        />
-        <Muted>
-          Full-day blocks leave both times empty. Extra sessions require start and end.
-        </Muted>
-        {addOverride.error ? <ErrorState message={addOverride.error.message} /> : null}
-        <Button
-          label="Add date override"
-          loading={addOverride.isPending}
-          disabled={!overrideDate}
-          onPress={() => addOverride.mutate()}
-        />
-        {overridesQuery.data?.map((item) => (
-          <View key={item.id} style={styles.entry}>
-            <View style={{ flex: 1 }}>
-              <Body strong>
-                {item.date} · {item.kind}
-              </Body>
-              <Muted>
-                {[item.startTime?.slice(0, 5), item.endTime?.slice(0, 5), item.reason]
-                  .filter(Boolean)
-                  .join(" – ") || "All day"}
-              </Muted>
-            </View>
-            <Button
-              label="Delete"
-              compact
-              tone="ghost"
-              onPress={() =>
-                remove(`/api/doctor/availability/overrides/${item.id}`, () =>
-                  overridesQuery.refetch()
-                )
-              }
-            />
-          </View>
-        ))}
-      </Card>
+        <MaterialCommunityIcons name="chevron-right" size={20} color={colors.textMuted} />
+      </Pressable>
 
       <SectionHeader title="Legal" />
       <LegalLinks />
@@ -548,13 +386,23 @@ export default function DoctorSettings() {
 
 const styles = StyleSheet.create({
   row: { flexDirection: "row", gap: 10, alignItems: "flex-start" },
-  entry: {
+  navCard: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
-    borderTopWidth: 1,
-    borderTopColor: "#dce4e6",
-    paddingTop: 10,
+    gap: 12,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+    borderRadius: radius.xl,
+    padding: 16,
+  },
+  navIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: radius.md,
+    backgroundColor: colors.doctorBg,
+    alignItems: "center",
+    justifyContent: "center",
   },
   summaryRow: { flexDirection: "row", alignItems: "center", gap: 12 },
   savedText: { color: colors.success, fontFamily: fonts.bodySemibold, fontSize: 12 },

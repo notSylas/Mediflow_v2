@@ -8,11 +8,13 @@ import {
   Divider,
   ErrorState,
   Loading,
+  Mono,
   Muted,
   Screen,
   StatusBadge,
 } from "@/components/ui";
 import { apiFetch } from "@/lib/api";
+import { colors } from "@/lib/theme";
 import { formatDateTime, formatMoney } from "@/lib/format";
 import type { Appointment, Payment } from "@/lib/types";
 
@@ -60,7 +62,7 @@ export default function Receipt() {
         <Divider />
         <View style={styles.between}>
           <Body strong>Total paid</Body>
-          <Body strong>{formatMoney(payment.amountInPaise)}</Body>
+          <Mono style={styles.total}>{formatMoney(payment.amountInPaise)}</Mono>
         </View>
       </Card>
       <Muted>
@@ -89,4 +91,5 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     gap: 12,
   },
+  total: { fontSize: 20, color: colors.primary },
 });

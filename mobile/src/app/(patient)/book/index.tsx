@@ -10,6 +10,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import {
   BackHeader,
   Body,
@@ -20,13 +21,14 @@ import {
   ErrorState,
   Field,
   Loading,
+  Mono,
   Muted,
   Screen,
   SectionHeader,
 } from "@/components/ui";
 import { apiFetch, apiUpload } from "@/lib/api";
 import { formatDate, formatDateTime, formatMoney, formatTime } from "@/lib/format";
-import { colors, radius } from "@/lib/theme";
+import { colors, fonts, radius, shadowGlow } from "@/lib/theme";
 import { hasEmergencyRedFlag } from "@/lib/triage";
 import type { Appointment, Payment } from "@/lib/types";
 
@@ -288,15 +290,17 @@ export default function BookingFlow() {
           <Muted>{formatDateTime(appointment.startsAt)}</Muted>
           <View style={styles.summaryRow}>
             <Muted>Consultation fee</Muted>
-            <Body strong>
-              {appointmentDetail.isLoading
-                ? "Loading…"
-                : formatMoney(appointmentDetail.data?.payment?.amountInPaise)}
-            </Body>
+            {appointmentDetail.isLoading ? (
+              <Muted>Loading…</Muted>
+            ) : (
+              <Mono style={styles.fee}>
+                {formatMoney(appointmentDetail.data?.payment?.amountInPaise)}
+              </Mono>
+            )}
           </View>
           <View style={styles.summaryRow}>
             <Muted>Slot hold</Muted>
-            <Body strong>10 minutes</Body>
+            <Mono style={styles.holdValue}>10 minutes</Mono>
           </View>
         </Card>
         <Card tone="warning">
@@ -340,9 +344,14 @@ export default function BookingFlow() {
   return (
     <Screen>
       <View style={styles.confirm}>
-        <View style={styles.confirmIcon}>
-          <MaterialCommunityIcons name="check" size={34} color={colors.primaryFg} />
-        </View>
+        <LinearGradient
+          colors={["#16a06b", "#0c7d56", "#0a5f42"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.confirmIcon}
+        >
+          <MaterialCommunityIcons name="check-bold" size={36} color={colors.primaryFg} />
+        </LinearGradient>
         <Text style={styles.confirmTitle}>Appointment confirmed</Text>
         <Muted>{appointment ? formatDateTime(appointment.startsAt) : ""}</Muted>
       </View>
@@ -378,7 +387,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bg,
     padding: 12,
   },
-  fileName: { flex: 1, color: colors.text, fontSize: 14, fontWeight: "600" },
+  fileName: { flex: 1, color: colors.text, fontSize: 14, fontFamily: fonts.bodySemibold },
   consent: {
     flexDirection: "row",
     alignItems: "flex-start",
@@ -401,8 +410,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
     alignItems: "center",
   },
-  slotActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  slotText: { color: colors.text, fontSize: 14, fontWeight: "700" },
+  slotActive: { backgroundColor: colors.primary, borderColor: colors.primary, ...shadowGlow },
+  slotText: { color: colors.text, fontSize: 14, fontFamily: fonts.monoSemibold, letterSpacing: -0.4 },
   slotTextActive: { color: colors.primaryFg },
   summaryRow: {
     flexDirection: "row",
@@ -410,14 +419,26 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
   },
-  confirm: { alignItems: "center", gap: 10, paddingVertical: 34 },
+  fee: { fontSize: 18, color: colors.primary },
+  holdValue: { fontSize: 14, color: colors.text },
+  confirm: { alignItems: "center", gap: 10, paddingVertical: 36 },
   confirmIcon: {
-    width: 68,
-    height: 68,
-    borderRadius: 34,
-    backgroundColor: colors.success,
+    width: 76,
+    height: 76,
+    borderRadius: 38,
     alignItems: "center",
     justifyContent: "center",
+    shadowColor: "#0c7d56",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.32,
+    shadowRadius: 22,
+    elevation: 7,
   },
-  confirmTitle: { fontSize: 24, fontWeight: "800", color: colors.text },
+  confirmTitle: {
+    fontSize: 26,
+    fontFamily: fonts.display,
+    letterSpacing: -0.6,
+    color: colors.text,
+    marginTop: 4,
+  },
 });

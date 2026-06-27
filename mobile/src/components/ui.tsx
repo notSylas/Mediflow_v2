@@ -1,7 +1,7 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import {
   ActivityIndicator,
-  Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -11,10 +11,20 @@ import {
   type KeyboardTypeOptions,
   type StyleProp,
   type TextInputProps,
+  type TextStyle,
   type ViewStyle,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { colors, fonts, radius, shadow, space } from "@/lib/theme";
+import {
+  colors,
+  fonts,
+  gradients,
+  radius,
+  shadow,
+  shadowGlow,
+  shadowSoft,
+  space,
+} from "@/lib/theme";
 import { PressableScale } from "@/components/motion";
 
 export function Screen({
@@ -31,6 +41,7 @@ export function Screen({
       <ScrollView
         contentContainerStyle={styles.screen}
         keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
         refreshControl={
           onRefresh ? (
             <RefreshControl
@@ -59,7 +70,7 @@ export function PageHeader({
 }) {
   return (
     <View style={styles.pageHeader}>
-      <View style={{ flex: 1, gap: 3 }}>
+      <View style={{ flex: 1, gap: 4 }}>
         <Text style={styles.title}>{title}</Text>
         {subtitle ? <Text style={styles.muted}>{subtitle}</Text> : null}
       </View>
@@ -79,7 +90,7 @@ export function BackHeader({
 }) {
   return (
     <View style={styles.backHeader}>
-      <IconButton icon="arrow-left" label="Go back" onPress={onBack} />
+      <IconButton icon="chevron-left" label="Go back" onPress={onBack} />
       <View style={{ flex: 1 }}>
         <Text style={styles.headerTitle}>{title}</Text>
         {subtitle ? <Text style={styles.caption}>{subtitle}</Text> : null}
@@ -91,21 +102,27 @@ export function BackHeader({
 export function Card({
   children,
   tone = "default",
+  elevated,
   style,
 }: {
   children: React.ReactNode;
   tone?: "default" | "accent" | "warning" | "danger" | "doctor";
+  elevated?: boolean;
   style?: StyleProp<ViewStyle>;
 }) {
   const toneStyle = {
     default: null,
-    accent: { backgroundColor: colors.accent, borderColor: "#c8e9e4" },
-    warning: { backgroundColor: colors.warningBg, borderColor: "#f4d89d" },
-    danger: { backgroundColor: colors.dangerBg, borderColor: "#f2caca" },
-    doctor: { backgroundColor: colors.doctorBg, borderColor: "#d9d5ff" },
+    accent: { backgroundColor: colors.accent, borderColor: "#d4def8" },
+    warning: { backgroundColor: colors.warningBg, borderColor: "#f0dcb0" },
+    danger: { backgroundColor: colors.dangerBg, borderColor: "#f3cfcf" },
+    doctor: { backgroundColor: colors.doctorBg, borderColor: "#ddd2f6" },
   }[tone];
 
-  return <View style={[styles.card, toneStyle, style]}>{children}</View>;
+  return (
+    <View style={[styles.card, toneStyle, elevated && styles.cardElevated, style]}>
+      {children}
+    </View>
+  );
 }
 
 export function SectionHeader({
@@ -149,6 +166,17 @@ export function Caption({ children }: { children: React.ReactNode }) {
   return <Text style={styles.caption}>{children}</Text>;
 }
 
+/** Tabular numerals (Geist Mono) for money, times, doses. */
+export function Mono({
+  children,
+  style,
+}: {
+  children: React.ReactNode;
+  style?: StyleProp<TextStyle>;
+}) {
+  return <Text style={[styles.mono, style]}>{children}</Text>;
+}
+
 export function Divider() {
   return <View style={styles.divider} />;
 }
@@ -162,7 +190,7 @@ export function Field({
     <View style={styles.fieldWrap}>
       {label ? <Text style={styles.label}>{label}</Text> : null}
       <TextInput
-        placeholderTextColor={colors.textMuted}
+        placeholderTextColor={colors.textFaint}
         multiline={multiline}
         textAlignVertical={multiline ? "top" : "center"}
         {...props}
@@ -188,7 +216,7 @@ export function CompactField({
       value={value}
       onChangeText={onChangeText}
       placeholder={placeholder}
-      placeholderTextColor={colors.textMuted}
+      placeholderTextColor={colors.textFaint}
       keyboardType={keyboardType}
       style={styles.compactInput}
     />
@@ -214,14 +242,74 @@ export function Button({
   tone?: ButtonTone;
   compact?: boolean;
 }) {
+  const solid = tone === "primary" || tone === "danger";
+  const foreground = solid ? colors.primaryFg : colors.text;
+  const trailingIcon = Boolean(icon && !compact);
+
+  const body = loading ? (
+    <ActivityIndicator color={foreground} />
+  ) : trailingIcon ? (
+    <>
+      <Text numberOfLines={1} style={[styles.buttonText, { color: foreground }]}>
+        {label}
+      </Text>
+      <View
+        style={[
+          styles.buttonIconBubble,
+          solid ? styles.buttonIconBubbleSolid : styles.buttonIconBubbleSubtle,
+        ]}
+      >
+        <MaterialCommunityIcons
+          name={icon!}
+          size={17}
+          color={solid ? colors.text : foreground}
+        />
+      </View>
+    </>
+  ) : (
+    <>
+      {icon ? (
+        <MaterialCommunityIcons name={icon} size={18} color={foreground} />
+      ) : null}
+      <Text style={[styles.buttonText, { color: foreground }]}>{label}</Text>
+    </>
+  );
+
+  // Primary gets a real cobalt gradient + colored elevation (the premium CTA).
+  if (tone === "primary") {
+    return (
+      <PressableScale
+        accessibilityRole="button"
+        onPress={onPress}
+        disabled={disabled || loading}
+        haptic="light"
+        style={[
+          styles.buttonShadow,
+          compact && styles.buttonCompactWrap,
+          (disabled || loading) && { opacity: 0.55 },
+        ]}
+      >
+        <LinearGradient
+          colors={gradients.patient}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={[
+            styles.button,
+            trailingIcon && styles.buttonWithTrailingIcon,
+            compact && styles.buttonCompact,
+          ]}
+        >
+          {body}
+        </LinearGradient>
+      </PressableScale>
+    );
+  }
+
   const toneStyle = {
-    primary: { backgroundColor: colors.primary, borderColor: colors.primary },
-    secondary: { backgroundColor: colors.card, borderColor: colors.border },
+    secondary: { backgroundColor: colors.card, borderColor: colors.borderStrong },
     danger: { backgroundColor: colors.danger, borderColor: colors.danger },
     ghost: { backgroundColor: "transparent", borderColor: "transparent" },
   }[tone];
-  const foreground =
-    tone === "primary" || tone === "danger" ? colors.primaryFg : colors.text;
 
   return (
     <PressableScale
@@ -231,19 +319,15 @@ export function Button({
       haptic={tone === "ghost" ? false : "light"}
       style={[
         styles.button,
+        styles.buttonBordered,
         toneStyle,
+        tone === "danger" && shadowSoft,
+        trailingIcon && styles.buttonWithTrailingIcon,
         compact && styles.buttonCompact,
-        (disabled || loading) && { opacity: 0.5 },
+        (disabled || loading) && { opacity: 0.55 },
       ]}
     >
-      {loading ? (
-        <ActivityIndicator color={foreground} />
-      ) : (
-        <>
-          {icon ? <MaterialCommunityIcons name={icon} size={18} color={foreground} /> : null}
-          <Text style={[styles.buttonText, { color: foreground }]}>{label}</Text>
-        </>
-      )}
+      {body}
     </PressableScale>
   );
 }
@@ -272,14 +356,14 @@ export function IconButton({
   onPress: () => void;
 }) {
   return (
-    <Pressable
+    <PressableScale
       accessibilityLabel={label}
       accessibilityRole="button"
       onPress={onPress}
-      style={({ pressed }) => [styles.iconButton, pressed && { opacity: 0.65 }]}
+      style={styles.iconButton}
     >
       <MaterialCommunityIcons name={icon} size={22} color={colors.text} />
-    </Pressable>
+    </PressableScale>
   );
 }
 
@@ -297,15 +381,17 @@ export function ChoiceChips({
       {options.map((option) => {
         const active = option.value === value;
         return (
-          <Pressable
+          <PressableScale
             key={option.value}
             onPress={() => onChange(option.value)}
+            scaleTo={0.96}
+            haptic="light"
             style={[styles.chip, active && styles.chipActive]}
           >
             <Text style={[styles.chipText, active && styles.chipTextActive]}>
               {option.label}
             </Text>
-          </Pressable>
+          </PressableScale>
         );
       })}
     </View>
@@ -326,22 +412,20 @@ export function SegmentedControl({
       {options.map((option) => {
         const selected = option.value === value;
         return (
-          <Pressable
+          <PressableScale
             key={option.value}
             accessibilityRole="tab"
             accessibilityState={{ selected }}
             onPress={() => onChange(option.value)}
-            style={({ pressed }) => [
-              styles.segment,
-              selected && styles.segmentActive,
-              pressed && { opacity: 0.72 },
-            ]}
+            scaleTo={0.98}
+            haptic="light"
+            style={[styles.segment, selected && styles.segmentActive]}
           >
             <Text style={[styles.segmentText, selected && styles.segmentTextActive]}>
               {option.label}
               {option.count == null ? "" : `  ${option.count}`}
             </Text>
-          </Pressable>
+          </PressableScale>
         );
       })}
     </View>
@@ -363,7 +447,7 @@ export function StatusBadge({
     },
     confirmed: { label: "Confirmed", bg: colors.successBg, fg: colors.success },
     completed: { label: "Completed", bg: colors.infoBg, fg: colors.info },
-    cancelled: { label: "Cancelled", bg: "#edf0f1", fg: colors.textMuted },
+    cancelled: { label: "Cancelled", bg: colors.surfaceStrong, fg: colors.textMuted },
     no_show: {
       label: audience === "patient" ? "Missed" : "No-show",
       bg: colors.dangerBg,
@@ -372,9 +456,14 @@ export function StatusBadge({
     draft: { label: "Draft", bg: colors.warningBg, fg: colors.warning },
     issued: { label: "Issued", bg: colors.successBg, fg: colors.success },
   };
-  const item = config[status] ?? { label: status, bg: "#edf0f1", fg: colors.textMuted };
+  const item = config[status] ?? {
+    label: status,
+    bg: colors.surfaceStrong,
+    fg: colors.textMuted,
+  };
   return (
     <View style={[styles.badge, { backgroundColor: item.bg }]}>
+      <View style={[styles.badgeDot, { backgroundColor: item.fg }]} />
       <Text style={[styles.badgeText, { color: item.fg }]}>{item.label}</Text>
     </View>
   );
@@ -416,9 +505,14 @@ export function Avatar({ name, doctor }: { name: string; doctor?: boolean }) {
     .slice(0, 2)
     .toUpperCase();
   return (
-    <View style={[styles.avatar, doctor && { backgroundColor: colors.doctor }]}>
+    <LinearGradient
+      colors={doctor ? gradients.doctor : gradients.patient}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={styles.avatar}
+    >
       <Text style={styles.avatarText}>{initials || "MF"}</Text>
-    </View>
+    </LinearGradient>
   );
 }
 
@@ -439,7 +533,7 @@ export function EmptyState({
     <Card>
       <View style={[styles.empty, compact && styles.emptyCompact]}>
         <View style={styles.emptyIcon}>
-          <MaterialCommunityIcons name={icon} size={22} color={colors.primary} />
+          <MaterialCommunityIcons name={icon} size={24} color={colors.primary} />
         </View>
         <Text style={styles.emptyTitle}>{title}</Text>
         <Text style={[styles.muted, { textAlign: "center" }]}>{message}</Text>
@@ -462,7 +556,9 @@ export function ErrorState({
         <MaterialCommunityIcons name="alert-circle-outline" size={22} color={colors.danger} />
         <View style={{ flex: 1, gap: 8 }}>
           <Text style={[styles.body, { color: colors.danger }]}>{message}</Text>
-          {onRetry ? <Button label="Try again" onPress={onRetry} tone="secondary" compact /> : null}
+          {onRetry ? (
+            <Button label="Try again" onPress={onRetry} tone="secondary" compact />
+          ) : null}
         </View>
       </View>
     </Card>
@@ -472,40 +568,63 @@ export function ErrorState({
 export function Loading({ label = "Loading your clinic…" }: { label?: string }) {
   return (
     <SafeAreaView style={styles.loading}>
-      <View style={styles.brandMark}>
-        <MaterialCommunityIcons name="heart-pulse" size={27} color={colors.primaryFg} />
-      </View>
-      <ActivityIndicator color={colors.primary} size="large" />
+      <LinearGradient
+        colors={gradients.patient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.brandMark}
+      >
+        <MaterialCommunityIcons name="heart-pulse" size={28} color={colors.primaryFg} />
+      </LinearGradient>
+      <ActivityIndicator color={colors.primary} />
       <Text style={styles.muted}>{label}</Text>
     </SafeAreaView>
+  );
+}
+
+export function ScreenGlow({ variant = "patient" }: { variant?: "patient" | "doctor" }) {
+  const tint = variant === "doctor" ? colors.doctorLight : colors.primaryLight;
+  return (
+    <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+      <View style={[styles.screenGlowPrimary, { backgroundColor: tint }]} />
+      <View style={[styles.screenGlowSecondary, { backgroundColor: tint }]} />
+    </View>
   );
 }
 
 export function ProgressBar({ value }: { value: number }) {
   return (
     <View style={styles.progressTrack}>
-      <View style={[styles.progressValue, { width: `${Math.max(0, Math.min(100, value))}%` }]} />
+      <LinearGradient
+        colors={gradients.patient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={[
+          styles.progressValue,
+          { width: `${Math.max(0, Math.min(100, value))}%` },
+        ]}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
-  screen: { padding: space.md, paddingBottom: 110, gap: space.md },
+  screen: { padding: space.md + 2, paddingBottom: 120, gap: 14 },
   pageHeader: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 2 },
   backHeader: { flexDirection: "row", alignItems: "center", gap: 10 },
   title: {
-    fontSize: 22,
-    lineHeight: 28,
+    fontSize: 27,
+    lineHeight: 32,
     fontFamily: fonts.display,
-    letterSpacing: -0.3,
+    letterSpacing: -0.7,
     color: colors.text,
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 19,
     lineHeight: 24,
     fontFamily: fonts.heading,
-    letterSpacing: -0.2,
+    letterSpacing: -0.4,
     color: colors.text,
   },
   sectionHeader: {
@@ -513,72 +632,96 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     gap: 12,
-    marginTop: 2,
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 17,
     fontFamily: fonts.heading,
-    letterSpacing: -0.2,
+    letterSpacing: -0.3,
     color: colors.text,
   },
   body: { fontSize: 15, lineHeight: 22, fontFamily: fonts.body, color: colors.text },
   muted: { fontSize: 14, fontFamily: fonts.body, color: colors.textMuted, lineHeight: 20 },
-  caption: { fontSize: 12, fontFamily: fonts.body, color: colors.textMuted, lineHeight: 17 },
+  caption: { fontSize: 12, fontFamily: fonts.body, color: colors.textFaint, lineHeight: 17 },
+  mono: { fontFamily: fonts.monoSemibold, color: colors.text, letterSpacing: -0.3 },
   card: {
     backgroundColor: colors.card,
-    borderRadius: radius.lg,
+    borderRadius: radius.xl,
     borderWidth: 1,
-    borderColor: colors.border,
-    padding: space.md,
+    borderColor: colors.cardBorder,
+    padding: 18,
     gap: space.sm,
-    ...shadow,
+    ...shadowSoft,
   },
+  cardElevated: { ...shadow },
   divider: { height: 1, backgroundColor: colors.border, marginVertical: 3 },
   fieldWrap: { gap: 7 },
   label: { fontSize: 13, fontFamily: fonts.bodySemibold, color: colors.text },
   input: {
-    minHeight: 48,
+    minHeight: 52,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radius.md,
-    paddingHorizontal: 14,
+    paddingHorizontal: 15,
     fontSize: 16,
+    fontFamily: fonts.body,
     color: colors.text,
-    backgroundColor: colors.card,
+    backgroundColor: colors.surface,
   },
-  textarea: { minHeight: 106, paddingTop: 13, paddingBottom: 13 },
+  textarea: { minHeight: 110, paddingTop: 14, paddingBottom: 14 },
   compactInput: {
-    minHeight: 42,
+    minHeight: 44,
     flex: 1,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radius.md,
-    paddingHorizontal: 12,
+    paddingHorizontal: 13,
     fontSize: 14,
+    fontFamily: fonts.body,
     color: colors.text,
-    backgroundColor: colors.card,
+    backgroundColor: colors.surface,
   },
+  buttonShadow: { borderRadius: radius.pill, ...shadowGlow },
+  buttonCompactWrap: { alignSelf: "flex-start" },
   button: {
-    minHeight: 48,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    paddingHorizontal: 16,
+    minHeight: 52,
+    borderRadius: radius.pill,
+    paddingHorizontal: 18,
     flexDirection: "row",
     gap: 8,
     alignItems: "center",
     justifyContent: "center",
   },
-  buttonCompact: { minHeight: 38, alignSelf: "flex-start", paddingHorizontal: 12 },
-  buttonText: { fontSize: 15, fontFamily: fonts.semibold, letterSpacing: 0.1 },
+  buttonBordered: { borderWidth: 1 },
+  buttonWithTrailingIcon: {
+    justifyContent: "space-between",
+    paddingRight: 8,
+    paddingLeft: 20,
+  },
+  buttonCompact: { minHeight: 40, paddingHorizontal: 16 },
+  buttonText: { fontSize: 15, fontFamily: fonts.semibold, letterSpacing: -0.1 },
+  buttonIconBubble: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  buttonIconBubbleSolid: { backgroundColor: "#ffffff" },
+  buttonIconBubbleSubtle: {
+    backgroundColor: colors.surfaceStrong,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
   iconButton: {
     width: 44,
     height: 44,
-    borderRadius: radius.md,
+    borderRadius: radius.pill,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: colors.card,
     borderWidth: 1,
     borderColor: colors.border,
+    ...shadowSoft,
   },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   chip: {
@@ -586,8 +729,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.card,
-    paddingVertical: 9,
-    paddingHorizontal: 13,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
   },
   chipActive: { backgroundColor: colors.accent, borderColor: colors.primary },
   chipText: { fontSize: 13, color: colors.textMuted, fontFamily: fonts.bodySemibold },
@@ -595,68 +738,76 @@ const styles = StyleSheet.create({
   segmented: {
     flexDirection: "row",
     padding: 4,
-    borderRadius: radius.md,
-    backgroundColor: "#e8eeee",
+    borderRadius: radius.pill,
+    backgroundColor: colors.surfaceStrong,
   },
   segment: {
     flex: 1,
-    minHeight: 44,
-    borderRadius: radius.sm,
+    minHeight: 40,
+    borderRadius: radius.pill,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 10,
   },
-  segmentActive: { backgroundColor: colors.card, ...shadow },
+  segmentActive: { backgroundColor: colors.card, ...shadowSoft },
   segmentText: {
     fontSize: 13,
     fontFamily: fonts.bodySemibold,
     color: colors.textMuted,
   },
   segmentTextActive: { color: colors.text },
-  badge: { borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 5 },
-  badgeText: { fontSize: 11, fontFamily: fonts.bodySemibold },
+  badge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    borderRadius: radius.pill,
+    paddingHorizontal: 11,
+    paddingVertical: 5,
+  },
+  badgeDot: { width: 6, height: 6, borderRadius: 3 },
+  badgeText: { fontSize: 11.5, fontFamily: fonts.bodySemibold, letterSpacing: -0.1 },
   statCard: {
     width: "48%",
-    minHeight: 108,
+    minHeight: 112,
     backgroundColor: colors.card,
-    borderRadius: radius.lg,
+    borderRadius: radius.xl,
     borderWidth: 1,
-    borderColor: colors.border,
-    padding: 14,
-    ...shadow,
+    borderColor: colors.cardBorder,
+    padding: 15,
+    ...shadowSoft,
   },
   statIcon: {
-    width: 34,
-    height: 34,
+    width: 36,
+    height: 36,
     borderRadius: radius.md,
     alignItems: "center",
     justifyContent: "center",
   },
   statValue: {
-    marginTop: 8,
-    fontSize: 22,
-    fontFamily: fonts.display,
-    letterSpacing: -0.4,
+    marginTop: 10,
+    fontSize: 24,
+    fontFamily: fonts.monoSemibold,
+    letterSpacing: -0.6,
     color: colors.text,
   },
   avatar: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: colors.primary,
   },
-  avatarText: { color: colors.primaryFg, fontSize: 15, fontFamily: fonts.heading },
-  empty: { alignItems: "center", gap: 8, paddingVertical: 14 },
+  avatarText: { color: colors.primaryFg, fontSize: 16, fontFamily: fonts.heading },
+  empty: { alignItems: "center", gap: 8, paddingVertical: 20 },
   emptyCompact: { paddingVertical: 6 },
   emptyIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 54,
+    height: 54,
+    borderRadius: 27,
     backgroundColor: colors.accent,
     alignItems: "center",
     justifyContent: "center",
+    marginBottom: 2,
   },
   emptyTitle: { fontSize: 16, fontFamily: fonts.heading, color: colors.text },
   errorRow: { flexDirection: "row", gap: 10, alignItems: "flex-start" },
@@ -664,22 +815,40 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    gap: 16,
+    gap: 18,
     backgroundColor: colors.bg,
   },
   brandMark: {
-    width: 56,
-    height: 56,
-    borderRadius: 18,
-    backgroundColor: colors.primary,
+    width: 60,
+    height: 60,
+    borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
+    ...shadowGlow,
   },
   progressTrack: {
-    height: 8,
+    height: 9,
     borderRadius: radius.pill,
     overflow: "hidden",
-    backgroundColor: "#e8eeee",
+    backgroundColor: colors.surfaceStrong,
   },
-  progressValue: { height: "100%", borderRadius: radius.pill, backgroundColor: colors.primary },
+  progressValue: { height: "100%", borderRadius: radius.pill },
+  screenGlowPrimary: {
+    position: "absolute",
+    right: -110,
+    top: 140,
+    width: 240,
+    height: 240,
+    borderRadius: 120,
+    opacity: 0.05,
+  },
+  screenGlowSecondary: {
+    position: "absolute",
+    left: -130,
+    bottom: 120,
+    width: 260,
+    height: 260,
+    borderRadius: 130,
+    opacity: 0.04,
+  },
 });
