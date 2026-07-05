@@ -26,6 +26,15 @@ export default function CallPage({
   const [connection, setConnection] = useState<TokenResponse | null>(null);
   const [choices, setChoices] = useState<LocalUserChoices | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Camera/mic (getUserMedia) is only exposed in a secure context: HTTPS, or
+  // http://localhost / 127.0.0.1. Over a plain-HTTP LAN IP the browser hides
+  // navigator.mediaDevices entirely, so the call can never start. Detect this
+  // up front and explain it, rather than letting PreJoin surface a generic
+  // "couldn't access your camera or microphone" that looks like a denied
+  // permission.
+  const insecure =
+    typeof window !== "undefined" &&
+    (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia);
 
   useEffect(() => {
     let cancelled = false;
@@ -52,6 +61,26 @@ export default function CallPage({
   const handleDisconnected = useCallback(() => {
     router.push(`/`);
   }, [router]);
+
+  if (insecure) {
+    const host = typeof window !== "undefined" ? window.location.host : "";
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 px-6 text-center">
+        <p className="text-lg font-medium">Video needs a secure connection</p>
+        <p className="max-w-md text-muted-foreground">
+          Your browser only allows camera and microphone access over HTTPS (or
+          via <span className="font-mono">localhost</span>). You&apos;re on{" "}
+          <span className="font-mono">{host}</span> over http://, so the call
+          can&apos;t start. Open this page over <span className="font-mono">https://</span>
+          {" "}— run the app with <span className="font-mono">npm run dev:https</span> — or
+          visit it from this machine via <span className="font-mono">localhost</span>.
+        </p>
+        <Button variant="outline" onClick={() => router.back()}>
+          Go back
+        </Button>
+      </div>
+    );
+  }
 
   if (error) {
     return (

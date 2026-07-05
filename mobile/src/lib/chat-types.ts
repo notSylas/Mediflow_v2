@@ -35,6 +35,7 @@ export interface Conversation {
 export interface DoctorConversationRow {
   conversation: Conversation;
   patient: { id: string; name: string; email: string };
+  isMember?: boolean;
 }
 
 /** Live event the socket server emits on the "message" channel. */

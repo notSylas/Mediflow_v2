@@ -45,6 +45,20 @@ services:
       postgres:
         condition: service_healthy
 
+  # TLS terminator so the LAN is a secure context (camera/mic need HTTPS).
+  # Browse to https://<lan-ip>/ on each device — see Caddyfile.
+  caddy:
+    image: caddy:2-alpine
+    ports:
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./certs:/certs:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - app
+
   realtime:
     build: .
     # Bypass the npm script's `--env-file=.env` so compose env (DB by service
@@ -66,3 +80,5 @@ services:
 
 volumes:
   pgdata:
+  caddy_data:
+  caddy_config:

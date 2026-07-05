@@ -1,5 +1,5 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { auroraHeaderStyles } from "@/components/aurora-header";
@@ -8,6 +8,7 @@ import { DoctorAppointmentCard } from "@/components/clinical";
 import { ListSkeleton } from "@/components/skeleton";
 import {
   Body,
+  Button,
   Card,
   EmptyState,
   ErrorState,
@@ -16,6 +17,7 @@ import {
 } from "@/components/ui";
 import { FadeInView, PressableScale } from "@/components/motion";
 import { apiFetch } from "@/lib/api";
+import { useToast } from "@/components/toast";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { formatRelativeDay } from "@/lib/format-chat";
 import { colors, fonts, radius } from "@/lib/theme";
@@ -43,18 +45,59 @@ interface RefillQueueItem {
   diagnosis: string | null;
 }
 
+interface CareFollowUpItem {
+  id: string;
+  createdAt: string;
+  patientId: string;
+  patientName: string | null;
+  patientEmail: string;
+  note: string | null;
+}
+
 interface WorkQueueResponse {
   needsPrescription: DoctorAppointmentRow[];
   triageFlagged: DoctorAppointmentRow[];
   unreadConversations: DoctorConversationRow[];
   followUps: FollowUpQueueItem[];
   refillRequests: RefillQueueItem[];
+  careFollowUps: CareFollowUpItem[];
 }
 
 export default function DoctorWorkQueue() {
+  const client = useQueryClient();
+  const toast = useToast();
   const query = useQuery({
     queryKey: ["doctor", "work-queue"],
     queryFn: () => apiFetch<WorkQueueResponse>("/api/v1/doctor/work-queue"),
+  });
+  const careAction = useMutation({
+    mutationFn: ({
+      id,
+      action,
+    }: {
+      id: string;
+      action: "fulfill" | "dismiss";
+    }) =>
+      apiFetch<{ appointmentId?: string; ok?: boolean }>(
+        `/api/v1/doctor/care-follow-ups/${id}`,
+        {
+          method: "POST",
+          body: JSON.stringify({ action }),
+        }
+      ),
+    onSuccess: (result, variables) => {
+      client.invalidateQueries({ queryKey: ["doctor", "work-queue"] });
+      client.invalidateQueries({ queryKey: ["doctor", "home"] });
+      if (variables.action === "fulfill" && result.appointmentId) {
+        router.push({
+          pathname: "/(doctor)/prescribe/[id]",
+          params: { id: result.appointmentId },
+        });
+        return;
+      }
+      toast.success("Care follow-up dismissed.");
+    },
+    onError: (e: Error) => toast.error(e.message),
   });
 
   const data = query.data;
@@ -63,7 +106,8 @@ export default function DoctorWorkQueue() {
     (data?.triageFlagged.length ?? 0) +
     (data?.unreadConversations.length ?? 0) +
     (data?.followUps.length ?? 0) +
-    (data?.refillRequests.length ?? 0);
+    (data?.refillRequests.length ?? 0) +
+    (data?.careFollowUps?.length ?? 0);
 
   return (
     <AuroraScreen
@@ -144,6 +188,20 @@ export default function DoctorWorkQueue() {
             </QueueSection>
           ) : null}
 
+          {data.careFollowUps?.length > 0 ? (
+            <QueueSection title="Care plan follow-ups" index={2}>
+              {data.careFollowUps.map((item) => (
+                <CareFollowUpCard
+                  key={item.id}
+                  item={item}
+                  pending={careAction.isPending}
+                  onFulfill={() => careAction.mutate({ id: item.id, action: "fulfill" })}
+                  onDismiss={() => careAction.mutate({ id: item.id, action: "dismiss" })}
+                />
+              ))}
+            </QueueSection>
+          ) : null}
+
           {data.unreadConversations.length > 0 ? (
             <QueueSection title="Unread messages" index={3}>
               {data.unreadConversations.map(({ conversation, patient }) => (
@@ -188,6 +246,55 @@ export default function DoctorWorkQueue() {
         </>
       ) : null}
     </AuroraScreen>
+  );
+}
+
+function CareFollowUpCard({
+  item,
+  pending,
+  onFulfill,
+  onDismiss,
+}: {
+  item: CareFollowUpItem;
+  pending: boolean;
+  onFulfill: () => void;
+  onDismiss: () => void;
+}) {
+  return (
+    <Card>
+      <View style={styles.queueRow}>
+        <View style={[styles.queueIcon, { backgroundColor: colors.doctorBg }]}>
+          <MaterialCommunityIcons name="hand-heart" size={20} color={colors.doctor} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Body strong>{item.patientName || item.patientEmail}</Body>
+          <Muted>
+            Care member · requested {formatRelativeDay(item.createdAt)}
+            {item.note ? ` · ${item.note}` : ""}
+          </Muted>
+        </View>
+      </View>
+      <View style={styles.careActions}>
+        <View style={styles.careActionButton}>
+          <Button
+            label="Start consult"
+            icon="file-document-edit-outline"
+            compact
+            loading={pending}
+            onPress={onFulfill}
+          />
+        </View>
+        <View style={styles.careActionButton}>
+          <Button
+            label="Dismiss"
+            compact
+            tone="ghost"
+            disabled={pending}
+            onPress={onDismiss}
+          />
+        </View>
+      </View>
+    </Card>
   );
 }
 
@@ -293,6 +400,8 @@ const styles = StyleSheet.create({
   },
   summaryValue: { color: colors.text, fontFamily: fonts.display, fontSize: 24 },
   queueRow: { flexDirection: "row", alignItems: "center", gap: 11 },
+  careActions: { flexDirection: "row", alignItems: "center", gap: 8 },
+  careActionButton: { flex: 1 },
   queueIcon: {
     width: 42,
     height: 42,

@@ -7,6 +7,7 @@ import {
   ArrowRight,
   CheckCircle2,
   FilePenLine,
+  HandHeart,
   MessageCircle,
   Pill,
   RotateCcw,
@@ -15,7 +16,9 @@ import {
 import { auth } from "@/lib/auth";
 import {
   declineRefillRequestAction,
+  dismissCareFollowUpAction,
   dismissFollowUpAction,
+  fulfillCareFollowUpAction,
   markMessageReadAction,
   snoozeFollowUpAction,
 } from "@/app/(app)/doctor/actions";
@@ -24,6 +27,7 @@ import { listDoctorConversations } from "@/lib/chat";
 import { getOrCreateDoctorProfile } from "@/lib/doctor";
 import { listDoctorPendingFollowUps } from "@/lib/follow-ups";
 import { listPendingRefillRequests } from "@/lib/refills";
+import { listPendingCareFollowUps } from "@/lib/care-subscription";
 import { cn } from "@/lib/utils";
 import { TONES, type ToneName } from "@/lib/tones";
 import { Badge } from "@/components/ui/badge";
@@ -100,12 +104,14 @@ export default async function DoctorWorkQueuePage() {
   if (session.user.role !== "doctor") redirect("/patient");
 
   const profile = await getOrCreateDoctorProfile(session.user.id);
-  const [appointments, conversations, followUps, refillRequests] = await Promise.all([
-    listDoctorAppointments(profile.id),
-    listDoctorConversations(session.user.id),
-    listDoctorPendingFollowUps(profile.id),
-    listPendingRefillRequests(profile.id),
-  ]);
+  const [appointments, conversations, followUps, refillRequests, careFollowUps] =
+    await Promise.all([
+      listDoctorAppointments(profile.id),
+      listDoctorConversations(session.user.id),
+      listDoctorPendingFollowUps(profile.id),
+      listPendingRefillRequests(profile.id),
+      listPendingCareFollowUps(profile.id),
+    ]);
 
   const timezone = profile.timezone;
 
@@ -135,12 +141,17 @@ export default async function DoctorWorkQueuePage() {
     (a, b) => a.createdAt.getTime() - b.createdAt.getTime()
   );
 
+  const sortedCareFollowUps = [...careFollowUps].sort(
+    (a, b) => a.createdAt.getTime() - b.createdAt.getTime()
+  );
+
   const openCount =
     needsPrescription.length +
     unreadConversations.length +
     refillRequests.length +
     followUps.length +
-    triageFlagged.length;
+    triageFlagged.length +
+    sortedCareFollowUps.length;
 
   // Categories are sorted by count descending — whatever actually needs
   // attention surfaces first, instead of scanning past empty categories.
@@ -266,6 +277,52 @@ export default async function DoctorWorkQueuePage() {
       ),
     },
     {
+      key: "care-followups",
+      tone: "blue",
+      icon: HandHeart,
+      title: "Care plan follow-ups",
+      statLabel: "Care",
+      count: sortedCareFollowUps.length,
+      description: "Monthly check-in requests from MediFlow Care members.",
+      render: () => (
+        <>
+          {sortedCareFollowUps.slice(0, 8).map((request) => (
+            <div
+              key={request.id}
+              className="flex items-center justify-between gap-3 rounded-lg border bg-background/60 p-3"
+            >
+              <Link
+                href={`/doctor/patients/${request.patientId}`}
+                className="min-w-0 flex-1"
+              >
+                <span className="block truncate font-medium">
+                  {request.patientName || request.patientEmail}
+                </span>
+                <span className="block truncate text-sm text-muted-foreground">
+                  Care member · {formatInTimeZone(request.createdAt, timezone, "MMM d")}
+                  {request.note ? ` · ${request.note}` : ""}
+                </span>
+              </Link>
+              <div className="flex shrink-0 items-center gap-1">
+                <form action={fulfillCareFollowUpAction}>
+                  <input type="hidden" name="requestId" value={request.id} />
+                  <Button type="submit" size="sm" className="h-7 px-2 text-xs">
+                    Start consult
+                  </Button>
+                </form>
+                <form action={dismissCareFollowUpAction}>
+                  <input type="hidden" name="requestId" value={request.id} />
+                  <Button type="submit" variant="ghost" size="sm" className="h-7 px-2 text-xs">
+                    Dismiss
+                  </Button>
+                </form>
+              </div>
+            </div>
+          ))}
+        </>
+      ),
+    },
+    {
       key: "followups",
       tone: "emerald",
       icon: RotateCcw,
@@ -366,7 +423,7 @@ export default async function DoctorWorkQueuePage() {
         </Button>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         {sortedCategories.map((cat) => (
           <div key={cat.key} className={cn("rounded-xl p-4", TONES[cat.tone].tile)}>
             <p className="text-2xl font-semibold tabular-nums">{cat.count}</p>

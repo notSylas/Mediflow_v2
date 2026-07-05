@@ -13,6 +13,8 @@ export default async function globalSetup() {
       chat_attachments,
       messages,
       conversations,
+      care_followup_requests,
+      care_subscriptions,
       refill_requests,
       follow_ups,
       prescription_medicines,

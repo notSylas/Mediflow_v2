@@ -26,9 +26,10 @@ export default function Terms() {
       </Muted>
       <SectionHeader title="Messaging" />
       <Muted>
-        Messaging with your doctor unlocks after a paid consultation and is for
-        non-urgent follow-up only. It is not monitored around the clock — never use it
-        for emergencies.
+        Messaging with your doctor is available only through an active MediFlow Care
+        subscription. One-off video consultations do not include ongoing chat access.
+        Messaging is for non-urgent follow-up only and is not monitored around the
+        clock — never use it for emergencies.
       </Muted>
       <SectionHeader title="Governing law and contact" />
       <Muted>

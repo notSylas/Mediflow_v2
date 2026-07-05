@@ -52,6 +52,7 @@ export default function DoctorLayout() {
       <Tabs.Screen name="settings" options={{ title: "Settings" }} />
       <Tabs.Screen name="refill-requests" options={{ href: null }} />
       <Tabs.Screen name="work-queue" options={{ href: null }} />
+      <Tabs.Screen name="care" options={{ href: null }} />
       <Tabs.Screen name="messages/[id]" options={{ href: null }} />
       <Tabs.Screen name="encounter/[id]" options={{ href: null }} />
       <Tabs.Screen name="prescribe/[id]" options={{ href: null }} />

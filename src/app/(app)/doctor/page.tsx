@@ -9,6 +9,7 @@ import {
   CalendarDays,
   CheckCircle2,
   FilePenLine,
+  HandHeart,
   IndianRupee,
   ListChecks,
   MessageCircle,
@@ -28,6 +29,10 @@ import { listDoctorConversations } from "@/lib/chat";
 import { getDoctorRevenueInPaise, getOrCreateDoctorProfile } from "@/lib/doctor";
 import { listDoctorPendingFollowUps } from "@/lib/follow-ups";
 import { listPendingRefillRequests } from "@/lib/refills";
+import {
+  countActiveSubscribers,
+  listPendingCareFollowUps,
+} from "@/lib/care-subscription";
 import { JoinCallButton } from "@/components/JoinCallButton";
 import { PresenceBadge } from "@/components/PresenceBadge";
 import { SpotlightCard } from "@/components/wow/SpotlightCard";
@@ -48,8 +53,16 @@ export default async function DoctorDashboardPage() {
   if (session.user.role !== "doctor") redirect("/patient");
 
   const profile = await getOrCreateDoctorProfile(session.user.id);
-  const [rows, revenueInPaise, rules, conversations, followUps, refillRequests] =
-    await Promise.all([
+  const [
+    rows,
+    revenueInPaise,
+    rules,
+    conversations,
+    followUps,
+    refillRequests,
+    activeCareMembers,
+    careFollowUps,
+  ] = await Promise.all([
     listDoctorAppointments(profile.id),
     getDoctorRevenueInPaise(profile.id),
     db
@@ -60,6 +73,8 @@ export default async function DoctorDashboardPage() {
     listDoctorConversations(session.user.id),
     listDoctorPendingFollowUps(profile.id),
     listPendingRefillRequests(profile.id),
+    countActiveSubscribers(profile.id),
+    listPendingCareFollowUps(profile.id),
   ]);
 
   const setupSteps = [
@@ -121,6 +136,7 @@ export default async function DoctorDashboardPage() {
     needsPrescription.length +
     unreadConversations.length +
     refillRequests.length +
+    careFollowUps.length +
     followUps.length +
     triageFlagged.length;
 
@@ -142,6 +158,12 @@ export default async function DoctorDashboardPage() {
       label: "Collected",
       value: `₹${(revenueInPaise / 100).toLocaleString("en-IN")}`,
       tone: "amber" as const,
+    },
+    {
+      icon: HandHeart,
+      label: "Care members",
+      value: String(activeCareMembers),
+      tone: "emerald" as const,
     },
   ];
 
@@ -210,7 +232,7 @@ export default async function DoctorDashboardPage() {
         </Card>
       )}
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
         {stats.map((stat) => (
           <SpotlightCard
             key={stat.label}
@@ -248,7 +270,7 @@ export default async function DoctorDashboardPage() {
             </Link>
           </Button>
         </CardHeader>
-        <CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        <CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
           {[
             {
               label: "Needs Rx",
@@ -272,6 +294,12 @@ export default async function DoctorDashboardPage() {
               label: "Follow-ups",
               value: followUps.length,
               icon: RotateCcw,
+              tone: "emerald" as const,
+            },
+            {
+              label: "Care follow-ups",
+              value: careFollowUps.length,
+              icon: HandHeart,
               tone: "emerald" as const,
             },
             {

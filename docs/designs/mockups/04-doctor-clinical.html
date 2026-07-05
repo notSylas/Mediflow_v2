@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MediFlow — Doctor clinical (D1–D7)</title>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css" rel="stylesheet">
+<style>
+body{margin:0;background:#ECE7F4;}
+.fb{font-family:'Geist',system-ui,sans-serif;padding:24px;}
+.fg{display:grid;grid-template-columns:repeat(auto-fit,minmax(244px,1fr));gap:18px;align-items:start;max-width:1200px;margin:0 auto;}
+.dev{background:#0B1020;border-radius:40px;padding:7px;box-shadow:0 16px 36px rgba(15,23,42,.26),0 0 0 2px #1E293B;}
+.scr{background:#F8F7FB;border-radius:33px;overflow:hidden;position:relative;min-height:480px;}
+.isl{position:absolute;top:7px;left:50%;transform:translateX(-50%);width:72px;height:18px;background:#0B1020;border-radius:12px;z-index:5;}
+.sb{display:flex;justify-content:space-between;padding:11px 18px 0;font-size:11px;font-weight:600;color:#0F172A;}
+.step{position:absolute;top:42px;left:14px;background:#6D28C9;color:#fff;font-size:10px;font-weight:600;border-radius:20px;padding:3px 9px;z-index:6;font-family:'Geist Mono',monospace;}
+.hd{display:flex;align-items:center;gap:9px;padding:4px 16px 10px;}
+.hd i{font-size:20px;color:#475569;}.hd span{font-size:15px;font-weight:600;color:#0F172A;}
+.cta{border:none;border-radius:12px;padding:12px;font-family:Geist;font-size:14px;font-weight:600;color:#fff;width:100%;}
+.cw{background:#fff;border-radius:14px;box-shadow:0 1px 3px rgba(15,23,42,.07),0 8px 22px rgba(109,40,201,.08);}
+.hero{border-radius:16px;background:linear-gradient(135deg,#9D4EDD,#6D28C9 58%,#4A1D8F);box-shadow:0 12px 26px rgba(109,40,201,.32);position:relative;overflow:hidden;}
+.gl{background:rgba(255,255,255,.16);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.32);}
+.mono{font-family:'Geist Mono',monospace;}
+.tab{position:absolute;bottom:0;left:0;right:0;display:flex;justify-content:space-around;align-items:center;padding:8px 6px 16px;background:rgba(255,255,255,.74);backdrop-filter:blur(16px);border-top:1px solid rgba(226,232,240,.8);}
+</style></head>
+<body><div class="fb"><div class="fg">
+
+<div class="dev"><div class="scr">
+  <div class="isl"></div><div class="step">D1 · Get verified</div>
+  <div class="sb"><span>9:41</span><span><i class="ti ti-wifi"></i> <i class="ti ti-battery-3"></i></span></div>
+  <div style="padding:6px 18px 12px;"><p style="margin:0;font-size:19px;font-weight:600;color:#0F172A;">Get verified</p><p style="margin:3px 0 0;font-size:12px;color:#64748B;">We verify every doctor before going live.</p></div>
+  <div style="padding:0 18px;">
+    <div style="display:flex;gap:6px;margin-bottom:16px;"><div style="flex:1;height:5px;border-radius:3px;background:linear-gradient(90deg,#9D4EDD,#6D28C9);"></div><div style="flex:1;height:5px;border-radius:3px;background:linear-gradient(90deg,#9D4EDD,#6D28C9);"></div><div style="flex:1;height:5px;border-radius:3px;background:#E2E8F0;"></div></div>
+    <div class="cw" style="padding:12px;display:flex;align-items:center;gap:10px;margin-bottom:9px;"><div style="width:38px;height:38px;border-radius:10px;background:#DCFCE7;display:flex;align-items:center;justify-content:center;"><i class="ti ti-circle-check" style="color:#16A34A;font-size:20px;"></i></div><div style="flex:1;"><p style="margin:0;font-size:13px;font-weight:600;color:#0F172A;">Identity</p><p style="margin:0;font-size:11px;color:#16A34A;">DigiLocker verified</p></div></div>
+    <div class="cw" style="padding:12px;display:flex;align-items:center;gap:10px;margin-bottom:9px;"><div style="width:38px;height:38px;border-radius:10px;background:#DCFCE7;display:flex;align-items:center;justify-content:center;"><i class="ti ti-circle-check" style="color:#16A34A;font-size:20px;"></i></div><div style="flex:1;"><p style="margin:0;font-size:13px;font-weight:600;color:#0F172A;">Degree certificate</p><p style="margin:0;font-size:11px;color:#16A34A;">Uploaded</p></div></div>
+    <div class="cw" style="padding:12px;display:flex;align-items:center;gap:10px;border:1.5px solid #9D4EDD;margin-bottom:14px;"><div style="width:38px;height:38px;border-radius:10px;background:#F4ECFE;display:flex;align-items:center;justify-content:center;"><i class="ti ti-id-badge-2" style="color:#6D28C9;font-size:20px;"></i></div><div style="flex:1;"><p style="margin:0;font-size:13px;font-weight:600;color:#0F172A;">Registration no.</p><p style="margin:0;font-size:11px;color:#64748B;">NMR / state / AYUSH</p></div></div>
+    <div style="background:#FEF3C7;border-radius:10px;padding:10px;font-size:11px;color:#92400E;margin-bottom:13px;"><i class="ti ti-clock"></i> Admin reviews within 24h</div>
+    <button class="cta" style="background:linear-gradient(135deg,#9D4EDD,#6D28C9);box-shadow:0 6px 16px rgba(109,40,201,.3);">Submit for verification</button>
+  </div>
+</div></div>
+
+<div class="dev"><div class="scr">
+  <div class="isl"></div><div class="step">D2 · Today</div>
+  <div style="position:absolute;top:0;left:0;right:0;height:210px;background:radial-gradient(120% 90% at 80% -10%,#E9D7FD,#F8F7FB 60%);"></div>
+  <div style="position:relative;">
+    <div class="sb"><span>9:41</span><span><i class="ti ti-wifi"></i> <i class="ti ti-battery-3"></i></span></div>
+    <div style="padding:24px 18px 0;">
+      <p style="margin:0;font-size:12px;color:#64748B;">Tuesday, Jun 30</p>
+      <p style="margin:1px 0 14px;font-size:19px;font-weight:600;color:#0F172A;">Good morning, Dr. Mehta</p>
+      <div class="hero" style="padding:14px;">
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px;position:relative;">
+          <div class="gl" style="border-radius:11px;padding:9px;"><p style="margin:0;font-size:19px;font-weight:600;color:#fff;" class="mono">8</p><p style="margin:0;font-size:10px;color:#E9D7FD;">Today</p></div>
+          <div class="gl" style="border-radius:11px;padding:9px;"><p style="margin:0;font-size:19px;font-weight:600;color:#fff;" class="mono">₹4.8k</p><p style="margin:0;font-size:10px;color:#E9D7FD;">Revenue</p></div>
+          <div class="gl" style="border-radius:11px;padding:9px;"><p style="margin:0;font-size:19px;font-weight:600;color:#fff;" class="mono">12%</p><p style="margin:0;font-size:10px;color:#E9D7FD;">No-show</p></div>
+        </div>
+      </div>
+      <p style="margin:14px 0 8px;font-size:10px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:#94A3B8;">Next up</p>
+      <div class="cw" style="padding:12px;border:1.5px solid #D3B0FB;display:flex;justify-content:space-between;align-items:center;margin-bottom:9px;"><div><p style="margin:0;font-size:13px;font-weight:600;color:#0F172A;">Aarav Sharma</p><p style="margin:0;font-size:11px;color:#64748B;">6:20 pm · chest tightness</p></div><button style="background:linear-gradient(135deg,#9D4EDD,#6D28C9);color:#fff;border:none;border-radius:9px;padding:7px 13px;font-family:Geist;font-size:12px;font-weight:600;">Open</button></div>
+      <div class="cw" style="padding:12px;margin-bottom:88px;"><p style="margin:0;font-size:13px;font-weight:600;color:#0F172A;">Ritu Sen</p><p style="margin:0;font-size:11px;color:#64748B;">7:00 pm · follow-up</p></div>
+    </div>
+  </div>
+  <div class="tab"><span style="color:#6D28C9;text-align:center;font-size:9px;"><i class="ti ti-calendar-event" style="font-size:19px;display:block;"></i>Today</span><span style="color:#94A3B8;text-align:center;font-size:9px;"><i class="ti ti-users" style="font-size:19px;display:block;"></i>Patients</span><span style="color:#94A3B8;text-align:center;font-size:9px;"><i class="ti ti-list-check" style="font-size:19px;display:block;"></i>Queue</span><span style="color:#94A3B8;text-align:center;font-size:9px;"><i class="ti ti-message" style="font-size:19px;display:block;"></i>Inbox</span><span style="color:#94A3B8;text-align:center;font-size:9px;"><i class="ti ti-dots" style="font-size:19px;display:block;"></i>More</span></div>
+</div></div>
+
+<div class="dev"><div class="scr">
+  <div class="isl"></div><div class="step">D3 · Appointments</div>
+  <div class="sb"><span>9:41</span><span><i class="ti ti-wifi"></i> <i class="ti ti-battery-3"></i></span></div>
+  <div style="padding:6px 18px 8px;"><p style="margin:0;font-size:18px;font-weight:600;color:#0F172A;">Appointments</p></div>
+  <div style="display:flex;gap:6px;padding:0 18px 10px;"><span style="background:#6D28C9;color:#fff;border-radius:16px;padding:4px 12px;font-size:12px;">Today</span><span style="border:1px solid #D3B0FB;color:#6D28C9;border-radius:16px;padding:4px 12px;font-size:12px;">Week</span><span style="border:1px solid #D3B0FB;color:#6D28C9;border-radius:16px;padding:4px 12px;font-size:12px;">All</span></div>
+  <div style="padding:0 18px;">
+    <div style="display:flex;gap:10px;padding:10px 0;border-bottom:1px solid #EEF1F6;"><span style="font-size:12px;width:48px;color:#64748B;" class="mono">5:40p</span><div style="flex:1;"><p style="margin:0;font-size:13px;font-weight:600;color:#0F172A;">Neha Roy</p><p style="margin:0;font-size:11px;color:#64748B;">Completed</p></div></div>
+    <div style="display:flex;gap:10px;padding:8px;background:#F4ECFE;border-radius:9px;margin:4px 0;"><span style="font-size:12px;width:44px;color:#4A1D8F;" class="mono">6:20p</span><div style="flex:1;"><p style="margin:0;font-size:13px;font-weight:600;color:#311263;">Aarav Sharma</p><p style="margin:0;font-size:11px;color:#6D28C9;">Confirmed · in 2h</p></div></div>
+    <div style="display:flex;gap:10px;padding:10px 0;border-bottom:1px solid #EEF1F6;"><span style="font-size:12px;width:48px;color:#64748B;" class="mono">7:00p</span><div style="flex:1;"><p style="margin:0;font-size:13px;font-weight:600;color:#0F172A;">Ritu Sen</p><p style="margin:0;font-size:11px;color:#64748B;">Confirmed</p></div></div>
+    <div style="display:flex;gap:10px;padding:10px 0;border-bottom:1px solid #EEF1F6;"><span style="font-size:12px;width:48px;color:#64748B;" class="mono">7:40p</span><div style="flex:1;"><p style="margin:0;font-size:13px;font-weight:600;color:#0F172A;">Karan Joshi</p><p style="margin:0;font-size:11px;color:#64748B;">New</p></div></div>
+    <div style="display:flex;gap:10px;padding:10px 0;"><span style="font-size:12px;width:48px;color:#CBD5E1;" class="mono">8:20p</span><div style="flex:1;"><p style="margin:0;font-size:13px;color:#94A3B8;">Open slot</p></div></div>
+  </div>
+</div></div>
+
+<div class="dev"><div class="scr">
+  <div class="isl"></div><div class="step">D4 · Work queue</div>
+  <div class="sb"><span>9:41</span><span><i class="ti ti-wifi"></i> <i class="ti ti-battery-3"></i></span></div>
+  <div style="padding:6px 18px 10px;"><p style="margin:0;font-size:18px;font-weight:600;color:#0F172A;">Work queue</p></div>
+  <div style="padding:0 18px;">
+    <div class="cw" style="padding:13px;margin-bottom:10px;"><div style="display:flex;justify-content:space-between;"><p style="margin:0;font-size:13px;font-weight:600;color:#0F172A;"><i class="ti ti-pencil" style="color:#6D28C9;"></i> Write prescription</p><span style="background:#FEE2E2;color:#991B1B;border-radius:6px;padding:1px 7px;font-size:11px;">3</span></div><p style="margin:4px 0 0;font-size:11px;color:#64748B;">After today's consults</p></div>
+    <div class="cw" style="padding:13px;margin-bottom:10px;"><div style="display:flex;justify-content:space-between;"><p style="margin:0;font-size:13px;font-weight:600;color:#0F172A;"><i class="ti ti-pill" style="color:#6D28C9;"></i> Refill requests</p><span style="background:#FEF3C7;color:#92400E;border-radius:6px;padding:1px 7px;font-size:11px;">2</span></div><p style="margin:4px 0 0;font-size:11px;color:#64748B;">Awaiting approval</p></div>
+    <div class="cw" style="padding:13px;"><div style="display:flex;justify-content:space-between;"><p style="margin:0;font-size:13px;font-weight:600;color:#0F172A;"><i class="ti ti-calendar-repeat" style="color:#6D28C9;"></i> Follow-ups due</p><span style="background:#F4ECFE;color:#4A1D8F;border-radius:6px;padding:1px 7px;font-size:11px;">5</span></div><p style="margin:4px 0 0;font-size:11px;color:#64748B;">Patients to nudge</p></div>
+  </div>
+</div></div>
+
+<div class="dev"><div class="scr">
+  <div class="isl"></div><div class="step">D5 · Encounter</div>
+  <div class="sb"><span>9:41</span><span><i class="ti ti-wifi"></i> <i class="ti ti-battery-3"></i></span></div>
+  <div class="hd"><i class="ti ti-arrow-left"></i><span>Encounter</span></div>
+  <div style="padding:0 18px;">
+    <div class="hero" style="padding:14px;margin-bottom:13px;"><p style="margin:0;font-size:15px;font-weight:600;color:#fff;position:relative;">Aarav Sharma · 34 · M</p><p style="margin:3px 0 0;font-size:11px;color:#E9D7FD;position:relative;">Chest tightness · cholesterol report</p></div>
+    <div style="border-radius:12px;padding:12px;background:#EEF2FF;border:1px solid #C7D2FE;margin-bottom:13px;"><p style="margin:0 0 4px;font-size:10px;font-weight:600;text-transform:uppercase;color:#2A45C8;"><i class="ti ti-sparkles"></i> AI report summary</p><p style="margin:0;font-size:11px;color:#1A2C8A;line-height:1.5;">HbA1c 7.8 (high), LDL 162 (high). Metabolic + cardiac review.</p></div>
+    <p style="margin:0 0 6px;font-size:11px;font-weight:600;color:#475569;">SOAP note</p>
+    <div style="background:#fff;border:1px solid #E2E8F0;border-radius:9px;padding:10px;font-size:11px;color:#94A3B8;margin-bottom:7px;">S: Exertional chest tightness…</div>
+    <div style="background:#fff;border:1px solid #E2E8F0;border-radius:9px;padding:10px;font-size:11px;color:#94A3B8;margin-bottom:13px;">O: BP 138/88 · HbA1c 7.8…</div>
+    <button class="cta" style="background:linear-gradient(135deg,#9D4EDD,#6D28C9);box-shadow:0 6px 16px rgba(109,40,201,.3);">Write prescription</button>
+  </div>
+</div></div>
+
+<div class="dev"><div class="scr">
+  <div class="isl"></div><div class="step">D6 · Prescribe</div>
+  <div class="sb"><span>9:41</span><span><i class="ti ti-wifi"></i> <i class="ti ti-battery-3"></i></span></div>
+  <div class="hd"><i class="ti ti-arrow-left"></i><span>Prescription</span></div>
+  <div style="padding:0 18px;">
+    <p style="margin:0 0 9px;font-size:12px;color:#64748B;">For Aarav Sharma</p>
+    <div class="cw" style="padding:11px;margin-bottom:8px;"><p style="margin:0;font-size:13px;font-weight:600;color:#0F172A;" class="mono">Metformin 500mg</p><p style="margin:2px 0 0;font-size:11px;color:#64748B;" class="mono">1-0-1 · after food · 30d</p></div>
+    <div class="cw" style="padding:11px;margin-bottom:8px;"><p style="margin:0;font-size:13px;font-weight:600;color:#0F172A;" class="mono">Atorvastatin 10mg</p><p style="margin:2px 0 0;font-size:11px;color:#64748B;" class="mono">0-0-1 · night · 30d</p></div>
+    <div style="border:1.5px dashed #D3B0FB;border-radius:10px;padding:10px;text-align:center;font-size:13px;color:#6D28C9;margin-bottom:13px;"><i class="ti ti-plus"></i> Add medicine</div>
+    <div style="background:#FEF3C7;border-radius:9px;padding:9px;margin-bottom:11px;font-size:11px;color:#92400E;"><i class="ti ti-lock"></i> Once issued, this can't be edited.</div>
+    <button class="cta" style="background:linear-gradient(135deg,#9D4EDD,#6D28C9);">Issue prescription</button>
+  </div>
+</div></div>
+
+<div class="dev"><div class="scr">
+  <div class="isl"></div><div class="step">D7 · AI draft</div>
+  <div class="sb"><span>9:41</span><span><i class="ti ti-wifi"></i> <i class="ti ti-battery-3"></i></span></div>
+  <div class="hd"><i class="ti ti-arrow-left"></i><span>Review AI draft</span></div>
+  <div style="padding:0 18px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:11px;"><span style="background:#FEF3C7;color:#92400E;border-radius:6px;padding:3px 9px;font-size:11px;">Draft · not signed</span><span style="font-size:10px;color:#94A3B8;">edit before signing</span></div>
+    <p style="margin:0 0 4px;font-size:11px;font-weight:600;color:#475569;">Subjective</p>
+    <div style="background:#fff;border:1px solid #E2E8F0;border-radius:9px;padding:10px;font-size:11px;color:#0F172A;margin-bottom:8px;">Reports exertional chest tightness for 2 weeks…</div>
+    <p style="margin:0 0 4px;font-size:11px;font-weight:600;color:#475569;">Assessment</p>
+    <div style="background:#fff;border:1px solid #E2E8F0;border-radius:9px;padding:10px;font-size:11px;color:#0F172A;margin-bottom:8px;">Likely dyslipidemia with poor glycemic control…</div>
+    <p style="margin:0 0 4px;font-size:11px;font-weight:600;color:#475569;">Patient summary</p>
+    <div style="background:#fff;border:1px solid #E2E8F0;border-radius:9px;padding:10px;font-size:11px;color:#0F172A;margin-bottom:13px;">Your sugar and cholesterol are a bit high. Start the two medicines…</div>
+    <button class="cta" style="background:linear-gradient(135deg,#9D4EDD,#6D28C9);box-shadow:0 6px 16px rgba(109,40,201,.3);">Approve and sign</button>
+  </div>
+</div></div>
+
+</div></div></body></html>

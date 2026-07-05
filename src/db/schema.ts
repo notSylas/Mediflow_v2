@@ -100,6 +100,24 @@ export const paymentStatus = pgEnum("payment_status", [
 
 export const overrideKind = pgEnum("override_kind", ["blocked", "extra"]);
 
+// System of medicine the doctor practises. Gates the marketplace search filter
+// and, later, prescription authority (AYUSH vs allopathy boundaries).
+export const systemOfMedicine = pgEnum("system_of_medicine", [
+  "allopathy",
+  "homeopathy",
+  "ayurveda",
+]);
+
+// Marketplace verification lifecycle. A profile is only publicly listed once
+// it reaches "verified" (and isListed is true).
+export const doctorVerificationStatus = pgEnum("doctor_verification_status", [
+  "unverified",
+  "pending",
+  "verified",
+  "rejected",
+  "suspended",
+]);
+
 export const doctorProfiles = pgTable("doctor_profiles", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: text("user_id")
@@ -114,7 +132,32 @@ export const doctorProfiles = pgTable("doctor_profiles", {
   registrationNo: text("registration_no"), // medical council registration
   yearsExperience: integer("years_experience"),
   languages: text("languages"), // comma-separated, e.g. "English, Hindi"
+  // --- Marketplace fields (Phase 1) ---
+  // System of medicine — drives the search filter and (later) prescription scope.
+  systemOfMedicine: systemOfMedicine("system_of_medicine").notNull().default("allopathy"),
+  hospital: text("hospital"), // for search-by-hospital + profile display
+  city: text("city"),
+  // Verification (marketplace trust). Discovery only lists profiles that are
+  // BOTH verified AND isListed — enforced in the query, not just the UI.
+  verificationStatus: doctorVerificationStatus("verification_status")
+    .notNull()
+    .default("unverified"),
+  verifiedAt: timestamp("verified_at", { withTimezone: true }),
+  verifiedByUserId: text("verified_by_user_id").references(() => user.id, {
+    onDelete: "set null",
+  }),
+  verificationNotes: text("verification_notes"),
+  isListed: boolean("is_listed").notNull().default(false),
+  // Denormalized rating aggregate (avg = ratingSum / ratingCount at render);
+  // updated when a review is published.
+  ratingCount: integer("rating_count").notNull().default(0),
+  ratingSum: integer("rating_sum").notNull().default(0),
+  // Non-authoritative discovery-sort hint (eng review ARCH 4). Real bookable
+  // slots are still computed at query time on the profile/booking page.
+  nextAvailableAt: timestamp("next_available_at", { withTimezone: true }),
   feeInPaise: integer("fee_in_paise").notNull(),
+  // Monthly price of the MediFlow Care subscription, set by the doctor.
+  carePlanPriceInPaise: integer("care_plan_price_in_paise").notNull().default(49900),
   slotMinutes: integer("slot_minutes").notNull().default(20),
   timezone: text("timezone").notNull().default("Asia/Kolkata"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -422,6 +465,78 @@ export const refillRequests = pgTable("refill_requests", {
 });
 
 // ---------------------------------------------------------------------------
+// MediFlow Care — subscription that unlocks ongoing-care features (messaging
+// without a prior booking, a monthly async follow-up credit, reminders) between
+// paid video consults. v1 billing is a doctor/admin toggle — no Razorpay
+// recurring billing yet; the currentPeriod* columns are shaped so a real
+// subscription webhook can populate them later without a migration.
+// One row per patient↔doctor pair, mirroring the conversations table so
+// multi-doctor stays an insert, not a migration.
+// ---------------------------------------------------------------------------
+
+export const subscriptionStatus = pgEnum("subscription_status", [
+  "active",
+  "inactive",
+  "cancelled",
+  "manual_trial",
+]);
+
+export const careSubscriptions = pgTable(
+  "care_subscriptions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    patientId: text("patient_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    doctorId: uuid("doctor_id")
+      .notNull()
+      .references(() => doctorProfiles.id, { onDelete: "cascade" }),
+    status: subscriptionStatus("status").notNull().default("inactive"),
+    // Current care/billing period. In v1 these are set by the admin toggle;
+    // later they come from the Razorpay subscription webhook.
+    currentPeriodStart: timestamp("current_period_start", { withTimezone: true }),
+    currentPeriodEnd: timestamp("current_period_end", { withTimezone: true }),
+    // Monthly follow-up credit accounting, reset each period.
+    followUpCreditsUsed: integer("follow_up_credits_used").notNull().default(0),
+    // Patient-controlled preferences (also surfaced on the profile screen).
+    digestEnabled: boolean("digest_enabled").notNull().default(true),
+    medicineRemindersEnabled: boolean("medicine_reminders_enabled")
+      .notNull()
+      .default(true),
+    cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("uq_care_subscription_pair").on(t.patientId, t.doctorId)]
+);
+
+// Patient-initiated monthly async check-in, distinct from doctor-recommended
+// follow_ups (which are doctor-created). One allowed per active period; the
+// doctor services it by starting an async consult.
+export const careFollowUpRequests = pgTable("care_followup_requests", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  subscriptionId: uuid("subscription_id")
+    .notNull()
+    .references(() => careSubscriptions.id, { onDelete: "cascade" }),
+  patientId: text("patient_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  doctorId: uuid("doctor_id")
+    .notNull()
+    .references(() => doctorProfiles.id, { onDelete: "cascade" }),
+  // The async appointment created to service this request, once the doctor acts.
+  appointmentId: uuid("appointment_id").references(() => appointments.id, {
+    onDelete: "set null",
+  }),
+  note: text("note"),
+  status: followUpStatus("status").notNull().default("pending"),
+  // The subscription period this request was made in — used to enforce the
+  // one-per-period rule even after a period roll.
+  periodStart: timestamp("period_start", { withTimezone: true }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// ---------------------------------------------------------------------------
 // Medicine formulary — server-backed source for the prescription autocomplete.
 // Editable without an app release (via DB / re-seed); the mobile app keeps a
 // bundled copy as an offline fallback.
@@ -433,5 +548,98 @@ export const medicines = pgTable("medicines", {
   route: text("route").notNull().default("oral"),
   category: text("category"),
   isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// ---------------------------------------------------------------------------
+// Multi-doctor marketplace (Phase 1) — specialty taxonomy, per-doctor
+// specialties, patient reviews, and doctor verification documents.
+// ---------------------------------------------------------------------------
+
+// Practo-style two-level grouping. general_care = GP, women's health, skin,
+// child, dental, eye, ENT, mental health; advanced_care = bones/joints,
+// brain/nerve, urinary, lungs, heart, stomach, diabetes, cancer, etc.
+export const specialtyGroup = pgEnum("specialty_group", [
+  "general_care",
+  "advanced_care",
+]);
+
+// Specialty taxonomy as DATA (not an enum) so it grows without a migration.
+export const specialties = pgTable("specialties", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  slug: text("slug").notNull().unique(), // e.g. "cardiologist"
+  name: text("name").notNull(), // e.g. "Heart specialist"
+  group: specialtyGroup("group").notNull(),
+  sortOrder: integer("sort_order").notNull().default(0),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// A doctor practises one or more specialties. doctor_profiles.specialty stays
+// the primary display label; this table drives structured search + triage
+// matching.
+export const doctorSpecialties = pgTable(
+  "doctor_specialties",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    doctorId: uuid("doctor_id")
+      .notNull()
+      .references(() => doctorProfiles.id, { onDelete: "cascade" }),
+    specialtyId: uuid("specialty_id")
+      .notNull()
+      .references(() => specialties.id, { onDelete: "cascade" }),
+  },
+  (t) => [uniqueIndex("uq_doctor_specialty").on(t.doctorId, t.specialtyId)]
+);
+
+export const reviewStatus = pgEnum("review_status", [
+  "published",
+  "flagged",
+  "removed",
+]);
+
+// One patient review per completed appointment (rating 1-5). The doctor's
+// ratingCount/ratingSum aggregate is updated when a review is published.
+export const doctorReviews = pgTable(
+  "doctor_reviews",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    doctorId: uuid("doctor_id")
+      .notNull()
+      .references(() => doctorProfiles.id, { onDelete: "cascade" }),
+    patientId: text("patient_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    // One review per appointment — enforced by the unique index below.
+    appointmentId: uuid("appointment_id")
+      .notNull()
+      .references(() => appointments.id, { onDelete: "cascade" }),
+    rating: integer("rating").notNull(), // 1..5, validated in the API
+    body: text("body"),
+    status: reviewStatus("status").notNull().default("published"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("uq_review_per_appointment").on(t.appointmentId)]
+);
+
+// Documents a doctor submits for RMP verification (identity, degree,
+// registration). Stored inline as bytea for now (same as medical_reports);
+// swap to object storage in Phase 2.
+export const verificationDocKind = pgEnum("verification_doc_kind", [
+  "identity",
+  "degree",
+  "registration",
+]);
+
+export const doctorVerificationDocuments = pgTable("doctor_verification_documents", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  doctorId: uuid("doctor_id")
+    .notNull()
+    .references(() => doctorProfiles.id, { onDelete: "cascade" }),
+  kind: verificationDocKind("kind").notNull(),
+  filename: text("filename").notNull(),
+  mimeType: text("mime_type").notNull(),
+  data: bytea("data").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });

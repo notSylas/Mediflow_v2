@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MediFlow — Patient book &amp; pay (P1–P10)</title>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css" rel="stylesheet">
+<style>
+body{margin:0;background:#E9EDF4;}
+.fb{font-family:'Geist',system-ui,sans-serif;padding:24px;}
+.fg{display:grid;grid-template-columns:repeat(auto-fit,minmax(244px,1fr));gap:18px;align-items:start;max-width:1200px;margin:0 auto;}
+.dev{background:#0B1020;border-radius:40px;padding:7px;box-shadow:0 16px 36px rgba(15,23,42,.26),0 0 0 2px #1E293B;}
+.scr{background:#F7F8FB;border-radius:33px;overflow:hidden;position:relative;min-height:480px;}
+.isl{position:absolute;top:7px;left:50%;transform:translateX(-50%);width:72px;height:18px;background:#0B1020;border-radius:12px;z-index:5;}
+.sb{display:flex;justify-content:space-between;padding:11px 18px 0;font-size:11px;font-weight:600;color:#0F172A;}
+.step{position:absolute;top:42px;left:14px;background:#2A45C8;color:#fff;font-size:10px;font-weight:600;border-radius:20px;padding:3px 9px;z-index:6;font-family:'Geist Mono',monospace;}
+.hd{display:flex;align-items:center;gap:9px;padding:4px 16px 10px;}
+.hd i{font-size:20px;color:#475569;}.hd span{font-size:15px;font-weight:600;color:#0F172A;}
+.cta{border:none;border-radius:12px;padding:12px;font-family:Geist;font-size:14px;font-weight:600;color:#fff;width:100%;}
+.cw{background:#fff;border-radius:14px;box-shadow:0 1px 3px rgba(15,23,42,.07),0 8px 22px rgba(42,69,200,.08);}
+.hero{border-radius:16px;background:linear-gradient(135deg,#5B7BF0,#2A45C8 58%,#1A2C8A);box-shadow:0 12px 26px rgba(42,69,200,.32);position:relative;overflow:hidden;}
+.gl{background:rgba(255,255,255,.18);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.38);}
+.tab{position:absolute;bottom:0;left:0;right:0;display:flex;justify-content:space-around;align-items:center;padding:8px 6px 16px;background:rgba(255,255,255,.74);backdrop-filter:blur(16px);border-top:1px solid rgba(226,232,240,.8);}
+.tab i{font-size:19px;}
+</style></head>
+<body><div class="fb"><div class="fg">
+
+<div class="dev"><div class="scr">
+  <div class="isl"></div><div class="step">P1 · Home</div>
+  <div style="position:absolute;top:0;left:0;right:0;height:200px;background:radial-gradient(120% 90% at 80% -10%,#DCE3FF,#F7F8FB 60%);"></div>
+  <div style="position:relative;">
+    <div class="sb"><span>9:41</span><span><i class="ti ti-wifi"></i> <i class="ti ti-battery-3"></i></span></div>
+    <div style="padding:24px 18px 0;">
+      <p style="margin:0;font-size:12px;color:#64748B;">Good evening</p>
+      <p style="margin:1px 0 14px;font-size:20px;font-weight:600;color:#0F172A;">Aarav Sharma</p>
+      <div class="hero" style="padding:15px;">
+        <p style="margin:0 0 6px;font-size:10px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:#C7D2FE;">Next consult</p>
+        <p style="margin:0;font-size:15px;font-weight:600;color:#fff;">Dr. Mehta · Today 6:20 pm</p>
+        <div class="gl" style="border-radius:10px;padding:9px;text-align:center;font-size:13px;font-weight:600;color:#fff;margin-top:11px;"><i class="ti ti-video"></i> Join</div>
+      </div>
+      <button class="cta" style="background:linear-gradient(135deg,#5B7BF0,#2A45C8);box-shadow:0 5px 14px rgba(42,69,200,.3);margin:14px 0;"><i class="ti ti-stethoscope"></i> Start a consult</button>
+      <div class="cw" style="padding:12px;display:flex;align-items:center;gap:10px;margin-bottom:90px;"><div style="width:34px;height:34px;border-radius:9px;background:#EEF2FF;display:flex;align-items:center;justify-content:center;"><i class="ti ti-file-text" style="color:#2A45C8;"></i></div><div style="flex:1;"><p style="margin:0;font-size:12px;font-weight:600;color:#0F172A;">Blood panel · Jun 18</p><p style="margin:0;font-size:11px;color:#64748B;">2 findings</p></div><i class="ti ti-chevron-right" style="color:#94A3B8;"></i></div>
+    </div>
+  </div>
+  <div class="tab"><span style="color:#2A45C8;text-align:center;font-size:9px;"><i class="ti ti-home" style="display:block;"></i>Home</span><span style="color:#94A3B8;text-align:center;font-size:9px;"><i class="ti ti-search" style="display:block;"></i>Doctors</span><span style="width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#5B7BF0,#2A45C8);color:#fff;display:flex;align-items:center;justify-content:center;margin-top:-16px;box-shadow:0 6px 14px rgba(42,69,200,.4);"><i class="ti ti-plus" style="font-size:23px;"></i></span><span style="color:#94A3B8;text-align:center;font-size:9px;"><i class="ti ti-calendar" style="display:block;"></i>Visits</span><span style="color:#94A3B8;text-align:center;font-size:9px;"><i class="ti ti-user" style="display:block;"></i>Profile</span></div>
+</div></div>
+
+<div class="dev"><div class="scr">
+  <div class="isl"></div><div class="step">P2 · New consult</div>
+  <div class="sb"><span>9:41</span><span><i class="ti ti-wifi"></i> <i class="ti ti-battery-3"></i></span></div>
+  <div class="hd"><i class="ti ti-x"></i><span>New consult</span></div>
+  <div style="padding:8px 18px;">
+    <p style="margin:0 0 16px;font-size:13px;color:#64748B;">How would you like to start?</p>
+    <div class="hero" style="padding:18px;margin-bottom:12px;">
+      <i class="ti ti-file-upload" style="font-size:30px;color:#fff;"></i>
+      <p style="margin:9px 0 2px;font-size:16px;font-weight:600;color:#fff;">Upload a report</p>
+      <p style="margin:0;font-size:12px;color:#DCE3FF;">We'll flag what matters and match a doctor</p>
+    </div>
+    <div class="cw" style="padding:18px;margin-bottom:16px;">
+      <i class="ti ti-message-2" style="font-size:30px;color:#2A45C8;"></i>
+      <p style="margin:9px 0 2px;font-size:16px;font-weight:600;color:#0F172A;">Describe symptoms</p>
+      <p style="margin:0;font-size:12px;color:#64748B;">Or search by specialty</p>
+    </div>
+    <p style="text-align:center;margin:0;font-size:13px;color:#2A45C8;font-weight:500;">Browse all doctors</p>
+  </div>
+</div></div>
+
+<div class="dev"><div class="scr">
+  <div class="isl"></div><div class="step">P3 · Upload</div>
+  <div class="sb"><span>9:41</span><span><i class="ti ti-wifi"></i> <i class="ti ti-battery-3"></i></span></div>
+  <div class="hd"><i class="ti ti-arrow-left"></i><span>Upload report</span></div>
+  <div style="padding:8px 18px;">
+    <div style="border:2px dashed #C7D2FE;border-radius:16px;padding:30px 16px;text-align:center;background:#F5F7FF;margin-bottom:16px;">
+      <i class="ti ti-cloud-upload" style="font-size:40px;color:#2A45C8;"></i>
+      <p style="margin:10px 0 2px;font-size:14px;font-weight:600;color:#0F172A;">Add your report</p>
+      <p style="margin:0;font-size:12px;color:#64748B;">PDF or photo · lab tests, scans</p>
+    </div>
+    <div style="display:flex;gap:10px;margin-bottom:16px;">
+      <div class="cw" style="flex:1;padding:14px;text-align:center;"><i class="ti ti-camera" style="font-size:24px;color:#2A45C8;"></i><p style="margin:6px 0 0;font-size:12px;color:#0F172A;">Camera</p></div>
+      <div class="cw" style="flex:1;padding:14px;text-align:center;"><i class="ti ti-folder" style="font-size:24px;color:#2A45C8;"></i><p style="margin:6px 0 0;font-size:12px;color:#0F172A;">Files</p></div>
+    </div>
+    <div style="background:#EEF2FF;border-radius:10px;padding:11px;font-size:11px;color:#1A2C8A;"><i class="ti ti-lock"></i> Your reports are private and encrypted. You choose who sees them.</div>
+  </div>
+</div></div>
+
+<div class="dev"><div class="scr">
+  <div class="isl"></div><div class="step">P4 · Analyzing</div>
+  <div class="sb"><span>9:41</span><span><i class="ti ti-wifi"></i> <i class="ti ti-battery-3"></i></span></div>
+  <div class="hd"><i class="ti ti-arrow-left"></i><span>Analyzing</span></div>
+  <div style="padding:30px 18px;text-align:center;">
+    <div style="width:88px;height:88px;border-radius:50%;background:linear-gradient(135deg,#5B7BF0,#2A45C8);display:flex;align-items:center;justify-content:center;margin:18px auto 16px;box-shadow:0 10px 24px rgba(42,69,200,.34);"><i class="ti ti-loader-2" style="font-size:38px;color:#fff;"></i></div>
+    <p style="margin:0 0 4px;font-size:17px;font-weight:600;color:#0F172A;">Reading your report…</p>
+    <p style="margin:0 0 22px;font-size:13px;color:#64748B;">Usually takes a few seconds</p>
+    <div class="cw" style="padding:12px;display:flex;align-items:center;gap:10px;text-align:left;"><i class="ti ti-file-text" style="font-size:22px;color:#2A45C8;"></i><div style="flex:1;"><p style="margin:0;font-size:12px;font-weight:600;color:#0F172A;">blood_panel.pdf</p><p style="margin:0;font-size:11px;color:#16A34A;">Extracting values…</p></div></div>
+    <p style="margin:20px 0 0;font-size:11px;color:#94A3B8;">You can leave this screen. We'll notify you.</p>
+  </div>
+</div></div>
+
+<div class="dev"><div class="scr">
+  <div class="isl"></div><div class="step">P5 · Results</div>
+  <div class="sb"><span>9:41</span><span><i class="ti ti-wifi"></i> <i class="ti ti-battery-3"></i></span></div>
+  <div class="hd"><i class="ti ti-arrow-left"></i><span>Your results</span></div>
+  <div style="padding:0 18px;">
+    <div style="background:#FEF3C7;border:1px solid #FCD34D;border-radius:13px;padding:11px;margin-bottom:13px;display:flex;gap:9px;"><i class="ti ti-alert-triangle" style="font-size:20px;color:#B45309;"></i><div><p style="margin:0;font-size:12px;font-weight:600;color:#92400E;">Worth seeing a doctor soon</p><p style="margin:1px 0 0;font-size:11px;color:#B45309;">Not an emergency.</p></div></div>
+    <div class="hero" style="padding:14px;margin-bottom:14px;">
+      <p style="margin:0 0 9px;font-size:12px;font-weight:600;color:#fff;">What your report shows</p>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:9px;"><span class="gl" style="border-radius:20px;padding:5px 11px;font-size:11px;color:#fff;font-family:'Geist Mono',monospace;">HbA1c 7.8 ↑</span><span class="gl" style="border-radius:20px;padding:5px 11px;font-size:11px;color:#fff;font-family:'Geist Mono',monospace;">LDL 162 ↑</span></div>
+      <p style="margin:0;font-size:10px;color:#DCE3FF;">Guidance, not a diagnosis.</p>
+    </div>
+    <p style="margin:0 0 8px;font-size:12px;font-weight:600;color:#0F172A;">Recommended</p>
+    <div class="cw" style="padding:12px;margin-bottom:10px;">
+      <div style="display:flex;gap:10px;align-items:center;"><div style="width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#5B7BF0,#2A45C8);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;">PN</div><div style="flex:1;"><p style="margin:0;font-size:13px;font-weight:600;color:#0F172A;">Dr. Priya Nair <i class="ti ti-rosette-discount-check" style="color:#2A45C8;font-size:14px;"></i></p><p style="margin:0;font-size:11px;color:#64748B;">Endocrinologist · 4.9 ★</p></div></div>
+      <p style="margin:8px 0 10px;font-size:11px;color:#1A2C8A;background:#EEF2FF;border-radius:8px;padding:7px 9px;"><i class="ti ti-link"></i> High HbA1c → diabetes care · 7 pm</p>
+      <button class="cta" style="background:linear-gradient(135deg,#5B7BF0,#2A45C8);padding:9px;font-size:13px;">Book · ₹600</button>
+    </div>
+  </div>
+</div></div>
+
+<div class="dev"><div class="scr">
+  <div class="isl"></div><div class="step">P6 · Find doctor</div>
+  <div class="sb"><span>9:41</span><span><i class="ti ti-wifi"></i> <i class="ti ti-battery-3"></i></span></div>
+  <div style="padding:6px 18px 8px;"><p style="margin:0 0 9px;font-size:18px;font-weight:600;color:#0F172A;">Find your doctor</p><div style="display:flex;align-items:center;gap:8px;background:#fff;border:1px solid #E2E8F0;border-radius:11px;padding:10px 12px;box-shadow:0 1px 2px rgba(15,23,42,.05);"><i class="ti ti-search" style="color:#94A3B8;"></i><span style="font-size:13px;color:#94A3B8;">Name, hospital, specialization</span></div></div>
+  <div style="display:flex;gap:6px;padding:0 18px 10px;flex-wrap:wrap;"><span style="background:#2A45C8;color:#fff;border-radius:20px;padding:5px 11px;font-size:11px;">Cardiology <i class="ti ti-x"></i></span><span style="border:1px solid #C7D2FE;color:#2A45C8;border-radius:20px;padding:5px 11px;font-size:11px;">Allopathy</span><span style="border:1px solid #C7D2FE;color:#2A45C8;border-radius:20px;padding:5px 11px;font-size:11px;"><i class="ti ti-adjustments-horizontal"></i> Filters</span></div>
+  <div style="padding:0 18px;">
+    <div class="cw" style="padding:11px;margin-bottom:9px;display:flex;gap:10px;"><div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#5B7BF0,#2A45C8);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;">SM</div><div style="flex:1;"><p style="margin:0;font-size:13px;font-weight:600;color:#0F172A;">Dr. Sanjay Mehta <i class="ti ti-rosette-discount-check" style="color:#2A45C8;font-size:13px;"></i></p><p style="margin:1px 0;font-size:11px;color:#64748B;">Cardiologist · Apollo</p><p style="margin:2px 0 0;font-size:11px;color:#0F172A;">4.9 ★ · <span style="color:#16A34A;">Today 6:20p</span> · ₹600</p></div></div>
+    <div class="cw" style="padding:11px;margin-bottom:9px;display:flex;gap:10px;"><div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#9D4EDD,#6D28C9);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;">RK</div><div style="flex:1;"><p style="margin:0;font-size:13px;font-weight:600;color:#0F172A;">Dr. Ritu Kapoor <i class="ti ti-rosette-discount-check" style="color:#2A45C8;font-size:13px;"></i></p><p style="margin:1px 0;font-size:11px;color:#64748B;">Cardiologist · Fortis</p><p style="margin:2px 0 0;font-size:11px;color:#0F172A;">4.8 ★ · Tomorrow 11a · ₹550</p></div></div>
+    <div class="cw" style="padding:11px;display:flex;gap:10px;"><div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#16A34A,#0F7A37);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;">MD</div><div style="flex:1;"><p style="margin:0;font-size:13px;font-weight:600;color:#0F172A;">Dr. Meera Das <i class="ti ti-rosette-discount-check" style="color:#2A45C8;font-size:13px;"></i></p><p style="margin:1px 0;font-size:11px;color:#64748B;">Cardiologist · Manipal</p><p style="margin:2px 0 0;font-size:11px;color:#0F172A;">4.9 ★ · <span style="color:#16A34A;">Today 8p</span> · ₹800</p></div></div>
+  </div>
+</div></div>
+
+<div class="dev"><div class="scr">
+  <div class="isl"></div><div class="step">P7 · Profile</div>
+  <div style="background:linear-gradient(150deg,#5B7BF0,#2A45C8 60%,#1A2C8A);padding-bottom:24px;position:relative;overflow:hidden;">
+    <div style="position:absolute;inset:0;background:radial-gradient(70% 50% at 85% 0%,rgba(255,255,255,.2),transparent);"></div>
+    <div class="sb" style="color:#fff;"><span>9:41</span><span><i class="ti ti-wifi"></i> <i class="ti ti-battery-3"></i></span></div>
+    <div style="padding:4px 18px 0;position:relative;"><i class="ti ti-arrow-left" style="font-size:20px;color:#fff;"></i></div>
+    <div style="text-align:center;position:relative;padding-top:4px;"><div style="width:66px;height:66px;border-radius:50%;background:#fff;color:#2A45C8;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:600;margin:0 auto 9px;box-shadow:0 8px 18px rgba(0,0,0,.18);">SM</div><p style="margin:0;font-size:17px;font-weight:600;color:#fff;">Dr. Sanjay Mehta <i class="ti ti-rosette-discount-check" style="font-size:15px;"></i></p><p style="margin:2px 0 0;font-size:12px;color:#DCE3FF;">Cardiologist · 4.9 ★ (212)</p></div>
+  </div>
+  <div style="padding:0 18px;margin-top:-14px;position:relative;">
+    <div class="cw" style="display:grid;grid-template-columns:repeat(3,1fr);padding:13px 6px;text-align:center;margin-bottom:14px;"><div><p style="margin:0;font-size:15px;font-weight:600;color:#0F172A;">14 yrs</p><p style="margin:0;font-size:10px;color:#64748B;">Exp</p></div><div style="border-left:1px solid #E2E8F0;border-right:1px solid #E2E8F0;"><p style="margin:0;font-size:15px;font-weight:600;color:#0F172A;font-family:'Geist Mono',monospace;">₹600</p><p style="margin:0;font-size:10px;color:#64748B;">Fee</p></div><div><p style="margin:0;font-size:15px;font-weight:600;color:#16A34A;">6:20p</p><p style="margin:0;font-size:10px;color:#64748B;">Next</p></div></div>
+    <p style="margin:0 0 4px;font-size:12px;font-weight:600;color:#0F172A;">About</p>
+    <p style="margin:0 0 12px;font-size:12px;line-height:1.55;color:#475569;">Interventional cardiologist at Apollo. Preventive heart care, diabetes-linked risk. English, Hindi, Tamil.</p>
+    <div class="cw" style="padding:10px;margin-bottom:14px;"><p style="margin:0 0 2px;font-size:11px;color:#D97706;">★★★★★</p><p style="margin:0;font-size:11px;color:#475569;">"Explained my reports clearly, never rushed."</p></div>
+    <button class="cta" style="background:linear-gradient(135deg,#5B7BF0,#2A45C8);box-shadow:0 8px 18px rgba(42,69,200,.32);margin-bottom:18px;">Book consultation · ₹600</button>
+  </div>
+</div></div>
+
+<div class="dev"><div class="scr">
+  <div class="isl"></div><div class="step">P8 · Reason</div>
+  <div class="sb"><span>9:41</span><span><i class="ti ti-wifi"></i> <i class="ti ti-battery-3"></i></span></div>
+  <div class="hd"><i class="ti ti-arrow-left"></i><span>Book consultation</span></div>
+  <div style="display:flex;gap:5px;padding:0 18px 14px;"><div style="flex:1;height:4px;border-radius:2px;background:#2A45C8;"></div><div style="flex:1;height:4px;border-radius:2px;background:#E2E8F0;"></div><div style="flex:1;height:4px;border-radius:2px;background:#E2E8F0;"></div></div>
+  <div style="padding:0 18px;">
+    <p style="margin:0 0 10px;font-size:14px;font-weight:600;color:#0F172A;">Why are you visiting?</p>
+    <div style="background:#fff;border:1px solid #E2E8F0;border-radius:11px;padding:12px;font-size:13px;color:#0F172A;min-height:70px;margin-bottom:12px;">Chest tightness on exertion, plus a high cholesterol report I want reviewed.</div>
+    <p style="margin:0 0 8px;font-size:12px;font-weight:600;color:#475569;">Common symptoms</p>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;"><span style="background:#EEF2FF;color:#1A2C8A;border-radius:20px;padding:6px 12px;font-size:12px;">Chest pain</span><span style="border:1px solid #E2E8F0;color:#475569;border-radius:20px;padding:6px 12px;font-size:12px;">Fatigue</span><span style="border:1px solid #E2E8F0;color:#475569;border-radius:20px;padding:6px 12px;font-size:12px;">Breathlessness</span></div>
+    <div class="cw" style="padding:11px;display:flex;align-items:center;gap:10px;margin-bottom:16px;"><i class="ti ti-paperclip" style="color:#2A45C8;"></i><span style="font-size:13px;color:#0F172A;flex:1;">blood_panel.pdf attached</span><i class="ti ti-check" style="color:#16A34A;"></i></div>
+    <button class="cta" style="background:linear-gradient(135deg,#5B7BF0,#2A45C8);">Continue</button>
+  </div>
+</div></div>
+
+<div class="dev"><div class="scr">
+  <div class="isl"></div><div class="step">P9 · Pick time</div>
+  <div class="sb"><span>9:41</span><span><i class="ti ti-wifi"></i> <i class="ti ti-battery-3"></i></span></div>
+  <div class="hd"><i class="ti ti-arrow-left"></i><span>Pick a time</span></div>
+  <div style="display:flex;gap:5px;padding:0 18px 14px;"><div style="flex:1;height:4px;border-radius:2px;background:#2A45C8;"></div><div style="flex:1;height:4px;border-radius:2px;background:#2A45C8;"></div><div style="flex:1;height:4px;border-radius:2px;background:#E2E8F0;"></div></div>
+  <div style="padding:0 18px;">
+    <div style="display:flex;gap:7px;margin-bottom:14px;"><div style="flex:1;text-align:center;background:#2A45C8;color:#fff;border-radius:10px;padding:9px 0;"><p style="margin:0;font-size:11px;">Today</p><p style="margin:1px 0 0;font-size:14px;font-weight:600;">30</p></div><div style="flex:1;text-align:center;border:1px solid #E2E8F0;border-radius:10px;padding:9px 0;"><p style="margin:0;font-size:11px;color:#64748B;">Wed</p><p style="margin:1px 0 0;font-size:14px;font-weight:600;color:#0F172A;">01</p></div><div style="flex:1;text-align:center;border:1px solid #E2E8F0;border-radius:10px;padding:9px 0;"><p style="margin:0;font-size:11px;color:#64748B;">Thu</p><p style="margin:1px 0 0;font-size:14px;font-weight:600;color:#0F172A;">02</p></div></div>
+    <p style="margin:0 0 9px;font-size:12px;font-weight:600;color:#475569;">Evening slots</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;"><span style="border:1px solid #E2E8F0;border-radius:9px;padding:9px 14px;font-size:13px;color:#475569;font-family:'Geist Mono',monospace;">5:40</span><span style="background:#2A45C8;color:#fff;border-radius:9px;padding:9px 14px;font-size:13px;font-family:'Geist Mono',monospace;box-shadow:0 4px 10px rgba(42,69,200,.3);">6:20</span><span style="border:1px solid #E2E8F0;border-radius:9px;padding:9px 14px;font-size:13px;color:#475569;font-family:'Geist Mono',monospace;">7:00</span><span style="border:1px solid #E2E8F0;border-radius:9px;padding:9px 14px;font-size:13px;color:#CBD5E1;font-family:'Geist Mono',monospace;text-decoration:line-through;">7:40</span></div>
+    <div style="background:#FEF3C7;border-radius:9px;padding:9px;font-size:11px;color:#92400E;margin-bottom:14px;"><i class="ti ti-clock"></i> Slot held for <span style="font-family:'Geist Mono',monospace;">9:58</span> while you check out</div>
+    <button class="cta" style="background:linear-gradient(135deg,#5B7BF0,#2A45C8);">Continue to review</button>
+  </div>
+</div></div>
+
+<div class="dev"><div class="scr">
+  <div class="isl"></div><div class="step">P10 · Review and pay</div>
+  <div class="sb"><span>9:41</span><span><i class="ti ti-wifi"></i> <i class="ti ti-battery-3"></i></span></div>
+  <div class="hd"><i class="ti ti-arrow-left"></i><span>Review and pay</span></div>
+  <div style="display:flex;gap:5px;padding:0 18px 14px;"><div style="flex:1;height:4px;border-radius:2px;background:#2A45C8;"></div><div style="flex:1;height:4px;border-radius:2px;background:#2A45C8;"></div><div style="flex:1;height:4px;border-radius:2px;background:#2A45C8;"></div></div>
+  <div style="padding:0 18px;">
+    <div class="cw" style="padding:13px;margin-bottom:12px;"><div style="display:flex;gap:10px;align-items:center;"><div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#5B7BF0,#2A45C8);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;">SM</div><div><p style="margin:0;font-size:13px;font-weight:600;color:#0F172A;">Dr. Sanjay Mehta</p><p style="margin:0;font-size:11px;color:#64748B;">Fri, Jun 30 · 6:20 pm</p></div></div></div>
+    <div class="cw" style="padding:13px;margin-bottom:14px;"><div style="display:flex;justify-content:space-between;font-size:13px;color:#475569;margin-bottom:6px;"><span>Consultation</span><span style="font-family:'Geist Mono',monospace;">₹600.00</span></div><div style="display:flex;justify-content:space-between;font-size:13px;color:#475569;border-bottom:1px solid #E2E8F0;padding-bottom:8px;margin-bottom:8px;"><span>Platform fee</span><span style="font-family:'Geist Mono',monospace;">₹0.00</span></div><div style="display:flex;justify-content:space-between;font-size:15px;font-weight:600;color:#0F172A;"><span>Total</span><span style="font-family:'Geist Mono',monospace;">₹600.00</span></div></div>
+    <div style="display:flex;align-items:center;gap:8px;background:#EEF2FF;border-radius:9px;padding:9px;margin-bottom:14px;"><i class="ti ti-shield-lock" style="color:#2A45C8;"></i><span style="font-size:12px;color:#1A2C8A;">Secure payment via Razorpay</span></div>
+    <button class="cta" style="background:linear-gradient(135deg,#5B7BF0,#2A45C8);box-shadow:0 6px 16px rgba(42,69,200,.3);">Pay ₹600.00</button>
+  </div>
+</div></div>
+
+</div></div></body></html>

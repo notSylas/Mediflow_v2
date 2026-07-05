@@ -3,11 +3,12 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { formatInTimeZone } from "date-fns-tz";
 import { and, eq } from "drizzle-orm";
-import { ArrowRight, MessageCircle, Pill, RotateCcw, Search, Users } from "lucide-react";
+import { ArrowRight, HandHeart, MessageCircle, RotateCcw, Search, Users } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
 import { conversations, followUps, refillRequests } from "@/db/schema";
 import { listDoctorPatients } from "@/lib/appointments";
+import { getActiveSubscriberIds } from "@/lib/care-subscription";
 import { getOrCreateDoctorProfile } from "@/lib/doctor";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -25,7 +26,7 @@ export default async function DoctorPatientsPage({
 
   const { q, filter } = await searchParams;
   const profile = await getOrCreateDoctorProfile(session.user.id);
-  const [patients, pendingFollowUps, pendingRefills, unreadConversations] =
+  const [patients, pendingFollowUps, pendingRefills, unreadConversations, subscriberIds] =
     await Promise.all([
       listDoctorPatients(profile.id, q),
       db
@@ -43,6 +44,7 @@ export default async function DoctorPatientsPage({
         })
         .from(conversations)
         .where(eq(conversations.doctorId, profile.id)),
+      getActiveSubscriberIds(profile.id),
     ]);
 
   const countByPatient = (rows: { patientId: string }[]) => {
@@ -66,7 +68,12 @@ export default async function DoctorPatientsPage({
       (refillCounts.get(patient.id) ?? 0) > 0 ||
       (unreadCounts.get(patient.id) ?? 0) > 0
   );
-  const visiblePatients = filter === "attention" ? patientsWithAttention : patients;
+  const visiblePatients =
+    filter === "attention"
+      ? patientsWithAttention
+      : filter === "members"
+        ? patients.filter(({ patient }) => subscriberIds.has(patient.id))
+        : patients;
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 mx-auto max-w-5xl space-y-6 px-4 py-10 duration-500 sm:px-6">
@@ -88,9 +95,9 @@ export default async function DoctorPatientsPage({
       <div className="grid gap-3 sm:grid-cols-4">
         {[
           { label: "Patients", value: patients.length, icon: Users },
+          { label: "Care members", value: subscriberIds.size, icon: HandHeart },
           { label: "Need attention", value: patientsWithAttention.length, icon: RotateCcw },
           { label: "Unread messages", value: unreadCounts.size, icon: MessageCircle },
-          { label: "Pending refills", value: pendingRefills.length, icon: Pill },
         ].map((stat) => (
           <Card key={stat.label} className="glass">
             <CardContent className="flex items-center gap-3 p-4">
@@ -127,6 +134,7 @@ export default async function DoctorPatientsPage({
           aria-label="Filter patients"
         >
           <option value="">All patients</option>
+          <option value="members">Care members</option>
           <option value="attention">Needs attention</option>
         </select>
         <Button type="submit" variant="outline">
@@ -164,6 +172,7 @@ export default async function DoctorPatientsPage({
           const followUps = followUpCounts.get(patient.id) ?? 0;
           const refills = refillCounts.get(patient.id) ?? 0;
           const unread = unreadCounts.get(patient.id) ?? 0;
+          const isMember = subscriberIds.has(patient.id);
 
           return (
             <Link
@@ -176,7 +185,15 @@ export default async function DoctorPatientsPage({
                   {(patient.name || patient.email).slice(0, 2)}
                 </span>
                 <div className="min-w-0">
-                  <p className="truncate font-medium">{patient.name || patient.email}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="truncate font-medium">{patient.name || patient.email}</p>
+                    {isMember && (
+                      <Badge className="border-sky-200 bg-sky-100 text-sky-700 hover:bg-sky-100">
+                        <HandHeart className="mr-1 h-3 w-3" />
+                        Premium
+                      </Badge>
+                    )}
+                  </div>
                   <p className="truncate text-sm text-muted-foreground">{patient.email}</p>
                   <div className="mt-1 flex flex-wrap gap-1.5">
                     {unread > 0 && <Badge>{unread} unread</Badge>}

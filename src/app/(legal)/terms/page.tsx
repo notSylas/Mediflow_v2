@@ -46,9 +46,10 @@ export default function TermsPage() {
 
       <h2>6. Messaging</h2>
       <p>
-        Messaging with your doctor becomes available after you have a paid consultation.
-        It is for non-urgent follow-up only and is not monitored around the clock — never
-        use it for emergencies (see section 2).
+        Messaging with your doctor is available only through an active MediFlow Care
+        subscription. One-off video consultations do not include ongoing chat access.
+        Messaging is for non-urgent follow-up only and is not monitored around the
+        clock — never use it for emergencies (see section 2).
       </p>
 
       <h2>7. Governing law</h2>

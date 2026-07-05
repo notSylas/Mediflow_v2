@@ -1,18 +1,6 @@
-// Pure messaging/attachment authorization decisions, kept free of DB access so
-// they can be unit-tested directly. The data layer (chat.ts) reads rows and
-// delegates the *decisions* here.
-
-/**
- * Appointment statuses that unlock messaging. A patient may message only once
- * they've actually paid for a consultation — an unpaid hold (`pending_payment`)
- * or a cancelled visit does not count. Confirmed/completed/no_show all imply a
- * successful payment occurred.
- */
-const MESSAGING_BLOCKED_STATUSES = new Set(["pending_payment", "cancelled"]);
-
-export function messagingAllowedForStatus(status: string): boolean {
-  return !MESSAGING_BLOCKED_STATUSES.has(status);
-}
+// Pure attachment authorization decisions, kept free of DB access so they can
+// be unit-tested directly. Messaging access itself is subscription-gated in
+// care-subscription-policy.ts / chat.ts.
 
 export interface AttachmentOwnership {
   uploaderId: string;

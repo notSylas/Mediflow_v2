@@ -9,6 +9,13 @@ import { createFollowUp, dismissFollowUp, snoozeFollowUp } from "@/lib/follow-up
 import { getOrCreateDoctorProfile } from "@/lib/doctor";
 import { getDoctorRefillRequest, setRefillRequestStatus } from "@/lib/refills";
 import { getConversationForParticipant, markConversationRead } from "@/lib/chat";
+import {
+  activateSubscription,
+  deactivateSubscription,
+  getDoctorCareFollowUp,
+  resetFollowUpCredit,
+  setCareFollowUpStatus,
+} from "@/lib/care-subscription";
 
 async function requireDoctor() {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -81,6 +88,71 @@ export async function fulfillRefillRequestAction(formData: FormData) {
   revalidatePath("/doctor/refill-requests");
   revalidatePath("/doctor/work-queue");
   redirect(`/doctor/encounter/${consult.id}`);
+}
+
+/**
+ * Doctor/admin toggle for a patient's MediFlow Care subscription (v1 billing
+ * stand-in). action: activate | trial | deactivate | reset-credit.
+ */
+export async function setCareSubscriptionAction(formData: FormData) {
+  const { profile } = await requireDoctor();
+  const patientId = requiredString(formData, "patientId");
+  const action = requiredString(formData, "action");
+
+  switch (action) {
+    case "activate":
+      await activateSubscription(patientId, profile.id, "active");
+      break;
+    case "trial":
+      await activateSubscription(patientId, profile.id, "manual_trial");
+      break;
+    case "deactivate":
+      await deactivateSubscription(patientId, profile.id, "inactive");
+      break;
+    case "reset-credit":
+      await resetFollowUpCredit(patientId, profile.id);
+      break;
+    default:
+      throw new Error("Unknown care action");
+  }
+
+  revalidatePath("/doctor/care");
+  revalidatePath(`/doctor/patients/${patientId}`);
+}
+
+/** Fulfil a care-plan follow-up: open an async consult to review/prescribe in. */
+export async function fulfillCareFollowUpAction(formData: FormData) {
+  const { profile } = await requireDoctor();
+  const requestId = requiredString(formData, "requestId");
+  const request = await getDoctorCareFollowUp(requestId, profile.id);
+  if (!request || request.status !== "pending") {
+    throw new Error("Care follow-up not found");
+  }
+
+  const consult = await createAsyncConsult({
+    doctorId: profile.id,
+    patientId: request.patientId,
+    visitReason: "Care plan follow-up",
+    intakeNote:
+      request.note ?? "Patient requested their monthly MediFlow Care follow-up.",
+  });
+
+  await setCareFollowUpStatus(requestId, "booked", consult.id);
+  revalidatePath("/doctor/work-queue");
+  redirect(`/doctor/encounter/${consult.id}`);
+}
+
+/** Dismiss a care-plan follow-up from the work queue without a consult. */
+export async function dismissCareFollowUpAction(formData: FormData) {
+  const { profile } = await requireDoctor();
+  const requestId = requiredString(formData, "requestId");
+  const request = await getDoctorCareFollowUp(requestId, profile.id);
+  if (!request || request.status !== "pending") {
+    throw new Error("Care follow-up not found");
+  }
+
+  await setCareFollowUpStatus(requestId, "dismissed");
+  revalidatePath("/doctor/work-queue");
 }
 
 export async function declineRefillRequestAction(formData: FormData) {

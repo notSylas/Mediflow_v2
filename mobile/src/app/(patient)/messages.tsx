@@ -1,12 +1,13 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
-import { StyleSheet, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { AuroraScreen } from "@/components/aurora-screen";
 import { ChatThread } from "@/components/chat-thread";
 import {
   Avatar,
   Body,
+  Button,
   Card,
   EmptyState,
   ErrorState,
@@ -15,7 +16,13 @@ import {
   PrimaryButton,
 } from "@/components/ui";
 import { ApiError, apiFetch } from "@/lib/api";
-import { colors, radius } from "@/lib/theme";
+import { colors, fonts, radius } from "@/lib/theme";
+import {
+  CARE_BENEFITS,
+  CARE_MESSAGING_DISCLAIMER,
+  CARE_PLAN_NAME,
+  CARE_REPLY_EXPECTATION,
+} from "@/lib/care-types";
 import type { Conversation } from "@/lib/chat-types";
 
 interface PatientHomeDoctor {
@@ -71,16 +78,44 @@ export default function PatientMessages() {
         <EmptyState
           compact
           icon="chat-plus-outline"
-          title="Messaging opens after booking"
-          message="Book a consultation to start a secure conversation for visit preparation and follow-up questions."
+          title="Unlock messaging with your doctor"
+          message="Start the MediFlow Care plan to unlock ongoing messaging with your doctor. One-off video consultations do not include chat access."
           action={
             <PrimaryButton
-              label="Book a consultation"
-              icon="calendar-plus"
-              onPress={() => router.push("/(patient)/book")}
+              label="Start care plan"
+              icon="hand-heart"
+              onPress={() => router.push("/(patient)/care/checkout")}
             />
           }
         />
+
+        <Card tone="accent">
+          <View style={styles.careHeader}>
+            <View style={styles.careIcon}>
+              <MaterialCommunityIcons name="hand-heart" size={19} color={colors.primary} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Body strong>{CARE_PLAN_NAME}</Body>
+              <Muted>Ongoing messaging without a booking — plus monthly follow-ups.</Muted>
+            </View>
+          </View>
+          <View style={styles.careBenefits}>
+            {CARE_BENEFITS.map((b) => (
+              <View key={b} style={styles.careBenefitRow}>
+                <MaterialCommunityIcons name="check" size={14} color={colors.primary} />
+                <Text style={styles.careBenefitText}>{b}</Text>
+              </View>
+            ))}
+          </View>
+          <Button
+            label="Start care plan"
+            icon="arrow-right"
+            onPress={() => router.push("/(patient)/care/checkout")}
+          />
+          <Text style={styles.careDisclaimer}>
+            {CARE_MESSAGING_DISCLAIMER} {CARE_REPLY_EXPECTATION}
+          </Text>
+        </Card>
 
         <Card tone="accent">
           <Body strong>How messaging works</Body>
@@ -160,6 +195,19 @@ function Expectation({
 
 const styles = StyleSheet.create({
   doctorRow: { flexDirection: "row", alignItems: "center", gap: 11 },
+  careHeader: { flexDirection: "row", alignItems: "center", gap: 11 },
+  careIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: radius.md,
+    backgroundColor: colors.card,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  careBenefits: { gap: 7 },
+  careBenefitRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  careBenefitText: { flex: 1, color: colors.text, fontFamily: fonts.bodyMedium, fontSize: 13 },
+  careDisclaimer: { color: colors.textFaint, fontFamily: fonts.body, fontSize: 11.5, lineHeight: 16 },
   secureIcon: {
     width: 38,
     height: 38,

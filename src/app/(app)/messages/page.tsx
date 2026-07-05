@@ -4,7 +4,13 @@ import { redirect } from "next/navigation";
 import { CalendarPlus, MessageCircle, ShieldAlert, ShieldCheck, Stethoscope } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { getOrCreatePatientConversation, listDoctorConversations } from "@/lib/chat";
-import { getDoctorCard } from "@/lib/doctor";
+import { getDoctorCard, getDoctorProfile, getOrCreateDoctorProfile } from "@/lib/doctor";
+import {
+  getActiveSubscriberIds,
+  getPatientCareStatus,
+  toCareStatusDTO,
+} from "@/lib/care-subscription";
+import { CareCard } from "@/components/patient/CareCard";
 import { ChatThread } from "@/components/chat/ChatThread";
 import { DoctorMessages } from "@/components/chat/DoctorMessages";
 import {
@@ -22,7 +28,11 @@ export default async function MessagesPage() {
   if (!session) redirect("/login");
 
   if (session.user.role === "doctor") {
-    const rows = await listDoctorConversations(session.user.id);
+    const profile = await getOrCreateDoctorProfile(session.user.id);
+    const [rows, subscriberIds] = await Promise.all([
+      listDoctorConversations(session.user.id),
+      getActiveSubscriberIds(profile.id),
+    ]);
     return (
       <div className="mx-auto h-[calc(100dvh-1rem)] max-w-7xl overflow-hidden p-2 sm:p-4">
         <DoctorMessages
@@ -34,38 +44,47 @@ export default async function MessagesPage() {
             preview: r.conversation.lastMessagePreview,
             unread: r.conversation.doctorUnread,
             lastMessageAt: r.conversation.lastMessageAt?.toISOString() ?? null,
+            isMember: subscriberIds.has(r.patient.id),
           }))}
         />
       </div>
     );
   }
 
-  // Patient — gated to those who have booked.
+  // Patient — messaging is a premium care-plan feature; only active
+  // subscribers can message (a paid consult alone does not unlock it).
   const conv = await getOrCreatePatientConversation(session.user.id);
   if (!conv) {
+    const [careStatus, profile] = await Promise.all([
+      getPatientCareStatus(session.user.id),
+      getDoctorProfile(),
+    ]);
     return (
       <PatientPageShell>
         <Reveal>
           <PatientHero
             eyebrow="Secure messages"
             icon={MessageCircle}
-            title="Message your doctor after booking"
-            description="Messaging opens for patients who have booked a consultation, so the doctor has the clinical context needed for safe follow-up."
+            title="Messaging is part of MediFlow Care"
+            description="Direct messaging with your doctor is included with the care plan. Start the plan to message between visits — booking a one-off consultation does not include messaging."
           />
         </Reveal>
-        <PatientEmptyState
-          icon={MessageCircle}
-          title="Messaging opens after you book"
-          description="Once you have a consultation booked, you can message your doctor here for follow-up questions and report sharing."
-          action={
-            <Button asChild>
-              <Link href="/patient/book">
-                <CalendarPlus className="mr-2 h-4 w-4" />
-                Book a consultation
-              </Link>
-            </Button>
-          }
-        />
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
+          <CareCard care={toCareStatusDTO(careStatus)} timezone={profile?.timezone ?? "Asia/Kolkata"} />
+          <PatientEmptyState
+            icon={MessageCircle}
+            title="Why a plan?"
+            description="The care plan funds ongoing, between-visit support: messaging, a monthly follow-up, reminders, and refill help — beyond a single paid consultation."
+            action={
+              <Button asChild variant="outline">
+                <Link href="/patient/book">
+                  <CalendarPlus className="mr-2 h-4 w-4" />
+                  Book a one-off visit
+                </Link>
+              </Button>
+            }
+          />
+        </div>
       </PatientPageShell>
     );
   }

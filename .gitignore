@@ -47,3 +47,10 @@ next-env.d.ts
 
 # Local Claude Code settings (personal, not shared)
 .claude/settings.local.json
+
+# Local dev TLS cert (LAN HTTPS for video) — never commit
+certs/
+
+
+# Generated graph/code analysis output
+graphify-out/

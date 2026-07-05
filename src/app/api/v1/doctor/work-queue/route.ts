@@ -5,18 +5,21 @@ import { listDoctorConversations } from "@/lib/chat";
 import { getOrCreateDoctorProfile } from "@/lib/doctor";
 import { listDoctorPendingFollowUps } from "@/lib/follow-ups";
 import { listPendingRefillRequests } from "@/lib/refills";
+import { listPendingCareFollowUps } from "@/lib/care-subscription";
 
 export async function GET() {
   const access = await requireDoctorSession();
   if (access instanceof NextResponse) return access;
 
   const profile = await getOrCreateDoctorProfile(access.id);
-  const [appointments, conversations, followUps, refillRequests] = await Promise.all([
-    listDoctorAppointments(profile.id),
-    listDoctorConversations(access.id),
-    listDoctorPendingFollowUps(profile.id),
-    listPendingRefillRequests(profile.id),
-  ]);
+  const [appointments, conversations, followUps, refillRequests, careFollowUps] =
+    await Promise.all([
+      listDoctorAppointments(profile.id),
+      listDoctorConversations(access.id),
+      listDoctorPendingFollowUps(profile.id),
+      listPendingRefillRequests(profile.id),
+      listPendingCareFollowUps(profile.id),
+    ]);
 
   const needsPrescription = appointments.filter(
     (row) =>
@@ -37,5 +40,6 @@ export async function GET() {
     unreadConversations,
     followUps,
     refillRequests,
+    careFollowUps,
   });
 }

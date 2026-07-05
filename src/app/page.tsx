@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { eq } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 import {
   ArrowRight,
   CalendarClock,
@@ -93,6 +93,9 @@ export default async function HomePage() {
     .select({ profile: doctorProfiles, name: user.name })
     .from(doctorProfiles)
     .innerJoin(user, eq(user.id, doctorProfiles.userId))
+    // Canonical (oldest) doctor — keep the public landing card consistent with
+    // the rest of the app's doctor resolution.
+    .orderBy(asc(doctorProfiles.createdAt))
     .limit(1);
 
   const doctorName = doctor?.name ? `Dr. ${doctor.name}` : "Your doctor";

@@ -1,5 +1,12 @@
 # MediFlow v2 — Product Requirements
 
+> **Scope and roadmap are superseded by [PRODUCT.md](PRODUCT.md)** (the master
+> product plan). This file remains the v1 product-requirements detail, but where it
+> disagrees with PRODUCT.md on scope, PRODUCT.md wins. Notably reversed since this
+> was written: AI report-triage + doctor-authored scribe are now IN, and the medical
+> records vault is now IN. Do not treat the "no AI" / "records vault cut" fences below
+> as current.
+
 ## Problem
 
 A doctor runs a physical clinic that requires ~2 hours of travel for ~2 hours of consulting, with no guarantee that patients show up. Empty slots cost the doctor half a day.

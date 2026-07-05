@@ -12,6 +12,7 @@ import {
 } from "@/db/schema";
 import { requireDoctorSession } from "@/lib/api-auth";
 import { listDoctorPatients } from "@/lib/appointments";
+import { getActiveSubscriberIds } from "@/lib/care-subscription";
 import { getOrCreateDoctorProfile } from "@/lib/doctor";
 
 export async function GET(request: Request) {
@@ -43,6 +44,7 @@ async function enrichRoster(
     refillRows,
     reportRows,
     conversationRows,
+    memberIds,
   ] = await Promise.all([
     db
       .select({
@@ -110,6 +112,7 @@ async function enrichRoster(
       })
       .from(conversations)
       .where(and(eq(conversations.doctorId, doctorId), inArray(conversations.patientId, patientIds))),
+    getActiveSubscriberIds(doctorId),
   ]);
 
   const prescriptionStatusByAppointment = new Map(
@@ -150,6 +153,7 @@ async function enrichRoster(
       unreadMessageCount:
         conversationRows.find((conversation) => conversation.patientId === row.patient.id)
           ?.doctorUnread ?? 0,
+      isMember: memberIds.has(row.patient.id),
       hasRiskProfile: Boolean(
         profile?.allergies || profile?.chronicConditions || profile?.currentMedications
       ),

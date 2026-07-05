@@ -103,6 +103,7 @@ export interface DoctorProfile extends DoctorTrust {
   specialty: string | null;
   bio: string | null;
   feeInPaise: number;
+  carePlanPriceInPaise: number;
   slotMinutes: number;
   timezone: string;
 }
@@ -161,6 +162,8 @@ export interface DoctorHomeData {
   awaitingPrescription: number;
   pendingFollowUps: number;
   pendingRefills: number;
+  activeCareMembers: number;
+  pendingCareFollowUps: number;
 }
 
 export interface AvailabilityRule {

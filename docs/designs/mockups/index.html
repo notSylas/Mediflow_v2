@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MediFlow — UI Mockup Reference</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{--cobalt:#2A45C8;--cobalt-l:#5B7BF0;--cobalt-d:#1A2C8A;--violet:#6D28C9;--violet-l:#9D4EDD;--violet-d:#4A1D8F;--ink:#0F172A;--sec:#475569;--muted:#94A3B8;--border:#E2E8F0;}
+  *{box-sizing:border-box;}
+  body{font-family:'Geist',system-ui,sans-serif;background:#F7F8FB;color:var(--ink);margin:0;padding:40px 24px;line-height:1.6;}
+  .wrap{max-width:900px;margin:0 auto;}
+  h1{font-size:30px;font-weight:600;margin:0 0 4px;}
+  .lede{color:var(--sec);font-size:16px;margin:0 0 32px;}
+  h2{font-size:18px;font-weight:600;margin:32px 0 12px;}
+  a.card{display:block;text-decoration:none;color:inherit;background:#fff;border:1px solid var(--border);border-radius:14px;padding:16px 18px;margin-bottom:10px;box-shadow:0 1px 3px rgba(15,23,42,.05);transition:box-shadow .15s,transform .15s;}
+  a.card:hover{box-shadow:0 8px 24px rgba(42,69,200,.12);transform:translateY(-1px);}
+  a.card .t{font-size:15px;font-weight:600;}
+  a.card .d{font-size:13px;color:var(--sec);margin-top:2px;}
+  .pill{display:inline-block;font-size:11px;font-weight:500;border-radius:20px;padding:2px 9px;margin-left:6px;font-family:'Geist Mono',monospace;}
+  .pat{background:#EEF2FF;color:#1A2C8A;}
+  .doc{background:#F4ECFE;color:#4A1D8F;}
+  table{border-collapse:collapse;width:100%;font-size:13px;margin:8px 0 24px;}
+  td,th{border-bottom:1px solid var(--border);text-align:left;padding:7px 10px;}
+  th{color:var(--sec);font-weight:500;}
+  code{font-family:'Geist Mono',monospace;font-size:12px;background:#EEF2FF;color:#1A2C8A;padding:1px 6px;border-radius:5px;}
+  .sw{display:inline-block;width:14px;height:14px;border-radius:4px;vertical-align:-2px;margin-right:6px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>MediFlow — UI Mockup Reference</h1>
+  <p class="lede">High-fidelity screen mockups for the Approach C build (multi-doctor marketplace + AI report-triage). Design system: "Premium Clinical Glass" (see <code>docs/Design.md</code>). Cobalt = patient, violet = doctor. Open any file below in a browser.</p>
+
+  <h2>Boards</h2>
+  <a class="card" href="00-design-system.html"><div class="t">Design system &amp; color tokens</div><div class="d">Cobalt + violet ramps, gradients, glass recipe, shadows, Geist type scale, components.</div></a>
+  <a class="card" href="01-auth.html"><div class="t">Auth flow<span class="pill pat">A1–A3</span></div><div class="d">Welcome → email sign-in → OTP verify. Shared entry for patient and doctor.</div></a>
+  <a class="card" href="02-patient-booking.html"><div class="t">Patient — book &amp; pay<span class="pill pat">P1–P10</span></div><div class="d">Home → consult chooser → upload → analyzing → triage result → find doctor → profile → reason → slot → review &amp; pay.</div></a>
+  <a class="card" href="03-patient-consult.html"><div class="t">Patient — consult &amp; care<span class="pill pat">P11–P20</span></div><div class="d">Booked → visits → appointment → video call → prescription → Rx list → timeline → messages → care → profile.</div></a>
+  <a class="card" href="04-doctor-clinical.html"><div class="t">Doctor — clinical<span class="pill doc">D1–D7</span></div><div class="d">Verify → today → appointments → work queue → encounter → prescribe → AI draft review.</div></a>
+  <a class="card" href="05-doctor-practice.html"><div class="t">Doctor — practice<span class="pill doc">D8–D14</span></div><div class="d">Patients → patient detail → refills → inbox → availability → care patients → settings.</div></a>
+
+  <h2>Color tokens (quick reference)</h2>
+  <table>
+    <tr><th>Token</th><th>Hex</th><th>Use</th></tr>
+    <tr><td><span class="sw" style="background:#5B7BF0"></span>cobalt-light</td><td><code>#5B7BF0</code></td><td>Patient hero gradient start</td></tr>
+    <tr><td><span class="sw" style="background:#2A45C8"></span>cobalt (primary)</td><td><code>#2A45C8</code></td><td>Patient primary / CTAs</td></tr>
+    <tr><td><span class="sw" style="background:#1A2C8A"></span>cobalt-dark</td><td><code>#1A2C8A</code></td><td>Patient hero gradient end</td></tr>
+    <tr><td><span class="sw" style="background:#9D4EDD"></span>violet-light</td><td><code>#9D4EDD</code></td><td>Doctor hero gradient start</td></tr>
+    <tr><td><span class="sw" style="background:#6D28C9"></span>violet (primary)</td><td><code>#6D28C9</code></td><td>Doctor primary / CTAs</td></tr>
+    <tr><td><span class="sw" style="background:#4A1D8F"></span>violet-dark</td><td><code>#4A1D8F</code></td><td>Doctor hero gradient end</td></tr>
+    <tr><td><span class="sw" style="background:#16A34A"></span>success</td><td><code>#16A34A</code></td><td>Paid / available / confirmed</td></tr>
+    <tr><td><span class="sw" style="background:#D97706"></span>warning</td><td><code>#D97706</code></td><td>Attention / urgent banner</td></tr>
+    <tr><td><span class="sw" style="background:#DC2626"></span>danger</td><td><code>#DC2626</code></td><td>Cancel / no-show / failure</td></tr>
+  </table>
+  <p style="font-size:13px;color:var(--sec)">Glass recipe: <code>rgba(255,255,255,.18)</code> + <code>backdrop-filter: blur(12px)</code> + <code>1px rgba(255,255,255,.35)</code> border — hero surfaces only. Fonts: Geist (UI), Geist Mono (money/times/doses). These are flat previews; in the app the hero cards get real blur + layered shadows.</p>
+</div>
+</body>
+</html>

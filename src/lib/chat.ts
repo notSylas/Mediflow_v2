@@ -1,7 +1,7 @@
-import { and, desc, eq, lt, sql as dsql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, lt, lte, sql as dsql } from "drizzle-orm";
 import { db } from "@/db";
 import {
-  appointments,
+  careSubscriptions,
   chatAttachments,
   conversations,
   doctorProfiles,
@@ -9,10 +9,9 @@ import {
   user,
 } from "@/db/schema";
 import { publishChatMessage } from "@/lib/realtime";
-import {
-  attachmentUsableBy,
-  messagingAllowedForStatus,
-} from "@/lib/chat-policy";
+import { attachmentUsableBy } from "@/lib/chat-policy";
+import { patientHasActiveSubscription } from "@/lib/care-subscription";
+import { getCanonicalDoctorProfile } from "@/lib/doctor";
 
 export const MESSAGE_PAGE_SIZE = 30;
 
@@ -64,37 +63,28 @@ export async function canSendAttachment(
 }
 
 /**
- * True if the patient has a *paid* appointment with the doctor — messaging is
- * unlocked by a real consultation, not an unpaid hold. See chat-policy.ts.
+ * True if the patient may message the doctor. Messaging is a **premium care
+ * plan feature**: only an active MediFlow Care subscription unlocks it. A paid
+ * video consultation alone does NOT grant messaging (product decision —
+ * messaging is sold with the subscription, not the one-off consult).
  */
-export async function patientHasBooking(
+export async function patientCanMessageDoctor(
   patientId: string,
   doctorId: string
 ): Promise<boolean> {
-  const rows = await db
-    .select({ status: appointments.status })
-    .from(appointments)
-    .where(
-      and(
-        eq(appointments.patientId, patientId),
-        eq(appointments.doctorId, doctorId)
-      )
-    );
-  return rows.some((r) => messagingAllowedForStatus(r.status));
+  return patientHasActiveSubscription(patientId, doctorId);
 }
 
 /**
  * Returns the conversation for a patient with the (single) doctor, creating it
- * on first use. Gated: the patient must have a booking with the doctor.
+ * on first use. Gated: the patient must have an active care subscription with
+ * the doctor.
  */
 export async function getOrCreatePatientConversation(patientId: string) {
-  const [doctor] = await db
-    .select({ id: doctorProfiles.id, userId: doctorProfiles.userId })
-    .from(doctorProfiles)
-    .limit(1);
+  const doctor = await getCanonicalDoctorProfile();
   if (!doctor) return null;
 
-  if (!(await patientHasBooking(patientId, doctor.id))) return null;
+  if (!(await patientCanMessageDoctor(patientId, doctor.id))) return null;
 
   const pair = and(
     eq(conversations.patientId, patientId),
@@ -130,6 +120,9 @@ export async function getConversationForParticipant(
   const isPatient = row.conversation.patientId === user_.id;
   const isDoctor = user_.role === "doctor" && row.doctorUserId === user_.id;
   if (!isPatient && !isDoctor) return null;
+  if (!(await patientCanMessageDoctor(row.conversation.patientId, row.conversation.doctorId))) {
+    return null;
+  }
 
   return row;
 }
@@ -142,6 +135,7 @@ export async function listDoctorConversations(doctorUserId: string) {
     .where(eq(doctorProfiles.userId, doctorUserId));
   if (!doctor) return [];
 
+  const now = new Date();
   return db
     .select({
       conversation: conversations,
@@ -149,7 +143,21 @@ export async function listDoctorConversations(doctorUserId: string) {
     })
     .from(conversations)
     .innerJoin(user, eq(user.id, conversations.patientId))
-    .where(eq(conversations.doctorId, doctor.id))
+    .innerJoin(
+      careSubscriptions,
+      and(
+        eq(careSubscriptions.patientId, conversations.patientId),
+        eq(careSubscriptions.doctorId, conversations.doctorId)
+      )
+    )
+    .where(
+      and(
+        eq(conversations.doctorId, doctor.id),
+        inArray(careSubscriptions.status, ["active", "manual_trial"]),
+        lte(careSubscriptions.currentPeriodStart, now),
+        gte(careSubscriptions.currentPeriodEnd, now)
+      )
+    )
     .orderBy(desc(conversations.lastMessageAt));
 }
 

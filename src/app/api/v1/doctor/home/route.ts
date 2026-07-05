@@ -12,6 +12,10 @@ import {
 } from "@/lib/doctor";
 import { countDoctorPendingFollowUps } from "@/lib/follow-ups";
 import { countPendingRefillRequests } from "@/lib/refills";
+import {
+  countActiveSubscribers,
+  listPendingCareFollowUps,
+} from "@/lib/care-subscription";
 
 export async function GET() {
   const access = await requireDoctorSession();
@@ -24,6 +28,8 @@ export async function GET() {
     earnings,
     pendingFollowUps,
     pendingRefills,
+    activeCareMembers,
+    careFollowUps,
     paymentStats,
     rules,
     issued,
@@ -33,6 +39,8 @@ export async function GET() {
     getDoctorEarnings(profile.id),
     countDoctorPendingFollowUps(profile.id),
     countPendingRefillRequests(profile.id),
+    countActiveSubscribers(profile.id),
+    listPendingCareFollowUps(profile.id),
     getDoctorPaymentStats(profile.id),
     db
       .select({ id: availabilityRules.id })
@@ -63,6 +71,8 @@ export async function GET() {
     awaitingPrescription,
     pendingFollowUps,
     pendingRefills,
+    activeCareMembers,
+    pendingCareFollowUps: careFollowUps.length,
     paymentStats,
   });
 }

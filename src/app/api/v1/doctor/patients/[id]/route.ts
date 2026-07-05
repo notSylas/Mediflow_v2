@@ -13,6 +13,7 @@ import { listDoctorPatients } from "@/lib/appointments";
 import { getMedicineHistory, getPatientHistory } from "@/lib/consult";
 import { getOrCreateDoctorProfile } from "@/lib/doctor";
 import { getPatientProfile } from "@/lib/patient";
+import { getDoctorPatientCareStatus } from "@/lib/care-subscription";
 
 export async function GET(
   _request: Request,
@@ -44,6 +45,7 @@ export async function GET(
     refillHistory,
     reports,
     conversation,
+    care,
   ] = await Promise.all([
     getPatientHistory(id, profile.id),
     getMedicineHistory(id, profile.id),
@@ -86,6 +88,7 @@ export async function GET(
       .from(conversations)
       .where(and(eq(conversations.patientId, id), eq(conversations.doctorId, profile.id)))
       .then((rows) => rows[0] ?? null),
+    getDoctorPatientCareStatus(id, profile.id),
   ]);
 
   return NextResponse.json({
@@ -97,6 +100,7 @@ export async function GET(
     refillRequests: refillHistory,
     reports,
     conversation,
+    care,
     timezone: profile.timezone,
   });
 }

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MediFlow — Design system &amp; tokens</title>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#EEF1F6;font-family:'Geist',system-ui,sans-serif;color:#0F172A;}
+.ds{max-width:900px;margin:0 auto;padding:26px;}
+.sw{height:64px;border-radius:10px;display:flex;align-items:flex-end;padding:6px 8px;font-family:'Geist Mono',monospace;font-size:10px;font-weight:500;}
+.h{font-size:13px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#64748B;margin:26px 0 10px;}
+.g{display:grid;grid-template-columns:repeat(auto-fit,minmax(86px,1fr));gap:8px;}
+</style></head>
+<body><div class="ds">
+<p style="margin:0 0 2px;font-size:22px;font-weight:600;">MediFlow — Premium Clinical Glass</p>
+<p style="margin:0;font-size:14px;color:#475569;">Geist + Geist Mono · cobalt = patient, violet = doctor · glass on hero only</p>
+
+<p class="h">Patient identity — cobalt</p>
+<div class="g">
+<div class="sw" style="background:#EEF2FF;color:#1A2C8A;">50<br>#EEF2FF</div>
+<div class="sw" style="background:#DCE3FF;color:#1A2C8A;">100<br>#DCE3FF</div>
+<div class="sw" style="background:#B6C4FF;color:#122063;">200<br>#B6C4FF</div>
+<div class="sw" style="background:#5B7BF0;color:#fff;">400<br>#5B7BF0</div>
+<div class="sw" style="background:#2A45C8;color:#fff;">600 ●<br>#2A45C8</div>
+<div class="sw" style="background:#1A2C8A;color:#fff;">800<br>#1A2C8A</div>
+<div class="sw" style="background:#122063;color:#fff;">900<br>#122063</div>
+</div>
+<div style="height:56px;border-radius:12px;margin-top:8px;background:linear-gradient(135deg,#5B7BF0,#2A45C8 55%,#1A2C8A);box-shadow:0 8px 24px rgba(42,69,200,.32);display:flex;align-items:center;padding:0 14px;color:#fff;font-size:13px;">Hero gradient · linear-gradient(135deg, #5B7BF0, #2A45C8, #1A2C8A)</div>
+
+<p class="h">Doctor identity — violet</p>
+<div class="g">
+<div class="sw" style="background:#F4ECFE;color:#4A1D8F;">50<br>#F4ECFE</div>
+<div class="sw" style="background:#E9D7FD;color:#4A1D8F;">100<br>#E9D7FD</div>
+<div class="sw" style="background:#D3B0FB;color:#311263;">200<br>#D3B0FB</div>
+<div class="sw" style="background:#9D4EDD;color:#fff;">400<br>#9D4EDD</div>
+<div class="sw" style="background:#6D28C9;color:#fff;">600 ●<br>#6D28C9</div>
+<div class="sw" style="background:#4A1D8F;color:#fff;">800<br>#4A1D8F</div>
+<div class="sw" style="background:#311263;color:#fff;">900<br>#311263</div>
+</div>
+<div style="height:56px;border-radius:12px;margin-top:8px;background:linear-gradient(135deg,#9D4EDD,#6D28C9 55%,#4A1D8F);box-shadow:0 8px 24px rgba(109,40,201,.32);display:flex;align-items:center;padding:0 14px;color:#fff;font-size:13px;">Hero gradient · linear-gradient(135deg, #9D4EDD, #6D28C9, #4A1D8F)</div>
+
+<p class="h">Semantic</p>
+<div class="g">
+<div class="sw" style="background:#DCFCE7;color:#166534;">success bg<br>#DCFCE7</div>
+<div class="sw" style="background:#16A34A;color:#fff;">success<br>#16A34A</div>
+<div class="sw" style="background:#FEF3C7;color:#92400E;">warn bg<br>#FEF3C7</div>
+<div class="sw" style="background:#D97706;color:#fff;">warning<br>#D97706</div>
+<div class="sw" style="background:#FEE2E2;color:#991B1B;">danger bg<br>#FEE2E2</div>
+<div class="sw" style="background:#DC2626;color:#fff;">danger<br>#DC2626</div>
+</div>
+
+<p class="h">Neutrals</p>
+<div class="g">
+<div class="sw" style="background:#FFFFFF;color:#0F172A;border:1px solid #E2E8F0;">surface<br>#FFFFFF</div>
+<div class="sw" style="background:#F7F8FB;color:#0F172A;border:1px solid #E2E8F0;">canvas<br>#F7F8FB</div>
+<div class="sw" style="background:#E2E8F0;color:#0F172A;">border<br>#E2E8F0</div>
+<div class="sw" style="background:#94A3B8;color:#fff;">muted<br>#94A3B8</div>
+<div class="sw" style="background:#475569;color:#fff;">secondary<br>#475569</div>
+<div class="sw" style="background:#0F172A;color:#fff;">ink<br>#0F172A</div>
+</div>
+
+<p class="h">Glass recipe + elevation</p>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+<div style="border-radius:12px;padding:14px;background:linear-gradient(135deg,#5B7BF0,#2A45C8);">
+  <div style="background:rgba(255,255,255,.18);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.35);border-radius:10px;padding:12px;color:#fff;font-size:12px;">Glass card<br><span style="font-family:'Geist Mono',monospace;font-size:10px;">bg rgba(255,255,255,.18) · blur(12px) · border rgba(255,255,255,.35)</span></div>
+</div>
+<div style="border-radius:12px;padding:14px;background:#fff;border:1px solid #E2E8F0;font-size:12px;color:#475569;">Shadow stack<br><span style="font-family:'Geist Mono',monospace;font-size:10px;color:#94A3B8;">0 1px 2px rgba(15,23,42,.06),<br>0 8px 24px rgba(42,69,200,.18),<br>inset 0 1px 0 rgba(255,255,255,.6)</span><div style="height:34px;border-radius:8px;margin-top:8px;background:#fff;box-shadow:0 1px 2px rgba(15,23,42,.06),0 8px 24px rgba(42,69,200,.18),inset 0 1px 0 rgba(255,255,255,.6);"></div></div>
+</div>
+
+<p class="h">Type scale — Geist</p>
+<div style="background:#fff;border:1px solid #E2E8F0;border-radius:12px;padding:14px;">
+<p style="margin:0 0 6px;font-size:28px;font-weight:600;">Display 28 / 600 — hero amounts</p>
+<p style="margin:0 0 6px;font-size:20px;font-weight:600;">Title 20 / 600 — screen titles</p>
+<p style="margin:0 0 6px;font-size:15px;font-weight:500;">Body strong 15 / 500 — list items</p>
+<p style="margin:0 0 6px;font-size:13px;font-weight:400;color:#475569;">Body 13 / 400 — secondary text</p>
+<p style="margin:0 0 6px;font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#94A3B8;">Overline 11 / 600 — section labels</p>
+<p style="margin:0;font-size:15px;font-family:'Geist Mono',monospace;font-weight:500;">₹600.00 · 6:20 pm · 1-0-1 — Geist Mono tabular</p>
+</div>
+
+<p class="h">Components</p>
+<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+<button style="background:linear-gradient(135deg,#5B7BF0,#2A45C8);color:#fff;border:none;border-radius:10px;padding:11px 18px;font-family:Geist;font-size:14px;font-weight:500;box-shadow:0 4px 12px rgba(42,69,200,.3);">Primary</button>
+<button style="background:#fff;color:#2A45C8;border:1px solid #C7D2FE;border-radius:10px;padding:11px 18px;font-family:Geist;font-size:14px;font-weight:500;">Secondary</button>
+<span style="background:#DCE3FF;color:#1A2C8A;border-radius:8px;padding:4px 10px;font-size:12px;">Confirmed</span>
+<span style="background:#DCFCE7;color:#166534;border-radius:8px;padding:4px 10px;font-size:12px;">Paid</span>
+<span style="background:#FEF3C7;color:#92400E;border-radius:8px;padding:4px 10px;font-size:12px;">Pending</span>
+<span style="background:#FEE2E2;color:#991B1B;border-radius:8px;padding:4px 10px;font-size:12px;">No-show</span>
+<span style="border:1px solid #C7D2FE;color:#2A45C8;border-radius:20px;padding:5px 12px;font-size:12px;">Filter chip</span>
+</div>
+
+<p style="margin:26px 0 0;font-size:12px;color:#94A3B8;">Note: flat previews. In the app, hero cards use real backdrop-filter blur + the layered shadow stack above; dense lists stay flat.</p>
+</div></body></html>

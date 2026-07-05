@@ -7,6 +7,7 @@ import { useState } from "react";
 import { Alert, Linking, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { auroraHeaderStyles } from "@/components/aurora-header";
 import { AuroraScreen } from "@/components/aurora-screen";
+import { CareSettingsCard } from "@/components/care-settings";
 import { LegalLinks } from "@/components/legal-links";
 import {
   Avatar,
@@ -153,6 +154,9 @@ export default function PatientSettings() {
           onPress={save}
         />
       </Card>
+
+      <SectionHeader title="MediFlow Care Plan" />
+      <CareSettingsCard />
 
       <SectionHeader title="Privacy and security" />
       <Card>

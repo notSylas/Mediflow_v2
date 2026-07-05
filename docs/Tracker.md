@@ -156,7 +156,7 @@ updated `Rules.md` #1 and `AGENTS.md`.
 | Realtime infra (Postgres NOTIFY → socket.io) | ✅ | `realtime/server.ts`, `npm run realtime`; swappable behind `src/lib/realtime.ts` |
 | Short-lived HMAC socket tokens (15 min, refresh on reconnect) | ✅ | `src/lib/realtime-token.ts` |
 | REST API (conversations, messages, read, attachments) | ✅ | `/api/v1/conversations/*` |
-| Messaging gated to **paid** appointments | ✅ | `chat-policy.ts`; unit-tested |
+| Messaging gated to **paid** appointments **or active MediFlow Care** | ✅ | `chat-policy.ts` + `patientCanMessageDoctor` in `chat.ts`; see Care section |
 | Attachment authorization (uploader + conversation bound) | ✅ | `chat-policy.ts`; unit-tested |
 | Web chat UI (live, pagination, attachments, read state) | ✅ | `ChatThread`, `DoctorMessages` |
 | Mobile chat (Expo, live, pagination, PDF open, read state) | ✅ | `components/chat-thread.tsx` |
@@ -165,6 +165,36 @@ updated `Rules.md` #1 and `AGENTS.md`.
 | Production realtime hosting | 🔜 | Vercel can't host the socket process — see `Deployment.md` |
 | Push notifications (new-message alerts) | 🔜 | no `expo-notifications` yet; chat only updates while open |
 | Realtime E2E (socket delivery) test | 🔜 | only unit coverage today |
+
+## MediFlow Care subscription (added 2026-06-28)
+
+Ongoing-care subscription that unlocks messaging without a prior booking, a
+monthly async follow-up credit, and reminders — between paid video consults.
+Brief: `docs/designs/care-subscription-plan.md`. v1 billing is a mock/admin
+toggle (no Razorpay recurring yet).
+
+| Item | Status | Notes |
+|---|---|---|
+| Schema (`care_subscriptions`, `care_followup_requests`) | ✅ | one row per patient↔doctor pair; `db:push`ed |
+| Subscription policy (active/credit/period) | ✅ | `care-subscription-policy.ts`; 9 unit tests |
+| Data + admin toggle layer | ✅ | `care-subscription.ts` (activate/deactivate/reset/prefs/follow-up/roll) |
+| Messaging gate: **active subscription only** (premium feature) | ✅ | `patientCanMessageDoctor` in `chat.ts`; paid consult no longer unlocks chat (reversed earlier OR-gate per product call) |
+| Doctor-configurable monthly price | ✅ | `doctor_profiles.care_plan_price_in_paise`; doctor settings (web+mobile); shown to patient pre-checkout |
+| Cancellation breakdown (deduction/refund/timeline) | ✅ | pro-rated `computeCancellationBreakdown` + confirm screens web `/patient/care/cancel`, mobile `(patient)/care/cancel` |
+| Subscriber badge across doctor surfaces | ✅ | patient detail, patient **list** (+ "members" filter), **messages** list/header — web + mobile |
+| Patient API (status/start/cancel/prefs/follow-up) | ✅ | `/api/v1/patient/care/*` |
+| Checkout/payment page before activation | ✅ | web `/patient/care/checkout`, mobile `(patient)/care/checkout`; mock pay in v1 (₹499/mo) |
+| Doctor/admin toggle API (+ subscriber list) | ✅ | `/api/v1/doctor/care-subscriptions` (GET list) + `/[patientId]` (POST toggle) |
+| Doctor care-management screen (count + members + toggle) | ✅ | web `/doctor/care`, mobile `(doctor)/care`; nav + doctor-home entry |
+| Doctor care-follow-up action API | ✅ | `/api/v1/doctor/care-follow-ups/[id]` (fulfill→async consult / dismiss) |
+| Work queue: care follow-ups + count | ✅ | web + mobile work-queue, doctor patient detail badge |
+| Patient mobile (home card, messages unlock, settings, profile prefs) | ✅ | `care-card.tsx`, `care-settings.tsx` |
+| Patient web (dashboard card, messages unlock, settings) | ✅ | `components/patient/CareCard.tsx` + server actions |
+| Emergency disclaimer on all messaging promos | ✅ | "Messaging is not for emergencies." everywhere |
+| Real Razorpay recurring billing | 🧊 | deferred; checkout page is the plug-in point; schema absorbs without migration |
+| Weekly digest **email** (Resend) | 🔜 | data assembler + cron not built yet; waits on base Resend wiring |
+| Doctor home subscriber count + patient-list filter | 🔜 | patient detail badge done; list filter/home stat pending |
+| E2E (gate + follow-up once-per-period) | 🔜 | policy unit-tested; e2e specs pending |
 
 ## Web clinical workflow parity (added 2026-06-18)
 

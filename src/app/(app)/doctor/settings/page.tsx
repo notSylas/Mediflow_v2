@@ -1,6 +1,8 @@
+import Link from "next/link";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { asc, eq } from "drizzle-orm";
+import { ArrowLeft } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
 import { availabilityOverrides, availabilityRules } from "@/db/schema";
@@ -39,6 +41,13 @@ export default async function DoctorSettingsPage() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-8 px-6 py-12">
+      <Link
+        href="/doctor"
+        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        Back to dashboard
+      </Link>
       <div>
         <h1 className="mb-2 text-2xl font-semibold tracking-tight">Profile & availability</h1>
         <p className="text-muted-foreground">
@@ -51,6 +60,7 @@ export default async function DoctorSettingsPage() {
           specialty: profile.specialty,
           bio: profile.bio,
           feeInPaise: profile.feeInPaise,
+          carePlanPriceInPaise: profile.carePlanPriceInPaise,
           slotMinutes: profile.slotMinutes,
           timezone: profile.timezone,
         }}

@@ -1,3 +1,4 @@
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback } from "react";
@@ -56,7 +57,7 @@ export default function DoctorMessages() {
         />
       ) : (
         <View style={styles.list}>
-          {rows.map(({ conversation, patient }, i) => (
+          {rows.map(({ conversation, patient, isMember }, i) => (
             <FadeInView key={conversation.id} index={i}>
               <PressableScale
                 onPress={() =>
@@ -70,9 +71,14 @@ export default function DoctorMessages() {
                 <Avatar name={patient.name} doctor />
                 <View style={{ flex: 1, gap: 2 }}>
                   <View style={styles.rowTop}>
-                    <Text style={styles.name} numberOfLines={1}>
-                      {patient.name}
-                    </Text>
+                    <View style={styles.nameWrap}>
+                      <Text style={styles.name} numberOfLines={1}>
+                        {patient.name}
+                      </Text>
+                      {isMember ? (
+                        <MaterialCommunityIcons name="hand-heart" size={13} color={colors.info} />
+                      ) : null}
+                    </View>
                     {conversation.lastMessageAt ? (
                       <Text style={styles.when}>
                         {formatRelativeDay(conversation.lastMessageAt)}
@@ -110,7 +116,8 @@ const styles = StyleSheet.create({
     padding: space.md,
   },
   rowTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
-  name: { flex: 1, fontSize: 15, fontFamily: fonts.heading, color: colors.text },
+  nameWrap: { flex: 1, flexDirection: "row", alignItems: "center", gap: 5 },
+  name: { flexShrink: 1, fontSize: 15, fontFamily: fonts.heading, color: colors.text },
   when: { fontSize: 11, fontFamily: fonts.body, color: colors.textMuted },
   preview: { fontSize: 13, fontFamily: fonts.body, color: colors.textMuted },
   unread: {

@@ -1,18 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { attachmentUsableBy, messagingAllowedForStatus } from "@/lib/chat-policy";
-
-describe("messagingAllowedForStatus", () => {
-  it("unlocks messaging once a consultation is paid for", () => {
-    for (const status of ["confirmed", "completed", "no_show"]) {
-      expect(messagingAllowedForStatus(status)).toBe(true);
-    }
-  });
-
-  it("keeps messaging closed for an unpaid hold or a cancelled visit", () => {
-    expect(messagingAllowedForStatus("pending_payment")).toBe(false);
-    expect(messagingAllowedForStatus("cancelled")).toBe(false);
-  });
-});
+import { attachmentUsableBy } from "@/lib/chat-policy";
 
 describe("attachmentUsableBy", () => {
   const conversationId = "conv-1";

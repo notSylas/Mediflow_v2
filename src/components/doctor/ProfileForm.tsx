@@ -16,6 +16,7 @@ interface DoctorProfile {
   specialty: string | null;
   bio: string | null;
   feeInPaise: number;
+  carePlanPriceInPaise: number;
   slotMinutes: number;
   timezone: string;
 }
@@ -29,6 +30,9 @@ export function ProfileForm({
   const [bio, setBio] = useState(initialProfile.bio ?? "");
   const [feeInRupees, setFeeInRupees] = useState(
     (initialProfile.feeInPaise / 100).toString()
+  );
+  const [carePlanPriceInRupees, setCarePlanPriceInRupees] = useState(
+    (initialProfile.carePlanPriceInPaise / 100).toString()
   );
   const [slotMinutes, setSlotMinutes] = useState(
     initialProfile.slotMinutes.toString()
@@ -44,10 +48,16 @@ export function ProfileForm({
     setSuccess(false);
 
     const feeInPaise = Math.round(Number(feeInRupees) * 100);
+    const carePlanPriceInPaise = Math.round(Number(carePlanPriceInRupees) * 100);
     const slotMinutesValue = Number(slotMinutes);
 
     if (!Number.isFinite(feeInPaise) || feeInPaise <= 0) {
       setError("Fee must be a positive number.");
+      return;
+    }
+
+    if (!Number.isFinite(carePlanPriceInPaise) || carePlanPriceInPaise <= 0) {
+      setError("Care plan price must be a positive number.");
       return;
     }
 
@@ -71,6 +81,7 @@ export function ProfileForm({
           specialty: specialty.trim() || null,
           bio: bio.trim() || null,
           feeInPaise,
+          carePlanPriceInPaise,
           slotMinutes: slotMinutesValue,
           timezone: timezone.trim(),
         }),
@@ -142,6 +153,21 @@ export function ProfileForm({
                 onChange={(event) => setSlotMinutes(event.target.value)}
               />
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="carePlanPrice">MediFlow Care price (INR / month)</Label>
+            <Input
+              id="carePlanPrice"
+              type="number"
+              min="0"
+              step="0.01"
+              value={carePlanPriceInRupees}
+              onChange={(event) => setCarePlanPriceInRupees(event.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              Monthly subscription price shown to patients before they start the care plan.
+            </p>
           </div>
 
           <div className="space-y-2">

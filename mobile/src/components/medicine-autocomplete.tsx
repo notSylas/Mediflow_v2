@@ -1,14 +1,18 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useQuery } from "@tanstack/react-query";
 import { Field } from "@/components/ui";
+import { apiFetch } from "@/lib/api";
 import { colors, fonts, radius, shadow } from "@/lib/theme";
 import { searchFormulary, type FormularyEntry } from "@/lib/formulary";
 
 /**
- * Medicine name input with a live formulary dropdown. Suggestions render
- * in-flow directly under the field (reliable inside a ScrollView). Selecting a
- * suggestion fills name + strength + route via `onSelect`.
+ * Medicine name input with a live formulary dropdown. Suggestions come from the
+ * server-backed `/api/medicines` search; the bundled local formulary is the
+ * offline fallback (and shows instantly while the server request is in flight).
+ * Suggestions render in-flow directly under the field (reliable inside a
+ * ScrollView). Selecting one fills name + strength + route via `onSelect`.
  */
 export function MedicineNameField({
   value,
@@ -20,7 +24,28 @@ export function MedicineNameField({
   onSelect: (entry: FormularyEntry) => void;
 }) {
   const [focused, setFocused] = useState(false);
-  const suggestions = focused ? searchFormulary(value) : [];
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(value), 200);
+    return () => clearTimeout(t);
+  }, [value]);
+
+  const query = debounced.trim();
+  const server = useQuery({
+    queryKey: ["medicines", query.toLowerCase()],
+    queryFn: () =>
+      apiFetch<{ medicines: FormularyEntry[] }>(
+        `/api/medicines?q=${encodeURIComponent(query)}`
+      ),
+    enabled: focused && query.length >= 2,
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+  });
+
+  // Server is the source of truth; the bundled list is the offline fallback and
+  // also fills the gap instantly before the server responds.
+  const local = focused ? searchFormulary(value) : [];
+  const suggestions = server.isSuccess ? server.data.medicines : local;
   const open = focused && suggestions.length > 0;
 
   return (

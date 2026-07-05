@@ -39,6 +39,15 @@ export default function DoctorHome() {
     (sum, row) => sum + (row.conversation.doctorUnread ?? 0),
     0
   );
+  const careQuery = useQuery({
+    queryKey: ["doctor", "care-members"],
+    queryFn: () =>
+      apiFetch<{ activeCount: number; totalCount: number }>(
+        "/api/v1/doctor/care-subscriptions"
+      ),
+    retry: false,
+  });
+  const careActive = query.data?.activeCareMembers ?? careQuery.data?.activeCount ?? 0;
   if (query.isLoading) return <Loading label="Opening your clinic…" />;
   if (!query.data) {
     return (
@@ -58,6 +67,7 @@ export default function DoctorHome() {
     awaitingPrescription,
     pendingFollowUps,
     pendingRefills,
+    pendingCareFollowUps,
   } = query.data;
   const now = new Date();
   const todayKey = now.toDateString();
@@ -85,7 +95,12 @@ export default function DoctorHome() {
   ).length;
   const setupIncomplete = !profile.specialty || !hasAvailability;
   const workQueueTotal =
-    awaitingPrescription + unread + pendingRefills + pendingFollowUps + triageFlags;
+    awaitingPrescription +
+    unread +
+    pendingRefills +
+    pendingFollowUps +
+    pendingCareFollowUps +
+    triageFlags;
   const heroName = doctorHeroName(session?.user.name);
   const focusTitle = next
     ? next.patient.name || next.patient.email
@@ -162,6 +177,15 @@ export default function DoctorHome() {
       title: `${pendingFollowUps} follow-up${pendingFollowUps === 1 ? "" : "s"} recommended`,
       message: "Patients haven't booked their follow-up yet.",
       onPress: () => router.push("/(doctor)/appointments"),
+    });
+  }
+  if (pendingCareFollowUps > 0) {
+    attention.push({
+      icon: "hand-heart-outline",
+      tone: "doctor",
+      title: `${pendingCareFollowUps} care follow-up${pendingCareFollowUps === 1 ? "" : "s"}`,
+      message: "Subscribers have used their monthly async check-in.",
+      onPress: () => router.push("/(doctor)/work-queue"),
     });
   }
   if (triageFlags > 0) {
@@ -357,6 +381,36 @@ export default function DoctorHome() {
           </FadeInView>
 
           <FadeInView index={4}>
+            <SectionHeader
+              title="MediFlow Care"
+              action={
+                <Pressable onPress={() => router.push("/(doctor)/care")}>
+                  <Muted>Manage</Muted>
+                </Pressable>
+              }
+            />
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => router.push("/(doctor)/care")}
+            >
+              <Card tone="doctor">
+                <View style={styles.careRow}>
+                  <View style={styles.careIcon}>
+                    <MaterialCommunityIcons name="hand-heart" size={20} color={colors.doctor} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Body strong>
+                      {careActive} active member{careActive === 1 ? "" : "s"}
+                    </Body>
+                    <Muted>Tap to manage care-plan subscriptions.</Muted>
+                  </View>
+                  <MaterialCommunityIcons name="chevron-right" size={20} color={colors.textMuted} />
+                </View>
+              </Card>
+            </Pressable>
+          </FadeInView>
+
+          <FadeInView index={5}>
             <SectionHeader title="Earnings" />
             <Card>
               <View style={styles.earningsRow}>
@@ -557,6 +611,15 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
   },
   focusPillText: { fontFamily: fonts.bodySemibold, fontSize: 11 },
+  careRow: { flexDirection: "row", alignItems: "center", gap: 12 },
+  careIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: radius.md,
+    backgroundColor: colors.card,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   earningsRow: { flexDirection: "row", alignItems: "center" },
   earningStat: { flex: 1, alignItems: "center", gap: 2 },
   earningValue: {

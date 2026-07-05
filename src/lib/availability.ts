@@ -4,9 +4,9 @@ import {
   appointments,
   availabilityOverrides,
   availabilityRules,
-  doctorProfiles,
 } from "@/db/schema";
 import { computeAvailableSlots } from "@/lib/slots";
+import { getCanonicalDoctorProfile } from "@/lib/doctor";
 
 /**
  * Computes upcoming available slots for the (single, v1) doctor in the
@@ -17,7 +17,7 @@ export async function getAvailableSlots(
   from: Date,
   to: Date
 ): Promise<{ slots: Date[]; timezone: string | null }> {
-  const [profile] = await db.select().from(doctorProfiles).limit(1);
+  const profile = await getCanonicalDoctorProfile();
 
   if (!profile) {
     return { slots: [], timezone: null };

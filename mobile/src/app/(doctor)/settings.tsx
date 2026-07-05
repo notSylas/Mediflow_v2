@@ -71,6 +71,7 @@ export default function DoctorSettings() {
       yearsExperience: string;
       languages: string;
       fee: string;
+      carePlanPrice: string;
       slotMinutes: string;
       timezone: string;
     }>
@@ -87,6 +88,7 @@ export default function DoctorSettings() {
         : "",
     languages: profileQuery.data?.languages ?? "",
     fee: String((profileQuery.data?.feeInPaise ?? 50000) / 100),
+    carePlanPrice: String((profileQuery.data?.carePlanPriceInPaise ?? 49900) / 100),
     slotMinutes: String(profileQuery.data?.slotMinutes ?? 20),
     timezone: profileQuery.data?.timezone ?? "Asia/Kolkata",
     ...profileEdits,
@@ -107,6 +109,7 @@ export default function DoctorSettings() {
             : null,
           languages: profile.languages.trim() || null,
           feeInPaise: Math.round(Number(profile.fee) * 100),
+          carePlanPriceInPaise: Math.round(Number(profile.carePlanPrice) * 100),
           slotMinutes: Number(profile.slotMinutes),
           timezone: profile.timezone.trim(),
         }),
@@ -299,6 +302,18 @@ export default function DoctorSettings() {
           </View>
           <View style={{ flex: 1 }}>
             <Field
+              label="Care plan / month (INR)"
+              value={profile.carePlanPrice}
+              onChangeText={(value) =>
+                setProfileEdits((current) => ({ ...current, carePlanPrice: value }))
+              }
+              keyboardType="number-pad"
+            />
+          </View>
+        </View>
+        <View style={styles.row}>
+          <View style={{ flex: 1 }}>
+            <Field
               label="Slot minutes"
               value={profile.slotMinutes}
               onChangeText={(value) =>
@@ -307,15 +322,17 @@ export default function DoctorSettings() {
               keyboardType="number-pad"
             />
           </View>
+          <View style={{ flex: 1 }}>
+            <Field
+              label="Timezone"
+              value={profile.timezone}
+              onChangeText={(value) =>
+                setProfileEdits((current) => ({ ...current, timezone: value }))
+              }
+              autoCapitalize="none"
+            />
+          </View>
         </View>
-        <Field
-          label="Timezone"
-          value={profile.timezone}
-          onChangeText={(value) =>
-            setProfileEdits((current) => ({ ...current, timezone: value }))
-          }
-          autoCapitalize="none"
-        />
         {saveProfile.error ? <ErrorState message={saveProfile.error.message} /> : null}
         <Button
           label="Save profile"

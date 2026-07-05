@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:https": "next dev --experimental-https",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
@@ -17,6 +18,7 @@
     "check:env:strict": "tsx scripts/check-production-env.ts --strict",
     "promote-doctor": "tsx scripts/promote-doctor.ts",
     "seed:medicines": "tsx --env-file=.env scripts/seed-medicines.ts",
+    "seed:specialties": "tsx --env-file=.env scripts/seed-specialties.ts",
     "realtime": "tsx watch --env-file=.env realtime/server.ts",
     "docker:up": "docker compose up",
     "docker:down": "docker compose down",

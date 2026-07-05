@@ -6,6 +6,7 @@ import { formatInTimeZone } from "date-fns-tz";
 import {
   ArrowUpRight,
   Clock3,
+  HandHeart,
   Inbox,
   MessageCircle,
   Search,
@@ -26,6 +27,7 @@ interface ConversationSummary {
   preview: string | null;
   unread: number;
   lastMessageAt: string | null;
+  isMember?: boolean;
 }
 
 export function DoctorMessages({
@@ -95,7 +97,12 @@ export function DoctorMessages({
                 {c.patientName.slice(0, 2)}
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block truncate font-semibold">{c.patientName}</span>
+                <span className="flex items-center gap-1.5">
+                  <span className="truncate font-semibold">{c.patientName}</span>
+                  {c.isMember && (
+                    <HandHeart className="h-3.5 w-3.5 shrink-0 text-sky-600" />
+                  )}
+                </span>
                 <span className="block truncate text-xs text-muted-foreground">
                   {c.patientEmail}
                 </span>
@@ -154,7 +161,15 @@ export function DoctorMessages({
                   <UserRound className="h-5 w-5" />
                 </span>
                 <div className="min-w-0">
-                  <p className="truncate font-semibold">{active.patientName}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="truncate font-semibold">{active.patientName}</p>
+                    {active.isMember && (
+                      <Badge className="border-sky-200 bg-sky-100 text-sky-700 hover:bg-sky-100">
+                        <HandHeart className="mr-1 h-3 w-3" />
+                        Care
+                      </Badge>
+                    )}
+                  </div>
                   <p className="truncate text-sm text-muted-foreground">
                     {active.patientEmail}
                   </p>

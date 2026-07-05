@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
-import { chatAttachments, conversations, doctorProfiles, messages } from "@/db/schema";
+import { chatAttachments, conversations, doctorProfiles } from "@/db/schema";
 import { requireSession } from "@/lib/api-auth";
+import { patientCanMessageDoctor } from "@/lib/chat";
 
 /**
- * Serves a chat attachment to either participant of the conversation it was
- * sent in. Authorization walks attachment → message → conversation.
+ * Serves a chat attachment to either participant of the active care-plan
+ * conversation it was sent in.
  */
 export async function GET(
   _request: Request,
@@ -21,11 +22,11 @@ export async function GET(
     .select({
       attachment: chatAttachments,
       patientId: conversations.patientId,
+      doctorId: conversations.doctorId,
       doctorUserId: doctorProfiles.userId,
     })
     .from(chatAttachments)
-    .leftJoin(messages, eq(messages.attachmentId, chatAttachments.id))
-    .leftJoin(conversations, eq(conversations.id, messages.conversationId))
+    .leftJoin(conversations, eq(conversations.id, chatAttachments.conversationId))
     .leftJoin(doctorProfiles, eq(doctorProfiles.id, conversations.doctorId))
     .where(eq(chatAttachments.id, id))
     .limit(1);
@@ -39,6 +40,13 @@ export async function GET(
   // row exists in a race).
   if (!isParticipant && row.attachment.uploaderId !== access.id) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+  if (
+    row.patientId &&
+    row.doctorId &&
+    !(await patientCanMessageDoctor(row.patientId, row.doctorId))
+  ) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
   return new Response(new Uint8Array(row.attachment.data), {

@@ -8,6 +8,7 @@ import {
   ArrowRight,
   CalendarClock,
   FileText,
+  HandHeart,
   HeartPulse,
   Mail,
   MessageCircle,
@@ -29,6 +30,7 @@ import { getMedicineHistory, getPatientHistory } from "@/lib/consult";
 import { describeMedicineSchedule } from "@/lib/medicines";
 import { getOrCreateDoctorProfile } from "@/lib/doctor";
 import { ageFromDob, genderLabel, getPatientProfile } from "@/lib/patient";
+import { getDoctorPatientCareStatus } from "@/lib/care-subscription";
 import { cn } from "@/lib/utils";
 import { TONES } from "@/lib/tones";
 import { startAsyncConsultAction as startWebAsyncConsultAction } from "@/app/(app)/doctor/actions";
@@ -91,6 +93,7 @@ export default async function DoctorPatientDetailPage({
     refillHistory,
     reports,
     conversation,
+    care,
   ] = await Promise.all([
     getPatientHistory(patient.id, profile.id),
     getMedicineHistory(patient.id, profile.id),
@@ -136,6 +139,7 @@ export default async function DoctorPatientDetailPage({
       .from(conversations)
       .where(and(eq(conversations.patientId, patient.id), eq(conversations.doctorId, profile.id)))
       .then((rows) => rows[0] ?? null),
+    getDoctorPatientCareStatus(patient.id, profile.id),
   ]);
 
   const timezone = profile.timezone;
@@ -212,7 +216,15 @@ export default async function DoctorPatientDetailPage({
               {displayName.slice(0, 2)}
             </span>
             <div>
-              <h1 className="text-2xl font-semibold tracking-tight">{displayName}</h1>
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="text-2xl font-semibold tracking-tight">{displayName}</h1>
+                {care.active && (
+                  <Badge className="border-sky-200 bg-sky-100 text-sky-700 hover:bg-sky-100">
+                    <HandHeart className="mr-1 h-3.5 w-3.5" />
+                    Care member
+                  </Badge>
+                )}
+              </div>
               <p className="flex items-center gap-1.5 text-muted-foreground">
                 <Mail className="h-4 w-4" />
                 {patient.email}
@@ -220,6 +232,14 @@ export default async function DoctorPatientDetailPage({
               {snapshot.length > 0 && (
                 <p className="mt-1 text-sm text-muted-foreground">
                   {snapshot.join(" · ")}
+                </p>
+              )}
+              {care.active && (
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Messaging enabled ·{" "}
+                  {care.followUpAvailable
+                    ? "follow-up credit available"
+                    : "follow-up used this period"}
                 </p>
               )}
             </div>

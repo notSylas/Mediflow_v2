@@ -26,7 +26,9 @@ import { listPatientAppointments } from "@/lib/appointments";
 import { listPatientPrescriptions } from "@/lib/consult";
 import { getPatientPendingFollowUp } from "@/lib/follow-ups";
 import { getPatientProfile } from "@/lib/patient";
+import { getPatientCareStatus, toCareStatusDTO } from "@/lib/care-subscription";
 import { describeMedicineSchedule } from "@/lib/medicines";
+import { CareCard } from "@/components/patient/CareCard";
 import { dismissFollowUpAction } from "@/app/(app)/patient/actions";
 import { JoinCallButton } from "@/components/JoinCallButton";
 import { Reveal } from "@/components/Reveal";
@@ -62,14 +64,17 @@ export default async function PatientHomePage() {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) redirect("/login");
 
-  const [rows, profile, patientProfile, prescriptions, doctor, followUp] = await Promise.all([
-    listPatientAppointments(session.user.id),
-    getDoctorProfile(),
-    getPatientProfile(session.user.id),
-    listPatientPrescriptions(session.user.id),
-    getDoctorCard(),
-    getPatientPendingFollowUp(session.user.id),
-  ]);
+  const [rows, profile, patientProfile, prescriptions, doctor, followUp, careStatus] =
+    await Promise.all([
+      listPatientAppointments(session.user.id),
+      getDoctorProfile(),
+      getPatientProfile(session.user.id),
+      listPatientPrescriptions(session.user.id),
+      getDoctorCard(),
+      getPatientPendingFollowUp(session.user.id),
+      getPatientCareStatus(session.user.id),
+    ]);
+  const care = toCareStatusDTO(careStatus);
 
   const timezone = profile?.timezone ?? "Asia/Kolkata";
   const now = new Date();
@@ -212,6 +217,10 @@ export default async function PatientHomePage() {
             </div>
           </div>
         </PatientHero>
+      </Reveal>
+
+      <Reveal delay={40}>
+        <CareCard care={care} timezone={timezone} />
       </Reveal>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

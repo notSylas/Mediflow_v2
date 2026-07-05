@@ -2,7 +2,10 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { KeyRound, LogOut, Settings, ShieldCheck, UserRound } from "lucide-react";
 import { auth } from "@/lib/auth";
+import { getDoctorProfile } from "@/lib/doctor";
+import { getPatientCareStatus, toCareStatusDTO } from "@/lib/care-subscription";
 import { AccountSettings } from "@/components/account/AccountSettings";
+import { CareCard } from "@/components/patient/CareCard";
 import { LegalLinks } from "@/components/account/LegalLinks";
 import { LogoutButton } from "@/components/LogoutButton";
 import {
@@ -17,6 +20,12 @@ import { Reveal } from "@/components/Reveal";
 export default async function PatientSettingsPage() {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) redirect("/login");
+
+  const [careStatus, profile] = await Promise.all([
+    getPatientCareStatus(session.user.id),
+    getDoctorProfile(),
+  ]);
+  const care = toCareStatusDTO(careStatus);
 
   return (
     <PatientPageShell>
@@ -70,6 +79,13 @@ export default async function PatientSettingsPage() {
           />
         </Reveal>
       </div>
+
+      <PatientSection
+        title="MediFlow Care Plan"
+        description="Your ongoing care subscription, benefits, and renewal."
+      >
+        <CareCard care={care} timezone={profile?.timezone ?? "Asia/Kolkata"} variant="full" />
+      </PatientSection>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
         <PatientSection

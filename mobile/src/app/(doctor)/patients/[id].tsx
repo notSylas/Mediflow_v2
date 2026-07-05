@@ -62,6 +62,12 @@ interface Response {
     lastMessagePreview: string | null;
     doctorUnread: number;
   } | null;
+  care: {
+    active: boolean;
+    status: string;
+    followUpAvailable: boolean;
+    currentPeriodEnd: string | null;
+  };
   timezone: string;
 }
 
@@ -121,7 +127,21 @@ export default function DoctorPatientDetail() {
             <Body strong>{data.patient.name || data.patient.email}</Body>
             <Muted>{data.patient.email}</Muted>
           </View>
+          {data.care.active ? (
+            <View style={styles.careBadge}>
+              <MaterialCommunityIcons name="hand-heart" size={13} color={colors.info} />
+              <Text style={styles.careBadgeText}>Care member</Text>
+            </View>
+          ) : null}
         </View>
+        {data.care.active ? (
+          <Muted>
+            Messaging enabled ·{" "}
+            {data.care.followUpAvailable
+              ? "follow-up credit available"
+              : "follow-up used this period"}
+          </Muted>
+        ) : null}
         <Button
           label="Start follow-up / prescription"
           icon="file-document-edit-outline"
@@ -485,6 +505,16 @@ function profileScore(profile: PatientProfile | null) {
 }
 
 const styles = StyleSheet.create({
+  careBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    borderRadius: radius.pill,
+    backgroundColor: colors.infoBg,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+  },
+  careBadgeText: { color: colors.info, fontFamily: fonts.bodySemibold, fontSize: 10.5 },
   summaryGrid: { flexDirection: "row", gap: 9 },
   summaryMetric: {
     flex: 1,

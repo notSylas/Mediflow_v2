@@ -32,6 +32,7 @@ interface PatientRow {
   pendingRefillCount: number;
   reportCount: number;
   unreadMessageCount: number;
+  isMember: boolean;
   hasRiskProfile: boolean;
 }
 
@@ -86,6 +87,7 @@ export default function DoctorPatients() {
       <ChoiceChips
         options={[
           { label: "All", value: "all" },
+          { label: "Members", value: "members" },
           { label: "Risk", value: "risk" },
           { label: "Needs Rx", value: "needs_rx" },
           { label: "Follow-up", value: "follow_up" },
@@ -129,7 +131,15 @@ export default function DoctorPatients() {
                 <View style={styles.row}>
                   <Avatar name={row.patient.name || row.patient.email} doctor />
                   <View style={{ flex: 1 }}>
-                    <Body strong>{row.patient.name || row.patient.email}</Body>
+                    <View style={styles.nameRow}>
+                      <Body strong>{row.patient.name || row.patient.email}</Body>
+                      {row.isMember ? (
+                        <View style={styles.memberBadge}>
+                          <MaterialCommunityIcons name="hand-heart" size={11} color={colors.info} />
+                          <Text style={styles.memberBadgeText}>Premium</Text>
+                        </View>
+                      ) : null}
+                    </View>
                     <Muted>{row.patient.email}</Muted>
                     <View style={styles.tagRow}>
                       <View style={styles.tag}>
@@ -197,6 +207,7 @@ function RosterMetric({
 
 function matchesFilter(row: PatientRow, filter: string) {
   if (filter === "all") return true;
+  if (filter === "members") return row.isMember;
   if (filter === "risk") return row.hasRiskProfile || row.triageCount > 0;
   if (filter === "needs_rx") return row.pendingRxCount > 0;
   if (filter === "follow_up") return row.pendingFollowUpCount > 0;
@@ -243,6 +254,17 @@ const styles = StyleSheet.create({
   },
   metricValue: { color: colors.text, fontFamily: fonts.display, fontSize: 19 },
   metricLabel: { color: colors.textMuted, fontFamily: fonts.body, fontSize: 11 },
+  nameRow: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 7 },
+  memberBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    borderRadius: radius.pill,
+    backgroundColor: colors.infoBg,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  memberBadgeText: { color: colors.info, fontFamily: fonts.bodySemibold, fontSize: 10 },
   tagRow: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 7, marginTop: 7 },
   tag: {
     borderRadius: radius.pill,

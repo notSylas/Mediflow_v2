@@ -6,6 +6,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { AuroraScreen } from "@/components/aurora-screen";
+import { CarePreferences } from "@/components/care-settings";
 import { FadeInView } from "@/components/motion";
 import { useToast } from "@/components/toast";
 import {
@@ -300,6 +301,10 @@ export default function MedicalProfile() {
             autoComplete="tel"
           />
         </Card>
+      </FadeInView>
+
+      <FadeInView index={4}>
+        <CarePreferences />
       </FadeInView>
 
       <Card>

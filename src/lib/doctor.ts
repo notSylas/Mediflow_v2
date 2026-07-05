@@ -1,4 +1,4 @@
-import { and, eq, sql } from "drizzle-orm";
+import { and, asc, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { appointments, doctorProfiles, payments, user } from "@/db/schema";
 
@@ -19,6 +19,10 @@ export async function getDoctorCard() {
     })
     .from(doctorProfiles)
     .innerJoin(user, eq(user.id, doctorProfiles.userId))
+    // Deterministically resolve to the canonical (oldest) doctor. Without an
+    // explicit order, limit(1) is nondeterministic and can return a stray
+    // seed/test profile when several doctor_profiles exist.
+    .orderBy(asc(doctorProfiles.createdAt))
     .limit(1);
   return row ?? null;
 }
@@ -107,12 +111,29 @@ const DEFAULT_SLOT_MINUTES = 20;
 const DEFAULT_TIMEZONE = "Asia/Kolkata";
 
 /**
+ * The single canonical (v1) doctor profile — or null if none exists yet.
+ *
+ * This is THE shared resolver for "who is the doctor": slots, the patient
+ * messaging gate, the care subscription, and public doctor cards must all
+ * agree on the same row. Selection is deterministic (oldest profile) so that
+ * stray seed/test doctor_profiles can never make one feature resolve to a
+ * different doctor than another — which silently breaks slots and messaging.
+ */
+export async function getCanonicalDoctorProfile() {
+  const [profile] = await db
+    .select()
+    .from(doctorProfiles)
+    .orderBy(asc(doctorProfiles.createdAt))
+    .limit(1);
+  return profile ?? null;
+}
+
+/**
  * Returns the (single, v1) doctor's profile, or null if the doctor hasn't
- * set one up yet.
+ * set one up yet. Alias of {@link getCanonicalDoctorProfile}.
  */
 export async function getDoctorProfile() {
-  const [profile] = await db.select().from(doctorProfiles).limit(1);
-  return profile ?? null;
+  return getCanonicalDoctorProfile();
 }
 
 /**

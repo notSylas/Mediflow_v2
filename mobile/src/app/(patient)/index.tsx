@@ -14,6 +14,7 @@ import {
   View,
 } from "react-native";
 import { HeroHeader, auroraHeaderStyles } from "@/components/aurora-header";
+import { CareCard } from "@/components/care-card";
 import { FadeInView, PressableScale } from "@/components/motion";
 import {
   Avatar,
@@ -258,6 +259,10 @@ export default function PatientHome() {
         </HeroHeader>
 
         <View style={styles.body}>
+          <FadeInView index={0}>
+            <CareCard />
+          </FadeInView>
+
           {data.followUp ? (
             <FadeInView index={0}>
               <Card tone="accent">

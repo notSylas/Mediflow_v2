@@ -15,6 +15,7 @@ const updateProfileSchema = z.object({
   yearsExperience: z.number().int().min(0).max(80).nullable().optional(),
   languages: z.string().trim().max(200).nullable().optional(),
   feeInPaise: z.number().int().positive().optional(),
+  carePlanPriceInPaise: z.number().int().positive().max(10_000_00).optional(),
   slotMinutes: z.number().int().positive().max(240).optional(),
   timezone: z.string().trim().min(1).max(100).optional(),
 });
