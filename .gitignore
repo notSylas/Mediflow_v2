@@ -48,6 +48,10 @@ next-env.d.ts
 # Local Claude Code settings (personal, not shared)
 .claude/settings.local.json
 .claude/launch.json
+.claude/skills/
+
+# Local AI agent/skill tooling (personal, not product code)
+.agents/
 
 # Local dev TLS cert (LAN HTTPS for video) — never commit
 certs/
