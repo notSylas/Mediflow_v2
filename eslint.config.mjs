@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Agent/plugin sources are development tooling, not application code.
+    ".agents/**",
+    ".codex/**",
     // Generated Expo type output (regenerated on every mobile build).
     "mobile/.expo/**",
   ]),

@@ -47,6 +47,7 @@ next-env.d.ts
 
 # Local Claude Code settings (personal, not shared)
 .claude/settings.local.json
+.claude/launch.json
 
 # Local dev TLS cert (LAN HTTPS for video) — never commit
 certs/
