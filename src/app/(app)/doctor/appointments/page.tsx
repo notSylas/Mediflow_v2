@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { formatInTimeZone } from "date-fns-tz";
 import { auth } from "@/lib/auth/auth";
 import { listDoctorAppointments } from "@/lib/booking/appointments";
-import { getOrCreateDoctorProfile } from "@/lib/doctor";
+import { getOrCreateDoctorProfile } from "@/lib/people/doctor";
 import { Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";

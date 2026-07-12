@@ -12,8 +12,8 @@ import {
 } from "@/db/schema";
 import { requireDoctorSession } from "@/lib/auth/api-auth";
 import { listDoctorPatients } from "@/lib/booking/appointments";
-import { getActiveSubscriberIds } from "@/lib/care-subscription";
-import { getOrCreateDoctorProfile } from "@/lib/doctor";
+import { getActiveSubscriberIds } from "@/lib/care/care-subscription";
+import { getOrCreateDoctorProfile } from "@/lib/people/doctor";
 
 export async function GET(request: Request) {
   const access = await requireDoctorSession();

@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
 import { patientProfiles, user as userTable } from "@/db/schema";
-import { BLOOD_GROUPS, GENDERS } from "@/lib/patient-constants";
+import { BLOOD_GROUPS, GENDERS } from "@/lib/people/patient-constants";
 
 // Re-export the client-safe helpers so server modules can import everything
 // from one place.
@@ -12,7 +12,7 @@ export {
   genderLabel,
   ageFromDob,
   isProfileMeaningful,
-} from "@/lib/patient-constants";
+} from "@/lib/people/patient-constants";
 
 export const patientProfileSchema = z.object({
   dateOfBirth: z.string().date().nullish(),

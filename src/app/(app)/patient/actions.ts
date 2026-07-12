@@ -4,15 +4,15 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth/auth";
-import { createRefillRequest } from "@/lib/refills";
-import { setFollowUpStatus } from "@/lib/follow-ups";
+import { createRefillRequest } from "@/lib/care/refills";
+import { setFollowUpStatus } from "@/lib/care/follow-ups";
 import {
   activateSubscription,
   deactivateSubscription,
   getPatientCareStatus,
   requestFollowUp,
   updateCarePreferences,
-} from "@/lib/care-subscription";
+} from "@/lib/care/care-subscription";
 
 async function requirePatient() {
   const session = await auth.api.getSession({ headers: await headers() });

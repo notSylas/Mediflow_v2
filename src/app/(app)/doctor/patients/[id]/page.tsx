@@ -28,9 +28,9 @@ import {
 import { listDoctorPatients } from "@/lib/booking/appointments";
 import { getMedicineHistory, getPatientHistory } from "@/lib/consult/consult";
 import { describeMedicineSchedule } from "@/lib/consult/medicines";
-import { getOrCreateDoctorProfile } from "@/lib/doctor";
-import { ageFromDob, genderLabel, getPatientProfile } from "@/lib/patient";
-import { getDoctorPatientCareStatus } from "@/lib/care-subscription";
+import { getOrCreateDoctorProfile } from "@/lib/people/doctor";
+import { ageFromDob, genderLabel, getPatientProfile } from "@/lib/people/patient";
+import { getDoctorPatientCareStatus } from "@/lib/care/care-subscription";
 import { cn } from "@/lib/core/utils";
 import { TONES } from "@/lib/core/tones";
 import { startAsyncConsultAction as startWebAsyncConsultAction } from "@/app/(app)/doctor/actions";

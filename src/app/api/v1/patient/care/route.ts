@@ -7,7 +7,7 @@ import {
   getPatientCareStatus,
   toCareStatusDTO,
   updateCarePreferences,
-} from "@/lib/care-subscription";
+} from "@/lib/care/care-subscription";
 
 /** Patient's current MediFlow Care status (home card, settings). */
 export async function GET() {

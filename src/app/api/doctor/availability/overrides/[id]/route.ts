@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { availabilityOverrides } from "@/db/schema";
-import { getOrCreateDoctorProfile } from "@/lib/doctor";
+import { getOrCreateDoctorProfile } from "@/lib/people/doctor";
 import { requireDoctorSession } from "@/lib/auth/api-auth";
 
 export async function DELETE(

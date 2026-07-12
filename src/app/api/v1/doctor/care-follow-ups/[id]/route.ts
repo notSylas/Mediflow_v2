@@ -5,8 +5,8 @@ import { createAsyncConsult } from "@/lib/booking/appointments";
 import {
   getDoctorCareFollowUp,
   setCareFollowUpStatus,
-} from "@/lib/care-subscription";
-import { getOrCreateDoctorProfile } from "@/lib/doctor";
+} from "@/lib/care/care-subscription";
+import { getOrCreateDoctorProfile } from "@/lib/people/doctor";
 
 const schema = z.object({ action: z.enum(["fulfill", "dismiss"]) });
 

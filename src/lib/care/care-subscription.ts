@@ -11,8 +11,8 @@ import {
   isSubscriptionActive,
   periodEndFrom,
   type SubscriptionState,
-} from "@/lib/care-subscription-policy";
-import { getCanonicalDoctorProfile } from "@/lib/doctor";
+} from "@/lib/care/care-subscription-policy";
+import { getCanonicalDoctorProfile } from "@/lib/people/doctor";
 
 export type CareSubscription = typeof careSubscriptions.$inferSelect;
 

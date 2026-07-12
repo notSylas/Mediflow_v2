@@ -9,13 +9,13 @@ import {
   getDoctorPaymentStats,
   getDoctorRevenueInPaise,
   getOrCreateDoctorProfile,
-} from "@/lib/doctor";
-import { countDoctorPendingFollowUps } from "@/lib/follow-ups";
-import { countPendingRefillRequests } from "@/lib/refills";
+} from "@/lib/people/doctor";
+import { countDoctorPendingFollowUps } from "@/lib/care/follow-ups";
+import { countPendingRefillRequests } from "@/lib/care/refills";
 import {
   countActiveSubscribers,
   listPendingCareFollowUps,
-} from "@/lib/care-subscription";
+} from "@/lib/care/care-subscription";
 
 export async function GET() {
   const access = await requireDoctorSession();

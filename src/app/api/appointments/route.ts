@@ -13,10 +13,10 @@ import {
   HOLD_MINUTES,
   VISIT_REASON_VALUES,
 } from "@/lib/booking/booking";
-import { getDoctorProfile } from "@/lib/doctor";
+import { getDoctorProfile } from "@/lib/people/doctor";
 import { isUniqueViolation } from "@/lib/core/db-errors";
-import { getPatientProfile } from "@/lib/patient";
-import { getBookingProfileMissing } from "@/lib/patient-readiness";
+import { getPatientProfile } from "@/lib/people/patient";
+import { getBookingProfileMissing } from "@/lib/people/patient-readiness";
 import { hasEmergencyRedFlag } from "@/lib/consult/triage";
 
 const createAppointmentSchema = z.object({

@@ -6,7 +6,7 @@ import { auth } from "@/lib/auth/auth";
 import {
   getCancellationBreakdown,
   getPatientCareStatus,
-} from "@/lib/care-subscription";
+} from "@/lib/care/care-subscription";
 import { cancelCareAction } from "@/app/(app)/patient/actions";
 import {
   PatientHero,

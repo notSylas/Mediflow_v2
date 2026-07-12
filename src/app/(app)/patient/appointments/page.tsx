@@ -16,7 +16,7 @@ import { AppointmentCard } from "@/components/patient/AppointmentCard";
 import { Reveal } from "@/components/Reveal";
 import { canCancelAppointment } from "@/lib/booking/booking";
 import { listPatientAppointments } from "@/lib/booking/appointments";
-import { getDoctorProfile } from "@/lib/doctor";
+import { getDoctorProfile } from "@/lib/people/doctor";
 import {
   PatientEmptyState,
   PatientHero,

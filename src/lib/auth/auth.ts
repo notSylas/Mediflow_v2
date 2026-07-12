@@ -4,7 +4,7 @@ import { expo } from "@better-auth/expo";
 import { emailOTP } from "better-auth/plugins";
 import { db } from "@/db";
 import * as schema from "@/db/schema";
-import { emailLayout, sendEmail } from "@/lib/email";
+import { emailLayout, sendEmail } from "@/lib/notifications/email";
 
 const PRIVATE_LAN_HOSTS = [
   "10.*.*.*:3000",

@@ -1,5 +1,5 @@
-import { ageFromDob } from "@/lib/patient-constants";
-import { patientEditableName } from "@/lib/patient-identity";
+import { ageFromDob } from "@/lib/people/patient-constants";
+import { patientEditableName } from "@/lib/people/patient-identity";
 
 export type BookingProfileUser = {
   name?: string | null;

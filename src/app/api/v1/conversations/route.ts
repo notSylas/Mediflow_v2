@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { requireSession } from "@/lib/auth/api-auth";
 import { getOrCreatePatientConversation, listDoctorConversations } from "@/lib/messaging/chat";
-import { getActiveSubscriberIds } from "@/lib/care-subscription";
-import { getOrCreateDoctorProfile } from "@/lib/doctor";
+import { getActiveSubscriberIds } from "@/lib/care/care-subscription";
+import { getOrCreateDoctorProfile } from "@/lib/people/doctor";
 
 /**
  * Patient: returns (and lazily creates) their single conversation with the

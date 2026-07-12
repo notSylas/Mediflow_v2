@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { BLOOD_GROUPS, GENDERS } from "@/lib/patient-constants";
+import { BLOOD_GROUPS, GENDERS } from "@/lib/people/patient-constants";
 
 const GENDER_LABELS: Record<string, string> = {
   female: "Female",

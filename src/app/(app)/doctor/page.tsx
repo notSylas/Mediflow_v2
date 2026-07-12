@@ -26,13 +26,13 @@ import { availabilityRules } from "@/db/schema";
 import { auth } from "@/lib/auth/auth";
 import { listDoctorAppointments } from "@/lib/booking/appointments";
 import { listDoctorConversations } from "@/lib/messaging/chat";
-import { getDoctorRevenueInPaise, getOrCreateDoctorProfile } from "@/lib/doctor";
-import { listDoctorPendingFollowUps } from "@/lib/follow-ups";
-import { listPendingRefillRequests } from "@/lib/refills";
+import { getDoctorRevenueInPaise, getOrCreateDoctorProfile } from "@/lib/people/doctor";
+import { listDoctorPendingFollowUps } from "@/lib/care/follow-ups";
+import { listPendingRefillRequests } from "@/lib/care/refills";
 import {
   countActiveSubscribers,
   listPendingCareFollowUps,
-} from "@/lib/care-subscription";
+} from "@/lib/care/care-subscription";
 import { JoinCallButton } from "@/components/JoinCallButton";
 import { PresenceBadge } from "@/components/PresenceBadge";
 import { SpotlightCard } from "@/components/wow/SpotlightCard";

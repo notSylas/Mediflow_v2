@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import { formatInTimeZone } from "date-fns-tz";
 import { db } from "@/db";
 import { appointments, doctorProfiles, user } from "@/db/schema";
-import { emailLayout, sendEmail } from "@/lib/email";
+import { emailLayout, sendEmail } from "@/lib/notifications/email";
 
 /** Booking confirmation email. Loads everything it needs from the appointment. */
 export async function sendBookingConfirmation(appointmentId: string): Promise<void> {

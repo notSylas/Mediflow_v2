@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireDoctorSession } from "@/lib/auth/api-auth";
-import { getOrCreateDoctorProfile } from "@/lib/doctor";
-import { listPendingRefillRequests } from "@/lib/refills";
+import { getOrCreateDoctorProfile } from "@/lib/people/doctor";
+import { listPendingRefillRequests } from "@/lib/care/refills";
 
 /** Pending refill requests the doctor needs to act on. */
 export async function GET() {

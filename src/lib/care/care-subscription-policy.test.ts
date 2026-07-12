@@ -6,7 +6,7 @@ import {
   periodEndFrom,
   periodHasElapsed,
   type SubscriptionState,
-} from "@/lib/care-subscription-policy";
+} from "@/lib/care/care-subscription-policy";
 
 const now = new Date("2026-06-15T12:00:00Z");
 

@@ -4,7 +4,7 @@ import {
   getPatientProfile,
   patientProfileUpdateSchema,
   updatePatientIdentityAndProfile,
-} from "@/lib/patient";
+} from "@/lib/people/patient";
 
 export async function GET() {
   const access = await requireSession();

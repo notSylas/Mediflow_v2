@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireDoctorSession } from "@/lib/auth/api-auth";
-import { getOrCreateDoctorProfile } from "@/lib/doctor";
-import { getDoctorRefillRequest, setRefillRequestStatus } from "@/lib/refills";
+import { getOrCreateDoctorProfile } from "@/lib/people/doctor";
+import { getDoctorRefillRequest, setRefillRequestStatus } from "@/lib/care/refills";
 
 /** Doctor declines a refill request. */
 export async function POST(

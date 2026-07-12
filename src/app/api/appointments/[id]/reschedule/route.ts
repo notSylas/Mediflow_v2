@@ -7,7 +7,7 @@ import { requireSession } from "@/lib/auth/api-auth";
 import { getAppointmentForPatient } from "@/lib/booking/appointments";
 import { getAvailableSlots } from "@/lib/booking/availability";
 import { isUniqueViolation } from "@/lib/core/db-errors";
-import { getDoctorProfile } from "@/lib/doctor";
+import { getDoctorProfile } from "@/lib/people/doctor";
 
 const schema = z.object({ startsAt: z.string().datetime() });
 

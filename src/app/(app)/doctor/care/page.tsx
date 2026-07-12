@@ -8,8 +8,8 @@ import { listDoctorPatients } from "@/lib/booking/appointments";
 import {
   listDoctorSubscribers,
   type DoctorSubscriberRow,
-} from "@/lib/care-subscription";
-import { getOrCreateDoctorProfile } from "@/lib/doctor";
+} from "@/lib/care/care-subscription";
+import { getOrCreateDoctorProfile } from "@/lib/people/doctor";
 import { setCareSubscriptionAction } from "@/app/(app)/doctor/actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";

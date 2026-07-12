@@ -13,8 +13,8 @@ import {
   getPatientHistory,
 } from "@/lib/consult/consult";
 import { describeMedicineSchedule } from "@/lib/consult/medicines";
-import { ageFromDob, genderLabel, getPatientProfile } from "@/lib/patient";
-import { getOrCreateDoctorProfile } from "@/lib/doctor";
+import { ageFromDob, genderLabel, getPatientProfile } from "@/lib/people/patient";
+import { getOrCreateDoctorProfile } from "@/lib/people/doctor";
 import { createFollowUpAction } from "@/app/(app)/doctor/actions";
 import { JoinCallButton } from "@/components/JoinCallButton";
 import { PresenceBadge } from "@/components/PresenceBadge";

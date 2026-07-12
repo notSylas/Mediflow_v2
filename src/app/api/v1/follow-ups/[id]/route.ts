@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireSession } from "@/lib/auth/api-auth";
-import { setFollowUpStatus } from "@/lib/follow-ups";
+import { setFollowUpStatus } from "@/lib/care/follow-ups";
 
 const schema = z.object({ status: z.enum(["booked", "dismissed"]) });
 

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   canBookVideoConsultation,
   getBookingProfileMissing,
-} from "@/lib/patient-readiness";
+} from "@/lib/people/patient-readiness";
 
 const completeProfile = {
   dateOfBirth: "1995-04-12",

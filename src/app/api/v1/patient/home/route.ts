@@ -2,9 +2,9 @@ import { NextResponse } from "next/server";
 import { requireSession } from "@/lib/auth/api-auth";
 import { listPatientAppointments } from "@/lib/booking/appointments";
 import { listPatientPrescriptions } from "@/lib/consult/consult";
-import { getDoctorCard, getDoctorProfile } from "@/lib/doctor";
-import { getPatientProfile } from "@/lib/patient";
-import { getPatientPendingFollowUp } from "@/lib/follow-ups";
+import { getDoctorCard, getDoctorProfile } from "@/lib/people/doctor";
+import { getPatientProfile } from "@/lib/people/patient";
+import { getPatientPendingFollowUp } from "@/lib/care/follow-ups";
 
 export async function GET() {
   const access = await requireSession();

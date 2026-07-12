@@ -4,12 +4,12 @@ import { redirect } from "next/navigation";
 import { CalendarPlus, MessageCircle, ShieldAlert, ShieldCheck, Stethoscope } from "lucide-react";
 import { auth } from "@/lib/auth/auth";
 import { getOrCreatePatientConversation, listDoctorConversations } from "@/lib/messaging/chat";
-import { getDoctorCard, getDoctorProfile, getOrCreateDoctorProfile } from "@/lib/doctor";
+import { getDoctorCard, getDoctorProfile, getOrCreateDoctorProfile } from "@/lib/people/doctor";
 import {
   getActiveSubscriberIds,
   getPatientCareStatus,
   toCareStatusDTO,
-} from "@/lib/care-subscription";
+} from "@/lib/care/care-subscription";
 import { CareCard } from "@/components/patient/CareCard";
 import { ChatThread } from "@/components/chat/ChatThread";
 import { DoctorMessages } from "@/components/chat/DoctorMessages";

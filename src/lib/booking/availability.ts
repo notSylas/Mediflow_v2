@@ -6,7 +6,7 @@ import {
   availabilityRules,
 } from "@/db/schema";
 import { computeAvailableSlots } from "@/lib/booking/slots";
-import { getCanonicalDoctorProfile } from "@/lib/doctor";
+import { getCanonicalDoctorProfile } from "@/lib/people/doctor";
 
 /**
  * Computes upcoming available slots for the (single, v1) doctor in the

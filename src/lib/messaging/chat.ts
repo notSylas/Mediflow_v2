@@ -10,8 +10,8 @@ import {
 } from "@/db/schema";
 import { publishChatMessage } from "@/lib/messaging/realtime";
 import { attachmentUsableBy } from "@/lib/messaging/chat-policy";
-import { patientHasActiveSubscription } from "@/lib/care-subscription";
-import { getCanonicalDoctorProfile } from "@/lib/doctor";
+import { patientHasActiveSubscription } from "@/lib/care/care-subscription";
+import { getCanonicalDoctorProfile } from "@/lib/people/doctor";
 
 export const MESSAGE_PAGE_SIZE = 30;
 

@@ -9,8 +9,8 @@ import {
   UserRoundCheck,
 } from "lucide-react";
 import { auth } from "@/lib/auth/auth";
-import { getPatientProfile } from "@/lib/patient";
-import { patientEditableName } from "@/lib/patient-identity";
+import { getPatientProfile } from "@/lib/people/patient";
+import { patientEditableName } from "@/lib/people/patient-identity";
 import {
   PatientProfileForm,
   type PatientProfileValues,

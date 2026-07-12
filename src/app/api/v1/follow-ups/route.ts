@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireDoctorSession } from "@/lib/auth/api-auth";
-import { getOrCreateDoctorProfile } from "@/lib/doctor";
-import { createFollowUp } from "@/lib/follow-ups";
+import { getOrCreateDoctorProfile } from "@/lib/people/doctor";
+import { createFollowUp } from "@/lib/care/follow-ups";
 
 const schema = z.object({
   appointmentId: z.string().uuid(),

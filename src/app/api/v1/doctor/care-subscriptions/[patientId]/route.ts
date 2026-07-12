@@ -1,15 +1,15 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireDoctorSession } from "@/lib/auth/api-auth";
-import { getOrCreateDoctorProfile } from "@/lib/doctor";
+import { getOrCreateDoctorProfile } from "@/lib/people/doctor";
 import {
   activateSubscription,
   deactivateSubscription,
   getSubscription,
   resetFollowUpCredit,
   toCareStatusDTO,
-} from "@/lib/care-subscription";
-import { isSubscriptionActive } from "@/lib/care-subscription-policy";
+} from "@/lib/care/care-subscription";
+import { isSubscriptionActive } from "@/lib/care/care-subscription-policy";
 
 const schema = z.object({
   action: z.enum(["activate", "trial", "deactivate", "reset-credit"]),

@@ -5,9 +5,9 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createAsyncConsult } from "@/lib/booking/appointments";
 import { auth } from "@/lib/auth/auth";
-import { createFollowUp, dismissFollowUp, snoozeFollowUp } from "@/lib/follow-ups";
-import { getOrCreateDoctorProfile } from "@/lib/doctor";
-import { getDoctorRefillRequest, setRefillRequestStatus } from "@/lib/refills";
+import { createFollowUp, dismissFollowUp, snoozeFollowUp } from "@/lib/care/follow-ups";
+import { getOrCreateDoctorProfile } from "@/lib/people/doctor";
+import { getDoctorRefillRequest, setRefillRequestStatus } from "@/lib/care/refills";
 import { getConversationForParticipant, markConversationRead } from "@/lib/messaging/chat";
 import {
   activateSubscription,
@@ -15,7 +15,7 @@ import {
   getDoctorCareFollowUp,
   resetFollowUpCredit,
   setCareFollowUpStatus,
-} from "@/lib/care-subscription";
+} from "@/lib/care/care-subscription";
 
 async function requireDoctor() {
   const session = await auth.api.getSession({ headers: await headers() });

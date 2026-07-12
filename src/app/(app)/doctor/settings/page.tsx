@@ -6,7 +6,7 @@ import { ArrowLeft } from "lucide-react";
 import { auth } from "@/lib/auth/auth";
 import { db } from "@/db";
 import { availabilityOverrides, availabilityRules } from "@/db/schema";
-import { getOrCreateDoctorProfile } from "@/lib/doctor";
+import { getOrCreateDoctorProfile } from "@/lib/people/doctor";
 import { ProfileForm } from "@/components/doctor/ProfileForm";
 import { AvailabilityRulesEditor } from "@/components/doctor/AvailabilityRulesEditor";
 import { OverridesEditor } from "@/components/doctor/OverridesEditor";

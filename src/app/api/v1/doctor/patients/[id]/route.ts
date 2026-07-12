@@ -11,9 +11,9 @@ import {
 import { requireDoctorSession } from "@/lib/auth/api-auth";
 import { listDoctorPatients } from "@/lib/booking/appointments";
 import { getMedicineHistory, getPatientHistory } from "@/lib/consult/consult";
-import { getOrCreateDoctorProfile } from "@/lib/doctor";
-import { getPatientProfile } from "@/lib/patient";
-import { getDoctorPatientCareStatus } from "@/lib/care-subscription";
+import { getOrCreateDoctorProfile } from "@/lib/people/doctor";
+import { getPatientProfile } from "@/lib/people/patient";
+import { getDoctorPatientCareStatus } from "@/lib/care/care-subscription";
 
 export async function GET(
   _request: Request,

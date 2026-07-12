@@ -4,8 +4,8 @@ import { redirect } from "next/navigation";
 import { formatInTimeZone } from "date-fns-tz";
 import { ArrowLeft, CheckCircle2, FilePenLine, Pill, XCircle } from "lucide-react";
 import { auth } from "@/lib/auth/auth";
-import { getOrCreateDoctorProfile } from "@/lib/doctor";
-import { listPendingRefillRequests } from "@/lib/refills";
+import { getOrCreateDoctorProfile } from "@/lib/people/doctor";
+import { listPendingRefillRequests } from "@/lib/care/refills";
 import {
   declineRefillRequestAction,
   fulfillRefillRequestAction,

@@ -24,10 +24,10 @@ import {
 } from "@/app/(app)/doctor/actions";
 import { listDoctorAppointments } from "@/lib/booking/appointments";
 import { listDoctorConversations } from "@/lib/messaging/chat";
-import { getOrCreateDoctorProfile } from "@/lib/doctor";
-import { listDoctorPendingFollowUps } from "@/lib/follow-ups";
-import { listPendingRefillRequests } from "@/lib/refills";
-import { listPendingCareFollowUps } from "@/lib/care-subscription";
+import { getOrCreateDoctorProfile } from "@/lib/people/doctor";
+import { listDoctorPendingFollowUps } from "@/lib/care/follow-ups";
+import { listPendingRefillRequests } from "@/lib/care/refills";
+import { listPendingCareFollowUps } from "@/lib/care/care-subscription";
 import { cn } from "@/lib/core/utils";
 import { TONES, type ToneName } from "@/lib/core/tones";
 import { Badge } from "@/components/ui/badge";

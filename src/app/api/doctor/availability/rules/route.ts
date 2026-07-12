@@ -3,7 +3,7 @@ import { asc, eq } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
 import { availabilityRules } from "@/db/schema";
-import { getOrCreateDoctorProfile } from "@/lib/doctor";
+import { getOrCreateDoctorProfile } from "@/lib/people/doctor";
 import { requireDoctorSession } from "@/lib/auth/api-auth";
 
 const timeSchema = z

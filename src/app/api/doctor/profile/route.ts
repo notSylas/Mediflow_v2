@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
 import { doctorProfiles } from "@/db/schema";
-import { getOrCreateDoctorProfile } from "@/lib/doctor";
+import { getOrCreateDoctorProfile } from "@/lib/people/doctor";
 import { requireDoctorSession } from "@/lib/auth/api-auth";
 
 const updateProfileSchema = z.object({

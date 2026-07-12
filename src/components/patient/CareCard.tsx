@@ -5,7 +5,7 @@ import {
   requestCareFollowUpAction,
   updateCarePrefsAction,
 } from "@/app/(app)/patient/actions";
-import type { CareStatusDTO } from "@/lib/care-subscription";
+import type { CareStatusDTO } from "@/lib/care/care-subscription";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";

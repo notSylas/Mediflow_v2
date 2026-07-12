@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireSession } from "@/lib/auth/api-auth";
-import { createRefillRequest } from "@/lib/refills";
+import { createRefillRequest } from "@/lib/care/refills";
 
 const schema = z.object({ prescriptionId: z.string().uuid() });
 

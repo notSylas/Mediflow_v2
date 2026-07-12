@@ -5,8 +5,8 @@ import {
   getMedicineHistory,
   getPatientHistory,
 } from "@/lib/consult/consult";
-import { getOrCreateDoctorProfile } from "@/lib/doctor";
-import { getPatientProfile } from "@/lib/patient";
+import { getOrCreateDoctorProfile } from "@/lib/people/doctor";
+import { getPatientProfile } from "@/lib/people/patient";
 
 export async function GET(
   _request: Request,

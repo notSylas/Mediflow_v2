@@ -3,7 +3,7 @@ import { requireSession } from "@/lib/auth/api-auth";
 import { getAppointmentForPatient } from "@/lib/booking/appointments";
 import { canCancelAppointment } from "@/lib/booking/booking";
 import { getPrescriptionWithMedicines } from "@/lib/consult/consult";
-import { getDoctorCard, getDoctorProfile } from "@/lib/doctor";
+import { getDoctorCard, getDoctorProfile } from "@/lib/people/doctor";
 
 export async function GET(
   _request: Request,

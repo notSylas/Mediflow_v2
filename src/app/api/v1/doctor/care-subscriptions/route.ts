@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireDoctorSession } from "@/lib/auth/api-auth";
-import { getOrCreateDoctorProfile } from "@/lib/doctor";
-import { listDoctorSubscribers } from "@/lib/care-subscription";
+import { getOrCreateDoctorProfile } from "@/lib/people/doctor";
+import { listDoctorSubscribers } from "@/lib/care/care-subscription";
 
 /** Doctor's care-plan members + summary counts, for the care-management screen. */
 export async function GET() {

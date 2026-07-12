@@ -12,9 +12,9 @@ import {
   Video,
 } from "lucide-react";
 import { auth } from "@/lib/auth/auth";
-import { getDoctorCard, getDoctorProfile } from "@/lib/doctor";
-import { getPatientProfile } from "@/lib/patient";
-import { getBookingProfileMissing } from "@/lib/patient-readiness";
+import { getDoctorCard, getDoctorProfile } from "@/lib/people/doctor";
+import { getPatientProfile } from "@/lib/people/patient";
+import { getBookingProfileMissing } from "@/lib/people/patient-readiness";
 import { BookingFlow } from "@/components/patient/booking/BookingFlow";
 import {
   PatientHero,
