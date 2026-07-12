@@ -33,8 +33,8 @@ import {
   countActiveSubscribers,
   listPendingCareFollowUps,
 } from "@/lib/care/care-subscription";
-import { JoinCallButton } from "@/components/JoinCallButton";
-import { PresenceBadge } from "@/components/PresenceBadge";
+import { JoinCallButton } from "@/components/common/JoinCallButton";
+import { PresenceBadge } from "@/components/common/PresenceBadge";
 import { SpotlightCard } from "@/components/wow/SpotlightCard";
 import { CountdownRing } from "@/components/wow/CountdownRing";
 import { Badge } from "@/components/ui/badge";

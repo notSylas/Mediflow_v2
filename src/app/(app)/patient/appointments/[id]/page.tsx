@@ -10,7 +10,7 @@ import { getDoctorCard, getDoctorProfile } from "@/lib/people/doctor";
 import { getPatientProfile } from "@/lib/people/patient";
 import { patientDocumentName } from "@/lib/people/patient-identity";
 import { statusLabel } from "@/lib/booking/appointment-status";
-import { JoinCallButton } from "@/components/JoinCallButton";
+import { JoinCallButton } from "@/components/common/JoinCallButton";
 import { RescheduleDialog } from "@/components/patient/RescheduleDialog";
 import { CountdownRing } from "@/components/wow/CountdownRing";
 import { PrescriptionDocument } from "@/components/patient/PrescriptionDocument";

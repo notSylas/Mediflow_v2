@@ -14,7 +14,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { toast } from "sonner";
-import { JoinCallButton } from "@/components/JoinCallButton";
+import { JoinCallButton } from "@/components/common/JoinCallButton";
 import {
   AlertDialog,
   AlertDialogAction,

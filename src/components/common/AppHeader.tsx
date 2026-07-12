@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { HeartPulse } from "lucide-react";
 import type { Session } from "@/lib/auth/auth";
-import { LogoutButton } from "@/components/LogoutButton";
-import { NavLinks, type NavLink } from "@/components/NavLinks";
+import { LogoutButton } from "@/components/common/LogoutButton";
+import { NavLinks, type NavLink } from "@/components/common/NavLinks";
 import { Badge } from "@/components/ui/badge";
 
 const NAV_LINKS: Record<string, NavLink[]> = {

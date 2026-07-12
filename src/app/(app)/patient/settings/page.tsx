@@ -7,7 +7,7 @@ import { getPatientCareStatus, toCareStatusDTO } from "@/lib/care/care-subscript
 import { AccountSettings } from "@/components/account/AccountSettings";
 import { CareCard } from "@/components/patient/CareCard";
 import { LegalLinks } from "@/components/account/LegalLinks";
-import { LogoutButton } from "@/components/LogoutButton";
+import { LogoutButton } from "@/components/common/LogoutButton";
 import {
   PatientHero,
   PatientPageShell,

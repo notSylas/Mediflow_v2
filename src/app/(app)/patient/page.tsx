@@ -30,7 +30,7 @@ import { getPatientCareStatus, toCareStatusDTO } from "@/lib/care/care-subscript
 import { describeMedicineSchedule } from "@/lib/consult/medicines";
 import { CareCard } from "@/components/patient/CareCard";
 import { dismissFollowUpAction } from "@/app/(app)/patient/actions";
-import { JoinCallButton } from "@/components/JoinCallButton";
+import { JoinCallButton } from "@/components/common/JoinCallButton";
 import { Reveal } from "@/components/Reveal";
 import { CountUp } from "@/components/CountUp";
 import { ProgressBar } from "@/components/ProgressBar";

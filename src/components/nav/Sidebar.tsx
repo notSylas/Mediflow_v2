@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { HeartPulse } from "lucide-react";
 import type { Session } from "@/lib/auth/auth";
-import { LogoutButton } from "@/components/LogoutButton";
+import { LogoutButton } from "@/components/common/LogoutButton";
 import { Badge } from "@/components/ui/badge";
 import { NAV_ITEMS, isNavActive } from "@/components/nav/nav-items";
 import { cn } from "@/lib/core/utils";

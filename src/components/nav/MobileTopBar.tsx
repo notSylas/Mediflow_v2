@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { HeartPulse } from "lucide-react";
 import type { Session } from "@/lib/auth/auth";
-import { LogoutButton } from "@/components/LogoutButton";
-import { NavLinks } from "@/components/NavLinks";
+import { LogoutButton } from "@/components/common/LogoutButton";
+import { NavLinks } from "@/components/common/NavLinks";
 import { NAV_ITEMS } from "@/components/nav/nav-items";
 
 /** Top bar shown only below the lg breakpoint, where the sidebar is hidden. */
