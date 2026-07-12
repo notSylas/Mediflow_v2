@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { attachmentUsableBy } from "@/lib/chat-policy";
+import { attachmentUsableBy } from "@/lib/messaging/chat-policy";
 
 describe("attachmentUsableBy", () => {
   const conversationId = "conv-1";

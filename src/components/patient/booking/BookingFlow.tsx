@@ -153,7 +153,7 @@ export function BookingFlow({
 
     // Razorpay: open Checkout, then confirm with the signed callback.
     try {
-      const { openRazorpayCheckout } = await import("@/lib/razorpay-checkout");
+      const { openRazorpayCheckout } = await import("@/lib/payments/razorpay-checkout");
       const result = await openRazorpayCheckout({
         keyId: body.keyId,
         orderId: body.orderId,

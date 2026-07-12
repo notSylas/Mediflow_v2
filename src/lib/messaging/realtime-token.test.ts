@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { signRealtimeToken, verifyRealtimeToken } from "@/lib/realtime-token";
+import { signRealtimeToken, verifyRealtimeToken } from "@/lib/messaging/realtime-token";
 
 describe("realtime token", () => {
   afterEach(() => vi.useRealTimers());

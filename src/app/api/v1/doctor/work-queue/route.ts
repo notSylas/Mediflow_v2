@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireDoctorSession } from "@/lib/auth/api-auth";
 import { listDoctorAppointments } from "@/lib/booking/appointments";
-import { listDoctorConversations } from "@/lib/chat";
+import { listDoctorConversations } from "@/lib/messaging/chat";
 import { getOrCreateDoctorProfile } from "@/lib/doctor";
 import { listDoctorPendingFollowUps } from "@/lib/follow-ups";
 import { listPendingRefillRequests } from "@/lib/refills";

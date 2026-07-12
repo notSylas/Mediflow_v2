@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { CalendarPlus, MessageCircle, ShieldAlert, ShieldCheck, Stethoscope } from "lucide-react";
 import { auth } from "@/lib/auth/auth";
-import { getOrCreatePatientConversation, listDoctorConversations } from "@/lib/chat";
+import { getOrCreatePatientConversation, listDoctorConversations } from "@/lib/messaging/chat";
 import { getDoctorCard, getDoctorProfile, getOrCreateDoctorProfile } from "@/lib/doctor";
 import {
   getActiveSubscriberIds,

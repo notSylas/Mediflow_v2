@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireSession } from "@/lib/auth/api-auth";
-import { getConversationForParticipant, markConversationRead } from "@/lib/chat";
+import { getConversationForParticipant, markConversationRead } from "@/lib/messaging/chat";
 
 /**
  * Marks the conversation read for the caller. Clients call this when a live

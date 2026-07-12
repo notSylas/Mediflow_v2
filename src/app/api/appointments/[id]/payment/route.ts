@@ -8,7 +8,7 @@ import {
   confirmAppointmentPayment,
   getPaymentProvider,
   getRazorpayClient,
-} from "@/lib/payments";
+} from "@/lib/payments/payments";
 
 /**
  * Starts payment for a held appointment.

@@ -25,7 +25,7 @@ import { db } from "@/db";
 import { availabilityRules } from "@/db/schema";
 import { auth } from "@/lib/auth/auth";
 import { listDoctorAppointments } from "@/lib/booking/appointments";
-import { listDoctorConversations } from "@/lib/chat";
+import { listDoctorConversations } from "@/lib/messaging/chat";
 import { getDoctorRevenueInPaise, getOrCreateDoctorProfile } from "@/lib/doctor";
 import { listDoctorPendingFollowUps } from "@/lib/follow-ups";
 import { listPendingRefillRequests } from "@/lib/refills";

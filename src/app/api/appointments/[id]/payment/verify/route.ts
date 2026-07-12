@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireSession } from "@/lib/auth/api-auth";
 import { getAppointmentForPatient } from "@/lib/booking/appointments";
-import { confirmAppointmentPayment, verifyCheckoutSignature } from "@/lib/payments";
+import { confirmAppointmentPayment, verifyCheckoutSignature } from "@/lib/payments/payments";
 
 const verifySchema = z.object({
   razorpayOrderId: z.string().min(1),

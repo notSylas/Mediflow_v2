@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { chatAttachments, conversations, doctorProfiles } from "@/db/schema";
 import { requireSession } from "@/lib/auth/api-auth";
-import { patientCanMessageDoctor } from "@/lib/chat";
+import { patientCanMessageDoctor } from "@/lib/messaging/chat";
 
 /**
  * Serves a chat attachment to either participant of the active care-plan

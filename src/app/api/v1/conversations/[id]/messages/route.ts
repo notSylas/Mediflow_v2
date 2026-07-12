@@ -7,7 +7,7 @@ import {
   listMessages,
   markConversationRead,
   sendMessage,
-} from "@/lib/chat";
+} from "@/lib/messaging/chat";
 
 export async function GET(
   request: Request,

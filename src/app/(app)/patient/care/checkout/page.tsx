@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { ArrowLeft, Check, HandHeart, Lock, ShieldCheck } from "lucide-react";
 import { auth } from "@/lib/auth/auth";
 import { getPatientCareStatus } from "@/lib/care-subscription";
-import { getPaymentProvider } from "@/lib/payments";
+import { getPaymentProvider } from "@/lib/payments/payments";
 import { payCarePlanAction } from "@/app/(app)/patient/actions";
 import {
   PatientHero,

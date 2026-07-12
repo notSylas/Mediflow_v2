@@ -8,7 +8,7 @@ import { auth } from "@/lib/auth/auth";
 import { createFollowUp, dismissFollowUp, snoozeFollowUp } from "@/lib/follow-ups";
 import { getOrCreateDoctorProfile } from "@/lib/doctor";
 import { getDoctorRefillRequest, setRefillRequestStatus } from "@/lib/refills";
-import { getConversationForParticipant, markConversationRead } from "@/lib/chat";
+import { getConversationForParticipant, markConversationRead } from "@/lib/messaging/chat";
 import {
   activateSubscription,
   deactivateSubscription,

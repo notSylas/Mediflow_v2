@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { payments } from "@/db/schema";
 import { logger } from "@/lib/core/logger";
-import { confirmAppointmentPayment, verifyWebhookSignature } from "@/lib/payments";
+import { confirmAppointmentPayment, verifyWebhookSignature } from "@/lib/payments/payments";
 
 /**
  * Razorpay server-to-server webhook. The authoritative confirmation path —

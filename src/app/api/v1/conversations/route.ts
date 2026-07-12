@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireSession } from "@/lib/auth/api-auth";
-import { getOrCreatePatientConversation, listDoctorConversations } from "@/lib/chat";
+import { getOrCreatePatientConversation, listDoctorConversations } from "@/lib/messaging/chat";
 import { getActiveSubscriberIds } from "@/lib/care-subscription";
 import { getOrCreateDoctorProfile } from "@/lib/doctor";
 

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { chatAttachments } from "@/db/schema";
 import { requireSession } from "@/lib/auth/api-auth";
-import { getConversationForParticipant } from "@/lib/chat";
+import { getConversationForParticipant } from "@/lib/messaging/chat";
 import { ALLOWED_REPORT_TYPES, MAX_REPORT_SIZE_BYTES } from "@/lib/consult/reports";
 
 /** Uploads a chat attachment; returns its id to attach to a message. */
