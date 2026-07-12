@@ -70,7 +70,7 @@ Previously "minimal-functional, no spinners-everywhere." Now: subtle entrance fa
 - Glass surfaces: verify 4.5:1 text contrast against the actual blurred background, not a solid color assumption (see Glass & depth above).
 - Motion: all entrance/transition animations gated behind `prefers-reduced-motion: no-preference`.
 
-## v1 carryovers (see docs/v1-ui-flows.md)
+## v1 carryovers (see docs/archive/v1-ui-flows.md)
 
 Kept: 4-step booking stepper UX, SOAP section structure, visit-reason cards, pre-call device check, drag-style weekly availability editing (simplified to rule rows in v2 — revisit if the doctor asks). Dropped: widget-grid dashboards, chat UI, decorative page transitions.
 
@@ -79,4 +79,4 @@ Kept: 4-step booking stepper UX, SOAP section structure, visit-reason cards, pre
 | Date | Decision | Rationale |
 |------|----------|-----------|
 | 2026-06-24 | Adopted "Premium Clinical Glass" direction via `/design-consultation`: Geist/Geist Mono typography (replacing Figtree+Noto Sans), cobalt-blue/violet dual identity (replacing teal/indigo), gradient/glass scoped to hero surfaces only, intentional motion | Two outside-voice proposals (Codex + Claude subagent) and three rounds of HTML preview iteration; user explicitly wanted an Apple Health/Wallet-grade "high UI design" feel over a more austere clinical-document direction that was tried and rejected first |
-| 2026-06-24 | Documented the pre-existing `.theme-doctor` dual-identity color-swap mechanism, previously implemented in code but never written down | Found during this session's design audit — real doc-vs-code drift, same pattern as the PRD.md scope-fence drift fixed earlier this session |
+| 2026-06-24 | Documented the pre-existing `.theme-doctor` dual-identity color-swap mechanism, previously implemented in code but never written down | Found during this session's design audit — real doc-vs-code drift, same pattern as the earlier PRD scope-fence drift |

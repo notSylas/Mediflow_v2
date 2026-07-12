@@ -51,7 +51,7 @@ deliberately pushed out, not forgotten.
 
 **Cons:** Verifying medical credentials is a real trust/liability problem, not a UI problem — a naive "approve/reject" button would create a false sense of verification without actually confirming anyone is a licensed doctor. Needs real design work (what counts as proof? who reviews it? what's the liability if wrong?) before any code gets written.
 
-**Context:** Surfaced when the user asked "how do we decide who's a doctor" during the 2026-06-25 auth-split CEO review. `docs/PRD.md` already explicitly lists "doctor signup/onboarding" as out of v1 scope — this item formalizes that as a tracked future decision rather than an unstated gap.
+**Context:** Surfaced when the user asked "how do we decide who's a doctor" during the 2026-06-25 auth-split CEO review. `docs/PRODUCT.md` lists doctor signup/onboarding as deferred (out of v1 scope) — this item formalizes that as a tracked future decision rather than an unstated gap.
 
 **Effort estimate:** L (human) → M (CC+gstack) — for the credentialing *design* discussion; the actual build effort depends heavily on what verification method is chosen.
 **Priority:** P3

@@ -32,6 +32,6 @@ Next.js 16 (App Router) + TypeScript + Tailwind 4. Postgres via Drizzle (`src/db
 
 ## Status
 
-Docs suite in `docs/`: `PRD.md` (product + scope fences) · `TechSpec.md` (stack + key designs) · `AppFlow.md` (user flows + state machine) · `Design.md` (UI patterns) · `Schema.md` (DB reference) · `ImplementationPlan.md` (milestones) · `Tracker.md` (**live status board — keep updated**) · `Rules.md` (engineering rules) · `v1-feature-inventory.md` + `v1-ui-flows.md` (old-repo reference). Check `Tracker.md` first when resuming work.
+Docs live in `docs/` — start at [`docs/README.md`](docs/README.md) for the full index. Authoritative: `PRODUCT.md` (master product plan + scope), `Tracker.md` (**live status board — keep updated**), `TechSpec.md`, `AppFlow.md`, `Schema.md`, `Design.md`, `Rules.md`, `Deployment.md`. Historical planning docs and old-repo references are under `docs/archive/`; the pre-prod test/readiness backlog is under `docs/qa/`. Check `Tracker.md` first when resuming work.
 
-Milestones 1–4 done + Razorpay + full e2e suite (5 specs green: auth, booking, consult/prescription/returning-patient). Remaining for launch: Resend emails (OTP, confirmation, reminder), production deploy per `docs/Deployment.md`, doctor seed. Then v1.5 (AI scribe, Rx PDF).
+The core v1 clinic loop, Razorpay, messaging/Care, refills/follow-ups, and the Expo mobile app are built; the e2e suite (auth, booking, consult + API authorization/IDOR/concurrency/validation/care/refills) is green. Remaining for launch: production deploy per `docs/Deployment.md`, doctor seed, and the pre-prod verification tracked in Jira (`docs/qa/`). See `Tracker.md` for live status.

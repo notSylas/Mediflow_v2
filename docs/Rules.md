@@ -48,4 +48,4 @@ Non-negotiables for anyone (human or AI) working in this repo. `AGENTS.md` is th
 
 25. Update `docs/Tracker.md` when feature states change; keep `AGENTS.md` Status line current.
 26. Conventional-ish commits, present tense, scoped ("booking: …", "consult: …").
-27. When scope questions come up, check `PRD.md` fences and `docs/v1-feature-inventory.md` dispositions before adding anything.
+27. When scope questions come up, check `docs/PRODUCT.md` (master scope + roadmap) before adding anything; old-repo feature dispositions are archived at `docs/archive/v1-feature-inventory.md`.
