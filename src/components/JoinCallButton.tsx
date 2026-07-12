@@ -8,7 +8,7 @@ import {
   getJoinDenial,
   JOIN_EARLY_MINUTES,
   type JoinDenial,
-} from "@/lib/call-window";
+} from "@/lib/video/call-window";
 
 interface JoinCallButtonProps {
   appointmentId: string;

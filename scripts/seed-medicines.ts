@@ -2,7 +2,7 @@
 //   npm run seed:medicines
 import { db } from "../src/db";
 import { medicines } from "../src/db/schema";
-import { MEDICINE_SEED } from "../src/lib/medicine-seed";
+import { MEDICINE_SEED } from "../src/lib/consult/medicine-seed";
 
 async function main() {
   for (const m of MEDICINE_SEED) {

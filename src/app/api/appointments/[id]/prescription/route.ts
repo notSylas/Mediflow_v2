@@ -5,7 +5,7 @@ import { db } from "@/db";
 import { prescriptionMedicines, prescriptions } from "@/db/schema";
 import { requireDoctorSession } from "@/lib/auth/api-auth";
 import { getAppointmentForParticipant } from "@/lib/booking/appointments";
-import { getPrescriptionWithMedicines } from "@/lib/consult";
+import { getPrescriptionWithMedicines } from "@/lib/consult/consult";
 
 const medicineSchema = z.object({
   name: z.string().trim().min(1).max(200),

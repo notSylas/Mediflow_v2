@@ -4,7 +4,7 @@ import {
   getEncounterData,
   getMedicineHistory,
   getPatientHistory,
-} from "@/lib/consult";
+} from "@/lib/consult/consult";
 import { getOrCreateDoctorProfile } from "@/lib/doctor";
 import { getPatientProfile } from "@/lib/patient";
 

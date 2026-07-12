@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { auth } from "@/lib/auth/auth";
-import { getPatientPrescriptionById } from "@/lib/consult";
+import { getPatientPrescriptionById } from "@/lib/consult/consult";
 import { getDoctorCard, getDoctorProfile } from "@/lib/doctor";
 import { getPatientProfile } from "@/lib/patient";
 import { patientDocumentName } from "@/lib/patient-identity";

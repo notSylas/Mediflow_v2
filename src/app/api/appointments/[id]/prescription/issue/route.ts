@@ -4,7 +4,7 @@ import { db } from "@/db";
 import { prescriptions } from "@/db/schema";
 import { requireDoctorSession } from "@/lib/auth/api-auth";
 import { getAppointmentForParticipant } from "@/lib/booking/appointments";
-import { getPrescriptionWithMedicines } from "@/lib/consult";
+import { getPrescriptionWithMedicines } from "@/lib/consult/consult";
 
 /** Issues the draft prescription, locking it permanently. */
 export async function POST(

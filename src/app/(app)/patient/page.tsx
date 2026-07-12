@@ -23,11 +23,11 @@ import {
 import { auth } from "@/lib/auth/auth";
 import { getDoctorCard, getDoctorProfile } from "@/lib/doctor";
 import { listPatientAppointments } from "@/lib/booking/appointments";
-import { listPatientPrescriptions } from "@/lib/consult";
+import { listPatientPrescriptions } from "@/lib/consult/consult";
 import { getPatientPendingFollowUp } from "@/lib/follow-ups";
 import { getPatientProfile } from "@/lib/patient";
 import { getPatientCareStatus, toCareStatusDTO } from "@/lib/care-subscription";
-import { describeMedicineSchedule } from "@/lib/medicines";
+import { describeMedicineSchedule } from "@/lib/consult/medicines";
 import { CareCard } from "@/components/patient/CareCard";
 import { dismissFollowUpAction } from "@/app/(app)/patient/actions";
 import { JoinCallButton } from "@/components/JoinCallButton";

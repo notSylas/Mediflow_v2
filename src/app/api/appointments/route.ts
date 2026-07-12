@@ -17,7 +17,7 @@ import { getDoctorProfile } from "@/lib/doctor";
 import { isUniqueViolation } from "@/lib/core/db-errors";
 import { getPatientProfile } from "@/lib/patient";
 import { getBookingProfileMissing } from "@/lib/patient-readiness";
-import { hasEmergencyRedFlag } from "@/lib/triage";
+import { hasEmergencyRedFlag } from "@/lib/consult/triage";
 
 const createAppointmentSchema = z.object({
   startsAt: z.string().datetime(),

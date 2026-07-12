@@ -26,8 +26,8 @@ import {
   user,
 } from "@/db/schema";
 import { listDoctorPatients } from "@/lib/booking/appointments";
-import { getMedicineHistory, getPatientHistory } from "@/lib/consult";
-import { describeMedicineSchedule } from "@/lib/medicines";
+import { getMedicineHistory, getPatientHistory } from "@/lib/consult/consult";
+import { describeMedicineSchedule } from "@/lib/consult/medicines";
 import { getOrCreateDoctorProfile } from "@/lib/doctor";
 import { ageFromDob, genderLabel, getPatientProfile } from "@/lib/patient";
 import { getDoctorPatientCareStatus } from "@/lib/care-subscription";

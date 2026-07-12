@@ -15,8 +15,8 @@ import {
   Stethoscope,
 } from "lucide-react";
 import { auth } from "@/lib/auth/auth";
-import { listPatientPrescriptions } from "@/lib/consult";
-import { describeMedicineSchedule } from "@/lib/medicines";
+import { listPatientPrescriptions } from "@/lib/consult/consult";
+import { describeMedicineSchedule } from "@/lib/consult/medicines";
 import { getDoctorProfile } from "@/lib/doctor";
 import { listPatientRefillRequests } from "@/lib/refills";
 import { requestRefillAction } from "@/app/(app)/patient/actions";

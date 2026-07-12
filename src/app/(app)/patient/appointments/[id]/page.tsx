@@ -5,7 +5,7 @@ import { formatInTimeZone } from "date-fns-tz";
 import { Download, FileText } from "lucide-react";
 import { auth } from "@/lib/auth/auth";
 import { getAppointmentForPatient } from "@/lib/booking/appointments";
-import { getPrescriptionWithMedicines } from "@/lib/consult";
+import { getPrescriptionWithMedicines } from "@/lib/consult/consult";
 import { getDoctorCard, getDoctorProfile } from "@/lib/doctor";
 import { getPatientProfile } from "@/lib/patient";
 import { patientDocumentName } from "@/lib/patient-identity";

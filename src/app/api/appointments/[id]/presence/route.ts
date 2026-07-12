@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { requireSession } from "@/lib/auth/api-auth";
 import { getAppointmentForParticipant } from "@/lib/booking/appointments";
-import { roomNameFor } from "@/lib/call-window";
-import { listRoomParticipantIdentities } from "@/lib/video";
+import { roomNameFor } from "@/lib/video/call-window";
+import { listRoomParticipantIdentities } from "@/lib/video/video";
 
 /** Is the *other* party of this appointment currently in the video room? */
 export async function GET(

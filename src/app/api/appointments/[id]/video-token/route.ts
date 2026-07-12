@@ -4,8 +4,8 @@ import { db } from "@/db";
 import { appointments } from "@/db/schema";
 import { requireSession } from "@/lib/auth/api-auth";
 import { getAppointmentForParticipant } from "@/lib/booking/appointments";
-import { getJoinDenial, roomNameFor } from "@/lib/call-window";
-import { createVideoToken, isVideoConfigured } from "@/lib/video";
+import { getJoinDenial, roomNameFor } from "@/lib/video/call-window";
+import { createVideoToken, isVideoConfigured } from "@/lib/video/video";
 
 const DENIAL_MESSAGES = {
   not_confirmed: "This appointment isn't confirmed.",

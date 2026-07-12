@@ -11,8 +11,8 @@ import {
   getEncounterData,
   getMedicineHistory,
   getPatientHistory,
-} from "@/lib/consult";
-import { describeMedicineSchedule } from "@/lib/medicines";
+} from "@/lib/consult/consult";
+import { describeMedicineSchedule } from "@/lib/consult/medicines";
 import { ageFromDob, genderLabel, getPatientProfile } from "@/lib/patient";
 import { getOrCreateDoctorProfile } from "@/lib/doctor";
 import { createFollowUpAction } from "@/app/(app)/doctor/actions";

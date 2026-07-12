@@ -21,7 +21,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
-import { describeMedicineSchedule } from "@/lib/medicines";
+import { describeMedicineSchedule } from "@/lib/consult/medicines";
 
 const TIMING_KEYS = ["morning", "afternoon", "evening", "night"] as const;
 const FOOD_RELATIONS = ["Before food", "After food", "With food"];
