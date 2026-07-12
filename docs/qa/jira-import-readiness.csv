@@ -1,0 +1,66 @@
+Issue ID,Issue Type,Summary,Epic Name,Epic Link,Component,Labels,Priority,Severity,Assignee,Automation,Description
+MFPR-1,Epic,Telehealth Production Readiness — MediFlow v2,MediFlow Production Readiness,,All,launch-blocker,P0 Highest,,Product,,Verify all regulatory clinical privacy security payments video notification accessibility and ops readiness for a teleconsultation service before production. Full detail in docs/qa/ProductionReadinessBacklog.md.
+MFPR-A1,Task,Display doctor RMP registration number and qualifications,,MFPR-1,Regulatory,regulatory legal legal-blocker launch-gate,P0 Highest,,Legal,,Telemedicine Guidelines: RMP identity must be shown on profile and at point of consult. Add reg number + qualifications; verify displayed to patient.
+MFPR-A2,Task,Enforce prescription drug restrictions (no controlled / Schedule X),,MFPR-1,Regulatory,regulatory clinical legal-blocker launch-gate,P0 Highest,,Clinical,,Block controlled substances/Schedule X/narcotics via teleconsult; enforce List O/A/B rules and refill limits. Currently free-form medicine list with no schedule guard.
+MFPR-A3,Task,Digitally-signed prescription in a legal verifiable format,,MFPR-1,Regulatory,regulatory legal eng launch-gate,P0 Highest,,Legal,,Issued Rx must carry a legally valid signature/format. Today Rx is structured+locked but unsigned.
+MFPR-A4,Task,Auditable versioned teleconsultation consent (verify wording),,MFPR-1,Regulatory,regulatory legal legal-blocker launch-gate,P0 Highest,,Legal,,Consent versioning exists; verify wording is compliant with Telemedicine Guidelines and captured per consult with timestamp/source.
+MFPR-A5,Task,Patient identity verification at first consult,,MFPR-1,Regulatory,regulatory legal clinical recommended,P1 High,,Legal,,Capture/verify patient name/age/ID at first consult per guidelines. Today only profile fields exist.
+MFPR-A6,Task,Minor patients — guardian identity and consent flow,,MFPR-1,Regulatory,regulatory legal clinical recommended,P1 High,,Legal,,Pediatric consults need guardian identity + consent. Not implemented.
+MFPR-A7,Task,Medical-records retention policy and enforced purge,,MFPR-1,Regulatory,regulatory legal recommended,P1 High,,Legal,,Define statutory retention period for records/Rx/reports and enforce deletion afterwards.
+MFPR-A8,Task,Publish and enforce refund and cancellation policy,,MFPR-1,Regulatory,regulatory legal payments legal-blocker launch-gate,P0 Highest,,Legal,,Consultation refund policy is undecided; decide publish and enforce in-product (Care-plan refund already exists).
+MFPR-A9,Task,Publish grievance redressal / Data Protection Officer contact,,MFPR-1,Regulatory,regulatory legal legal-blocker launch-gate,P0 Highest,,Legal,,DPDP requires a published grievance/DPO contact channel. Not present.
+MFPR-A10,Task,Express escalation-to-in-person/emergency duty in-flow,,MFPR-1,Regulatory,regulatory clinical legal recommended,P1 High,,Clinical,,Document and surface the practitioner's duty to escalate to ER/in-person when teleconsult is unsafe.
+MFPR-A11,Task,Legal review of ToS Privacy and Refund documents,,MFPR-1,Regulatory,regulatory legal legal-blocker launch-gate,P0 Highest,,Legal,,Terms/Privacy pages exist; get them (and refund policy) reviewed by a healthcare lawyer and kept current.
+MFPR-A12,Task,Cross-jurisdiction / doctor-licensing-vs-patient-location policy,,MFPR-1,Regulatory,regulatory legal future,P3 Low,,Legal,,Define policy for where the doctor is licensed vs where the patient is located.
+MFPR-B1,Task,Sign DPA/BAA with every data processor,,MFPR-1,Privacy,privacy legal security legal-blocker launch-gate,P0 Highest,,Legal,,Signed data-processing agreements with LiveKit Razorpay Resend Neon realtime-host Sentry.
+MFPR-B2,Task,Verify encryption at rest for DB and attachments,,MFPR-1,Privacy,privacy security launch-blocker launch-gate,P0 Highest,,Security,,Confirm DB and report/chat attachment (bytea) data is encrypted at rest.
+MFPR-B3,Task,Data localization — health data stored in India,,MFPR-1,Privacy,privacy legal security recommended,P1 High,,Security,,Health data currently in Neon Singapore region; assess India localization requirement or document lawful basis.
+MFPR-B4,Task,PHI access audit trail,,MFPR-1,Privacy,privacy security recommended,P1 High,,Security,,Record who viewed which record/Rx/report and when. pino logs are not an access audit trail.
+MFPR-B5,Task,Data-subject rights access export erasure workflow,,MFPR-1,Privacy,privacy legal recommended,P1 High,,Legal,,Provide access/export/erasure of personal data per DPDP.
+MFPR-B6,Task,Breach detection and notification process,,MFPR-1,Privacy,privacy security legal recommended,P1 High,,Security,,Define breach detection + notification within DPDP timelines.
+MFPR-B7,Task,Data retention/minimization and scheduled purge job,,MFPR-1,Privacy,privacy recommended,P2 Medium,,Privacy,,Minimize stored data and schedule purge of expired records.
+MFPR-B8,Task,No PHI/PII in logs Sentry or analytics,,MFPR-1,Privacy,privacy security launch-blocker launch-gate,P0 Highest,,Security,,Verify scrubbing so no personal/health data leaks into logs error reports or analytics.
+MFPR-B9,Task,Data-processing consent captured and withdrawable,,MFPR-1,Privacy,privacy legal recommended,P2 Medium,,Legal,,Capture processing consent and allow withdrawal.
+MFPR-C1,Task,Not-for-emergencies disclaimer on every entry point (verify),,MFPR-1,Clinical,clinical recommended,P2 Medium,,Clinical,,Verify red-flag triage + not-for-emergencies disclaimer appears on all entry points.
+MFPR-C2,Task,Documented escalation pathway to ER / in-person,,MFPR-1,Clinical,clinical recommended,P1 High,,Clinical,,Define and surface how a consult escalates to emergency/in-person care.
+MFPR-C3,Task,Drug allergy and interaction check at prescribing,,MFPR-1,Clinical,clinical recommended,P2 Medium,,Clinical,,Warn on allergy/interaction against patient profile when composing Rx.
+MFPR-C4,Task,Surface scope-of-care limits,,MFPR-1,Clinical,clinical recommended,P2 Medium,,Clinical,,List conditions unsuitable for teleconsult and surface them.
+MFPR-C5,Task,Continuity of care referral and handoff mechanism,,MFPR-1,Clinical,clinical future,P3 Low,,Clinical,,Provide referral/handoff to another provider.
+MFPR-C6,Task,SOAP mandatory before Rx can be issued (verify enforced),,MFPR-1,Clinical,clinical eng recommended,P2 Medium,,Clinical,,Verify a completed SOAP note is required before an Rx can be issued.
+MFPR-D1,Task,Patient identity capture (KYC-lite),,MFPR-1,Identity,identity security legal recommended,P1 High,,Security,,Capture minimal identity to bind account to a real person.
+MFPR-D2,Task,Doctor credential verification and storage,,MFPR-1,Identity,identity security legal recommended,P1 High,,Security,,Verify and store the doctor's medical credentials.
+MFPR-D3,Task,MFA option for accounts (especially doctor),,MFPR-1,Identity,identity security recommended,P2 Medium,,Security,,Offer a second authentication factor for high-privilege accounts.
+MFPR-D4,Task,OTP brute-force rate-limit expiry and lockout,,MFPR-1,Identity,identity security launch-blocker launch-gate,P0 Highest,,Security,,Verify/harden OTP against guessing: rate limit expiry lockout. Login is the front door.
+MFPR-E1,Task,External penetration test / security review,,MFPR-1,Security,security launch-blocker launch-gate,P1 High,,Security,,Commission a pen test / security review before launch.
+MFPR-E2,Task,Dependency/SCA scanning and patch process,,MFPR-1,Security,security eng recommended,P1 High,,Security,,Add SCA/dependency scanning and a patch cadence.
+MFPR-E3,Task,Secrets management and key rotation policy,,MFPR-1,Security,security recommended,P2 Medium,,Security,,Manage secrets safely and define key rotation.
+MFPR-E4,Task,Rate limiting WAF and DDoS protection,,MFPR-1,Security,security recommended,P1 High,,Security,,Protect public endpoints against abuse and volumetric attacks.
+MFPR-E5,Task,Upload validation and malware scan (reports + chat),,MFPR-1,Security,security launch-blocker launch-gate,P1 High,,Security,,Strictly validate and malware-scan uploaded files (currently type check only).
+MFPR-E6,Task,Security headers and secure cookie flags,,MFPR-1,Security,security eng launch-blocker launch-gate,P1 High,,Security,,Verify CSP/HSTS and Secure/HttpOnly/SameSite cookie flags.
+MFPR-E7,Task,Backups and disaster recovery tested (RTO/RPO),,MFPR-1,Security,security ops launch-blocker launch-gate,P0 Highest,,Ops,,Define and test backups + DR; set RTO/RPO. Neon defaults untested.
+MFPR-E8,Task,Video privacy and recording-consent policy,,MFPR-1,Security,security legal recommended,P2 Medium,,Security,,Access control exists (token+window); define recording/consent stance (default no recording).
+MFPR-F1,Task,GST / tax-invoice compliance on fees,,MFPR-1,Payments,payments legal recommended,P1 High,,Payments/Finance,,Consult is GST-exempt but platform/convenience fees may not be; ensure correct tax invoicing.
+MFPR-F2,Task,Doctor payout settlement and reconciliation process,,MFPR-1,Payments,payments recommended,P2 Medium,,Payments/Finance,,Define how the doctor is paid and reconciled.
+MFPR-F3,Task,Chargeback dispute and refund-fraud handling,,MFPR-1,Payments,payments recommended,P2 Medium,,Payments/Finance,,Handle chargebacks disputes and refund fraud.
+MFPR-F4,Task,Payment-failure reconciliation runbook,,MFPR-1,Payments,payments eng ops recommended,P1 High,,Eng,,Runbook for webhook-vs-client-callback edge cases and stuck payments.
+MFPR-F5,Task,Confirm and document PCI-DSS scope,,MFPR-1,Payments,payments security launch-blocker launch-gate,P1 High,,Security,,Confirm no card data touches our servers (Razorpay-hosted) and document PCI scope.
+MFPR-G1,Task,Poor-network video resilience and reconnection tested,,MFPR-1,Video,video eng recommended,P1 High,,Eng,,Test low-bandwidth 3G packet-loss reconnection behavior.
+MFPR-G2,Task,Fallback when video fails (audio/phone/chat),,MFPR-1,Video,video eng clinical recommended,P2 Medium,,Eng,,Provide a fallback when video cannot connect.
+MFPR-G3,Task,Call-quality monitoring and metrics,,MFPR-1,Video,video ops future,P3 Low,,Ops,,Monitor call quality/failures.
+MFPR-H1,Task,SMS and WhatsApp channel for OTP/reminders/confirmations,,MFPR-1,Notifications,notifications eng product recommended,P2 Medium,,Eng,,Add SMS/WhatsApp; email-only underperforms for India reach.
+MFPR-H2,Task,Communication consent and opt-out,,MFPR-1,Notifications,notifications legal recommended,P2 Medium,,Legal,,Capture consent and provide opt-out for communications.
+MFPR-H3,Task,Reminder dedup and delivery monitoring,,MFPR-1,Notifications,notifications eng recommended,P2 Medium,,Eng,,Ensure reminders aren't duplicated and monitor delivery.
+MFPR-I1,Task,WCAG 2.1 AA accessibility audit,,MFPR-1,Accessibility,accessibility ux recommended,P2 Medium,,UX,,Audit keyboard nav screen-reader support and contrast.
+MFPR-I2,Task,Multilingual / localization plan,,MFPR-1,Accessibility,accessibility ux product future,P3 Low,,UX,,Plan localization for Indian languages.
+MFPR-I3,Task,Low-bandwidth elderly and low-literacy UX,,MFPR-1,Accessibility,accessibility ux future,P3 Low,,UX,,Design for low-bandwidth elderly and low-literacy users.
+MFPR-J1,Task,Uptime monitoring alerting and on-call,,MFPR-1,Operations,ops launch-blocker launch-gate,P1 High,,Ops,,Add uptime monitoring alerting and an on-call path.
+MFPR-J2,Task,Observability verified (Sentry logs metrics no PII),,MFPR-1,Operations,ops recommended,P1 High,,Ops,,Verify Sentry captures errors and logs/metrics exist without PII.
+MFPR-J3,Task,Staging environment and rollback runbook,,MFPR-1,Operations,ops eng recommended,P1 High,,Ops,,Maintain a staging env and a documented rollback procedure.
+MFPR-J4,Task,Support / helpdesk and SLA,,MFPR-1,Operations,ops business recommended,P2 Medium,,Ops,,Provide user support and define an SLA.
+MFPR-J5,Task,Analytics and reporting (clinical + business),,MFPR-1,Operations,ops future,P3 Low,,Ops,,Build clinical and business reporting.
+MFPR-J6,Task,Incident-response runbook (including breach),,MFPR-1,Operations,ops security recommended,P1 High,,Ops,,Document incident response including data-breach handling.
+MFPR-J7,Task,Cost and scale monitoring,,MFPR-1,Operations,ops future,P3 Low,,Ops,,Monitor infra cost and scaling headroom.
+MFPR-K1,Task,ABDM / ABHA health-ID integration assessment,,MFPR-1,Interoperability,interoperability product future,P3 Low,,Product,,Assess integration with India's national digital health ID (ABHA/ABDM).
+MFPR-K2,Task,FHIR / HL7 / EHR export standard,,MFPR-1,Interoperability,interoperability eng future,P3 Low,,Eng,,Support standards-based record export.
+MFPR-K3,Task,e-pharmacy / diagnostics-lab integration,,MFPR-1,Interoperability,interoperability product future,P3 Low,,Product,,Integrate pharmacy fulfillment and lab diagnostics.
+MFPR-K4,Task,Insurance / claims integration,,MFPR-1,Interoperability,interoperability product future,P3 Low,,Product,,Integrate insurance/claims.
