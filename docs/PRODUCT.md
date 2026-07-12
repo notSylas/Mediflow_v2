@@ -34,7 +34,7 @@ property.
 
 ## 3. Settled policy reversals (on record — these override older docs)
 
-1. **AI features are IN.** The old "no AI in initial stages" fence in PRD.md is
+1. **AI features are IN.** The old "no AI in initial stages" fence (from the original PRD, now folded into §8) is
    **reversed**: AI report-triage and doctor-authored AI scribe are core to the
    plan. (AI never prescribes independently — India Telemedicine Guidelines 2020;
    doctor authors and signs.)
@@ -110,4 +110,31 @@ export/deletion), **observability** (AI failure/OCR-confidence/booking metrics),
 | 2 | Doctor onboarding: invite-only vs public self-signup | Phase 1 | Invite-only first |
 | 3 | Triage infra: async vs sync | Phase 2 | Async (decided in eng review) |
 | 4 | Build-sequencing: gate Phase 2 AI on validated bookings? | Phase 1→2 | Yes, gate it |
-| 5 | Stale PRD.md fences (AI, records-vault) — update or supersede? | doc hygiene | See below |
+
+---
+
+## 8. v1 baseline — requirements as built (folded in from the retired PRD)
+
+The single-doctor v1 that Phase 0 launches. Per-feature status: [Tracker.md](Tracker.md); flows + state machine: [AppFlow.md](AppFlow.md).
+
+**Patient stories**
+1. Sign in with email OTP (no passwords).
+2. State the visit reason + symptoms + optional report upload at booking.
+3. Pick a free slot and pay the fee at booking (the no-show fix).
+4. Join the video consult from the appointment page (camera/mic pre-check).
+5. See the prescription + outcome afterwards; retrieve all past prescriptions anytime.
+6. Cancel within the allowed window (≥2h before start); reschedule a confirmed slot.
+
+**Doctor stories**
+1. Define weekly availability + date overrides (holidays / extra sessions).
+2. See today's / upcoming appointments and a work queue of what needs attention.
+3. Open an encounter: intake, attached reports, full returning-patient history.
+4. Run the call, write a SOAP note, compose + **issue** a structured prescription (locked once issued).
+5. Mark the appointment completed or no-show.
+
+**Success criteria**
+- A real patient can book → pay → consult → receive a prescription with zero manual intervention.
+- Zero double-bookings (enforced by the DB unique index `uq_appointments_doctor_slot`, verified by tests).
+- The doctor can run 5+ consecutive consults without leaving the appointments view.
+
+**v1 non-goals** — see §6 for the full deferred list: marketplace dynamics, insurance billing, EHR interoperability. (AI scribe and the records vault were non-goals in the original PRD but are now **in** the roadmap per §3, sequenced to Phases 2–3.)
