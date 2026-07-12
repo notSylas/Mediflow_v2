@@ -1,6 +1,6 @@
 # MediFlow v2 — Feature Tracker
 
-Live status board. Update when state changes. Last updated: 2026-06-18.
+Live status board. Update when state changes. Last updated: 2026-07-12.
 
 Legend: ✅ done · 🔨 in progress · 🔜 planned (v1) · 🧊 v1.5 · ❌ cut
 
@@ -10,7 +10,7 @@ Legend: ✅ done · 🔨 in progress · 🔜 planned (v1) · 🧊 v1.5 · ❌ cu
 |---|---|---|
 | Next.js 16 + TS + Tailwind 4 scaffold | ✅ | |
 | Postgres (Docker :5433) + Drizzle schema | ✅ | `npm run db:push` |
-| Auth: email OTP | ✅ | OTP logged via pino until Resend |
+| Auth: email OTP | ✅ | Sent via Resend when configured; console fallback in development |
 | Auth: Google sign-in | ✅ | Activates when `GOOGLE_*` env set |
 | Roles (patient/doctor) + route guards | ✅ | |
 | Logging (pino) + optional Sentry | ✅ | |
@@ -76,7 +76,8 @@ Legend: ✅ done · 🔨 in progress · 🔜 planned (v1) · 🧊 v1.5 · ❌ cu
 | E2E: consult + prescription + returning patient | ✅ | Full clinic loop in one spec |
 | E2E: full suite green after UI overhaul | ✅ | 6/6 — caught a real logout regression (2026-06-13) |
 | Vercel cron config + doctor-promote script | ✅ | `vercel.json`, `npm run promote-doctor` |
-| Emails (OTP, confirmation, reminder) | 🔜 | Resend — last 🔜 before launch |
+| Emails (OTP, booking confirmation) | ✅ | Resend with console fallback when unconfigured |
+| Appointment reminder delivery | ✅ | Resend reminder + `/api/cron/reminders`; production scheduler must invoke it |
 | Deployment guide | ✅ | `docs/Deployment.md` |
 | Production deploy | 🔜 | Follow `docs/Deployment.md` |
 | Doctor seed script | 🔜 | |
@@ -140,7 +141,6 @@ in `mobile/.env` to the dev machine's LAN URL (phone can't reach localhost).
 | AI scribe (transcript → draft SOAP + Rx) | 🧊 |
 | Branded prescription PDF | 🧊 |
 | WhatsApp reminders | 🧊 |
-| Patient medical profile (slim) in encounter | 🧊 |
 | Medication tracker / records vault | 🧊 undecided |
 | Dashboards, diet/timeline, doctor signup | ❌ cut |
 
@@ -156,7 +156,7 @@ updated `Rules.md` #1 and `AGENTS.md`.
 | Realtime infra (Postgres NOTIFY → socket.io) | ✅ | `realtime/server.ts`, `npm run realtime`; swappable behind `src/lib/realtime.ts` |
 | Short-lived HMAC socket tokens (15 min, refresh on reconnect) | ✅ | `src/lib/realtime-token.ts` |
 | REST API (conversations, messages, read, attachments) | ✅ | `/api/v1/conversations/*` |
-| Messaging gated to **paid** appointments **or active MediFlow Care** | ✅ | `chat-policy.ts` + `patientCanMessageDoctor` in `chat.ts`; see Care section |
+| Messaging gated to **active MediFlow Care** | ✅ | Premium subscription gate lives in `patientCanMessageDoctor` in `chat.ts` |
 | Attachment authorization (uploader + conversation bound) | ✅ | `chat-policy.ts`; unit-tested |
 | Web chat UI (live, pagination, attachments, read state) | ✅ | `ChatThread`, `DoctorMessages` |
 | Mobile chat (Expo, live, pagination, PDF open, read state) | ✅ | `components/chat-thread.tsx` |
@@ -193,7 +193,7 @@ toggle (no Razorpay recurring yet).
 | Emergency disclaimer on all messaging promos | ✅ | "Messaging is not for emergencies." everywhere |
 | Real Razorpay recurring billing | 🧊 | deferred; checkout page is the plug-in point; schema absorbs without migration |
 | Weekly digest **email** (Resend) | 🔜 | data assembler + cron not built yet; waits on base Resend wiring |
-| Doctor home subscriber count + patient-list filter | 🔜 | patient detail badge done; list filter/home stat pending |
+| Doctor home subscriber count + patient-list filter | ✅ | Subscriber count and roster filters are available on doctor surfaces |
 | E2E (gate + follow-up once-per-period) | 🔜 | policy unit-tested; e2e specs pending |
 
 ## Web clinical workflow parity (added 2026-06-18)
