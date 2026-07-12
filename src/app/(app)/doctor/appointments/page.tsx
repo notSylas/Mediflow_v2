@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { formatInTimeZone } from "date-fns-tz";
 import { auth } from "@/lib/auth/auth";
-import { listDoctorAppointments } from "@/lib/appointments";
+import { listDoctorAppointments } from "@/lib/booking/appointments";
 import { getOrCreateDoctorProfile } from "@/lib/doctor";
 import { Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { AppointmentQuickActions } from "@/components/doctor/AppointmentQuickActions";
-import { statusLabel, statusVariant } from "@/lib/appointment-status";
+import { statusLabel, statusVariant } from "@/lib/booking/appointment-status";
 
 export default async function DoctorAppointmentsPage({
   searchParams,

@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { prescriptions } from "@/db/schema";
 import { requireDoctorSession } from "@/lib/auth/api-auth";
-import { getAppointmentForParticipant } from "@/lib/appointments";
+import { getAppointmentForParticipant } from "@/lib/booking/appointments";
 import { getPrescriptionWithMedicines } from "@/lib/consult";
 
 /** Issues the draft prescription, locking it permanently. */

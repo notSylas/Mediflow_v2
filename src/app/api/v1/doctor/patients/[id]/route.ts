@@ -9,7 +9,7 @@ import {
   user,
 } from "@/db/schema";
 import { requireDoctorSession } from "@/lib/auth/api-auth";
-import { listDoctorPatients } from "@/lib/appointments";
+import { listDoctorPatients } from "@/lib/booking/appointments";
 import { getMedicineHistory, getPatientHistory } from "@/lib/consult";
 import { getOrCreateDoctorProfile } from "@/lib/doctor";
 import { getPatientProfile } from "@/lib/patient";

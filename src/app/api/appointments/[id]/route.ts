@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireSession } from "@/lib/auth/api-auth";
-import { getAppointmentForPatient } from "@/lib/appointments";
+import { getAppointmentForPatient } from "@/lib/booking/appointments";
 
 export async function GET(
   _request: Request,

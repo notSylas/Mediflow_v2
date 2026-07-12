@@ -3,7 +3,7 @@ import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { availabilityRules, prescriptions } from "@/db/schema";
 import { requireDoctorSession } from "@/lib/auth/api-auth";
-import { listDoctorAppointments } from "@/lib/appointments";
+import { listDoctorAppointments } from "@/lib/booking/appointments";
 import {
   getDoctorEarnings,
   getDoctorPaymentStats,

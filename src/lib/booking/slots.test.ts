@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computeAvailableSlots } from "@/lib/slots";
+import { computeAvailableSlots } from "@/lib/booking/slots";
 
 const TZ = "Asia/Kolkata";
 

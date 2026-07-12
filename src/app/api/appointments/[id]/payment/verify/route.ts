@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireSession } from "@/lib/auth/api-auth";
-import { getAppointmentForPatient } from "@/lib/appointments";
+import { getAppointmentForPatient } from "@/lib/booking/appointments";
 import { confirmAppointmentPayment, verifyCheckoutSignature } from "@/lib/payments";
 
 const verifySchema = z.object({

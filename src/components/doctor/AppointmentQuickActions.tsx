@@ -15,7 +15,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { canCancelAppointment } from "@/lib/booking";
+import { canCancelAppointment } from "@/lib/booking/booking";
 
 interface AppointmentQuickActionsProps {
   appointmentId: string;

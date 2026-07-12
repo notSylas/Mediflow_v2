@@ -11,7 +11,7 @@ import {
   refillRequests,
 } from "@/db/schema";
 import { requireDoctorSession } from "@/lib/auth/api-auth";
-import { listDoctorPatients } from "@/lib/appointments";
+import { listDoctorPatients } from "@/lib/booking/appointments";
 import { getActiveSubscriberIds } from "@/lib/care-subscription";
 import { getOrCreateDoctorProfile } from "@/lib/doctor";
 

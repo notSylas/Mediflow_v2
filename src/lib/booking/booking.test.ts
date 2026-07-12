@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canCancelAppointment, CANCELLATION_WINDOW_HOURS } from "@/lib/booking";
+import { canCancelAppointment, CANCELLATION_WINDOW_HOURS } from "@/lib/booking/booking";
 
 const NOW = new Date("2026-06-15T00:00:00Z");
 

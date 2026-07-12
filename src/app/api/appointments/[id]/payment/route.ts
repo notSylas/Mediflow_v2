@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { payments } from "@/db/schema";
 import { requireSession } from "@/lib/auth/api-auth";
-import { getAppointmentForPatient } from "@/lib/appointments";
+import { getAppointmentForPatient } from "@/lib/booking/appointments";
 import {
   confirmAppointmentPayment,
   getPaymentProvider,

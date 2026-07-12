@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireDoctorSession } from "@/lib/auth/api-auth";
 import { getOrCreateDoctorProfile } from "@/lib/doctor";
-import { createAsyncConsult } from "@/lib/appointments";
+import { createAsyncConsult } from "@/lib/booking/appointments";
 
 const schema = z.object({
   patientId: z.string().min(1),

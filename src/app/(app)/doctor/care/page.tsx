@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { formatInTimeZone } from "date-fns-tz";
 import { ArrowRight, HandHeart, Users } from "lucide-react";
 import { auth } from "@/lib/auth/auth";
-import { listDoctorPatients } from "@/lib/appointments";
+import { listDoctorPatients } from "@/lib/booking/appointments";
 import {
   listDoctorSubscribers,
   type DoctorSubscriberRow,

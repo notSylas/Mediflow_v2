@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireSession } from "@/lib/auth/api-auth";
-import { getAppointmentForParticipant } from "@/lib/appointments";
+import { getAppointmentForParticipant } from "@/lib/booking/appointments";
 import { roomNameFor } from "@/lib/call-window";
 import { listRoomParticipantIdentities } from "@/lib/video";
 

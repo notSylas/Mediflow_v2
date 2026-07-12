@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
-import type { VisitReason } from "@/lib/booking";
+import type { VisitReason } from "@/lib/booking/booking";
 import { BookingStepper } from "./BookingStepper";
 import { ConfirmationStep } from "./ConfirmationStep";
 import { IntakeStep, type ReportRef } from "./IntakeStep";

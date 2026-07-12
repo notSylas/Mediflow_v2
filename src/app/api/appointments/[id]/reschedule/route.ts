@@ -4,8 +4,8 @@ import { z } from "zod";
 import { db } from "@/db";
 import { appointments } from "@/db/schema";
 import { requireSession } from "@/lib/auth/api-auth";
-import { getAppointmentForPatient } from "@/lib/appointments";
-import { getAvailableSlots } from "@/lib/availability";
+import { getAppointmentForPatient } from "@/lib/booking/appointments";
+import { getAvailableSlots } from "@/lib/booking/availability";
 import { isUniqueViolation } from "@/lib/core/db-errors";
 import { getDoctorProfile } from "@/lib/doctor";
 

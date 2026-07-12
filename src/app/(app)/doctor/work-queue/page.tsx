@@ -22,7 +22,7 @@ import {
   markMessageReadAction,
   snoozeFollowUpAction,
 } from "@/app/(app)/doctor/actions";
-import { listDoctorAppointments } from "@/lib/appointments";
+import { listDoctorAppointments } from "@/lib/booking/appointments";
 import { listDoctorConversations } from "@/lib/chat";
 import { getOrCreateDoctorProfile } from "@/lib/doctor";
 import { listDoctorPendingFollowUps } from "@/lib/follow-ups";

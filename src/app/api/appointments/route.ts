@@ -3,16 +3,16 @@ import { and, eq, lt } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
 import { appointments, medicalReports, payments } from "@/db/schema";
-import { getAvailableSlots } from "@/lib/availability";
+import { getAvailableSlots } from "@/lib/booking/availability";
 import { requireSession } from "@/lib/auth/api-auth";
-import { listPatientAppointments } from "@/lib/appointments";
+import { listPatientAppointments } from "@/lib/booking/appointments";
 import {
   CONSENT_SOURCES,
   CONSENT_VERSION,
   formatIntakeNote,
   HOLD_MINUTES,
   VISIT_REASON_VALUES,
-} from "@/lib/booking";
+} from "@/lib/booking/booking";
 import { getDoctorProfile } from "@/lib/doctor";
 import { isUniqueViolation } from "@/lib/core/db-errors";
 import { getPatientProfile } from "@/lib/patient";

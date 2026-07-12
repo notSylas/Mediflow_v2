@@ -4,7 +4,7 @@ import { z } from "zod";
 import { db } from "@/db";
 import { prescriptionMedicines, prescriptions } from "@/db/schema";
 import { requireDoctorSession } from "@/lib/auth/api-auth";
-import { getAppointmentForParticipant } from "@/lib/appointments";
+import { getAppointmentForParticipant } from "@/lib/booking/appointments";
 import { getPrescriptionWithMedicines } from "@/lib/consult";
 
 const medicineSchema = z.object({

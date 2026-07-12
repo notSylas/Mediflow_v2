@@ -4,7 +4,7 @@ import { z } from "zod";
 import { db } from "@/db";
 import { consultNotes } from "@/db/schema";
 import { requireDoctorSession } from "@/lib/auth/api-auth";
-import { getAppointmentForParticipant } from "@/lib/appointments";
+import { getAppointmentForParticipant } from "@/lib/booking/appointments";
 
 const soapSchema = z.object({
   subjective: z.string().max(10_000).nullish(),

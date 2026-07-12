@@ -25,7 +25,7 @@ import {
   refillRequests,
   user,
 } from "@/db/schema";
-import { listDoctorPatients } from "@/lib/appointments";
+import { listDoctorPatients } from "@/lib/booking/appointments";
 import { getMedicineHistory, getPatientHistory } from "@/lib/consult";
 import { describeMedicineSchedule } from "@/lib/medicines";
 import { getOrCreateDoctorProfile } from "@/lib/doctor";

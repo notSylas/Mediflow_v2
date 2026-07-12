@@ -4,7 +4,7 @@ import { z } from "zod";
 import { db } from "@/db";
 import { appointments } from "@/db/schema";
 import { requireDoctorSession } from "@/lib/auth/api-auth";
-import { getAppointmentForParticipant } from "@/lib/appointments";
+import { getAppointmentForParticipant } from "@/lib/booking/appointments";
 
 const statusSchema = z.object({
   status: z.enum(["completed", "no_show"]),

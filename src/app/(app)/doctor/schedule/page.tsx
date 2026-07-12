@@ -8,9 +8,9 @@ import { Ban, ChevronLeft, ChevronRight } from "lucide-react";
 import { auth } from "@/lib/auth/auth";
 import { db } from "@/db";
 import { availabilityOverrides, availabilityRules } from "@/db/schema";
-import { listDoctorAppointments } from "@/lib/appointments";
+import { listDoctorAppointments } from "@/lib/booking/appointments";
 import { getOrCreateDoctorProfile } from "@/lib/doctor";
-import { computeAvailableSlots } from "@/lib/slots";
+import { computeAvailableSlots } from "@/lib/booking/slots";
 import { Button } from "@/components/ui/button";
 import { DayBlockToggle } from "@/components/doctor/DayBlockToggle";
 

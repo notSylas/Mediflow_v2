@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { auth } from "@/lib/auth/auth";
 import { getDoctorCard, getDoctorProfile } from "@/lib/doctor";
-import { listPatientAppointments } from "@/lib/appointments";
+import { listPatientAppointments } from "@/lib/booking/appointments";
 import { listPatientPrescriptions } from "@/lib/consult";
 import { getPatientPendingFollowUp } from "@/lib/follow-ups";
 import { getPatientProfile } from "@/lib/patient";

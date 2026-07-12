@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
-import { VISIT_REASONS, type VisitReason } from "@/lib/booking";
+import { VISIT_REASONS, type VisitReason } from "@/lib/booking/booking";
 import { hasEmergencyRedFlag } from "@/lib/triage";
 
 export interface ReportRef {

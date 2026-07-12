@@ -3,7 +3,7 @@ import { asc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { availabilityOverrides, availabilityRules } from "@/db/schema";
 import { requireDoctorSession } from "@/lib/auth/api-auth";
-import { listDoctorAppointments } from "@/lib/appointments";
+import { listDoctorAppointments } from "@/lib/booking/appointments";
 import { getOrCreateDoctorProfile } from "@/lib/doctor";
 
 export async function GET() {

@@ -5,7 +5,7 @@ import {
   availabilityOverrides,
   availabilityRules,
 } from "@/db/schema";
-import { computeAvailableSlots } from "@/lib/slots";
+import { computeAvailableSlots } from "@/lib/booking/slots";
 import { getCanonicalDoctorProfile } from "@/lib/doctor";
 
 /**

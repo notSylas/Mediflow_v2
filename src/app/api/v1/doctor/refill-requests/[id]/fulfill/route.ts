@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireDoctorSession } from "@/lib/auth/api-auth";
 import { getOrCreateDoctorProfile } from "@/lib/doctor";
-import { createAsyncConsult } from "@/lib/appointments";
+import { createAsyncConsult } from "@/lib/booking/appointments";
 import { getDoctorRefillRequest, setRefillRequestStatus } from "@/lib/refills";
 
 /** Doctor fulfils a refill request: opens an async consult to prescribe in. */

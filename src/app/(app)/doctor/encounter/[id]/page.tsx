@@ -29,7 +29,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { statusLabel } from "@/lib/appointment-status";
+import { statusLabel } from "@/lib/booking/appointment-status";
 
 export default async function EncounterPage({
   params,

@@ -3,8 +3,8 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { appointments } from "@/db/schema";
 import { requireSession } from "@/lib/auth/api-auth";
-import { getAppointmentForParticipant } from "@/lib/appointments";
-import { canCancelAppointment } from "@/lib/booking";
+import { getAppointmentForParticipant } from "@/lib/booking/appointments";
+import { canCancelAppointment } from "@/lib/booking/booking";
 
 export async function POST(
   _request: Request,

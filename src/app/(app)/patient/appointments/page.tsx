@@ -14,8 +14,8 @@ import {
 import { auth } from "@/lib/auth/auth";
 import { AppointmentCard } from "@/components/patient/AppointmentCard";
 import { Reveal } from "@/components/Reveal";
-import { canCancelAppointment } from "@/lib/booking";
-import { listPatientAppointments } from "@/lib/appointments";
+import { canCancelAppointment } from "@/lib/booking/booking";
+import { listPatientAppointments } from "@/lib/booking/appointments";
 import { getDoctorProfile } from "@/lib/doctor";
 import {
   PatientEmptyState,

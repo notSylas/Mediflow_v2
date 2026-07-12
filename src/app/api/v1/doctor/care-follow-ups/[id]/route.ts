@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireDoctorSession } from "@/lib/auth/api-auth";
-import { createAsyncConsult } from "@/lib/appointments";
+import { createAsyncConsult } from "@/lib/booking/appointments";
 import {
   getDoctorCareFollowUp,
   setCareFollowUpStatus,

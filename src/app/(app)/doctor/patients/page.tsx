@@ -7,7 +7,7 @@ import { ArrowRight, HandHeart, MessageCircle, RotateCcw, Search, Users } from "
 import { auth } from "@/lib/auth/auth";
 import { db } from "@/db";
 import { conversations, followUps, refillRequests } from "@/db/schema";
-import { listDoctorPatients } from "@/lib/appointments";
+import { listDoctorPatients } from "@/lib/booking/appointments";
 import { getActiveSubscriberIds } from "@/lib/care-subscription";
 import { getOrCreateDoctorProfile } from "@/lib/doctor";
 import { Badge } from "@/components/ui/badge";

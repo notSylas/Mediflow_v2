@@ -4,7 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { formatInTimeZone } from "date-fns-tz";
 import { HeartPulse } from "lucide-react";
 import { auth } from "@/lib/auth/auth";
-import { getAppointmentForPatient } from "@/lib/appointments";
+import { getAppointmentForPatient } from "@/lib/booking/appointments";
 import { getDoctorProfile } from "@/lib/doctor";
 import { PrintButton } from "@/components/patient/PrintButton";
 
