@@ -15,34 +15,13 @@ vi.mock("next/navigation", () => ({
 vi.mock("@/lib/auth-client", () => ({
   authClient: {
     emailOtp: { sendVerificationOtp: vi.fn() },
-    signIn: { email: vi.fn(), emailOtp: vi.fn(), social: vi.fn() },
+    signIn: { emailOtp: vi.fn(), social: vi.fn() },
   },
 }));
-
-async function usePassword() {
-  await userEvent.click(screen.getByRole("button", { name: "Password" }));
-}
 
 describe("LoginForm", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-  });
-
-  it("signs in with email and password", async () => {
-    vi.mocked(authClient.signIn.email).mockResolvedValue({ error: null } as never);
-
-    render(<LoginForm googleEnabled={false} />);
-
-    await usePassword();
-    await userEvent.type(screen.getByLabelText("Email"), "patient@example.com");
-    await userEvent.type(screen.getByPlaceholderText("Your password"), "supersecret");
-    await userEvent.click(screen.getByRole("button", { name: /^sign in$/i }));
-
-    expect(authClient.signIn.email).toHaveBeenCalledWith({
-      email: "patient@example.com",
-      password: "supersecret",
-    });
-    expect(push).toHaveBeenCalledWith("/patient");
   });
 
   it("sends an OTP and advances to the code step", async () => {
