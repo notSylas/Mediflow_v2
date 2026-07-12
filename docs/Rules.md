@@ -25,6 +25,8 @@ Non-negotiables for anyone (human or AI) working in this repo. `AGENTS.md` is th
 13. Error contract: `{ error: string | issues }` with correct status (400/401/403/404/409/410/503). User-actionable messages.
 14. State transitions are validated server-side (e.g. only `confirmed` → `completed`/`no_show`).
 
+> **Endpoint namespace:** new API routes go under `/api/v1/*` — the versioned mobile + external contract. The un-versioned `/api/*` routes are legacy web-first endpoints kept for compatibility; don't add to them, and don't rename them (URLs are load-bearing). Externally-pinned routes never move: `/api/auth/*` (Better Auth mount), `/api/webhooks/razorpay` (URL registered in the Razorpay dashboard), `/api/cron/reminders` (referenced in `vercel.json`).
+
 ## Frontend
 
 15. shadcn/ui components from `src/components/ui/` — add via CLI, don't hand-roll.
