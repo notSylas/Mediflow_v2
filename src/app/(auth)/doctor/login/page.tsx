@@ -6,7 +6,7 @@ import { CalendarClock, ClipboardList, ShieldCheck, Stethoscope, Video } from "l
 import { LoginForm } from "@/components/auth/LoginForm";
 import { Reveal } from "@/components/Reveal";
 import { AuthHeroPanel } from "@/components/auth/AuthHeroPanel";
-import { auth } from "@/lib/auth";
+import { auth } from "@/lib/auth/auth";
 
 const POINTS = [
   { icon: CalendarClock, text: "Your day's schedule and bookings at a glance" },

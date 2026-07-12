@@ -3,7 +3,7 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { auth } from "@/lib/auth";
+import { auth } from "@/lib/auth/auth";
 import { createRefillRequest } from "@/lib/refills";
 import { setFollowUpStatus } from "@/lib/follow-ups";
 import {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef } from "react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/core/utils";
 
 /**
  * Wraps a button/link so it gently pulls toward the cursor on hover, then

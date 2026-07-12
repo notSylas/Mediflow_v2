@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { formatInTimeZone } from "date-fns-tz";
 import { ArrowLeft, CheckCircle2, FilePenLine, Pill, XCircle } from "lucide-react";
-import { auth } from "@/lib/auth";
+import { auth } from "@/lib/auth/auth";
 import { getOrCreateDoctorProfile } from "@/lib/doctor";
 import { listPendingRefillRequests } from "@/lib/refills";
 import {

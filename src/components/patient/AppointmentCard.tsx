@@ -30,7 +30,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { statusLabel, statusVariant } from "@/lib/appointment-status";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/core/utils";
 
 export interface AppointmentCardProps {
   id: string;

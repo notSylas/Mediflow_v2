@@ -19,11 +19,11 @@ import {
   Stethoscope,
 } from "lucide-react";
 import { eq } from "drizzle-orm";
-import { cn } from "@/lib/utils";
-import { TONES } from "@/lib/tones";
+import { cn } from "@/lib/core/utils";
+import { TONES } from "@/lib/core/tones";
 import { db } from "@/db";
 import { availabilityRules } from "@/db/schema";
-import { auth } from "@/lib/auth";
+import { auth } from "@/lib/auth/auth";
 import { listDoctorAppointments } from "@/lib/appointments";
 import { listDoctorConversations } from "@/lib/chat";
 import { getDoctorRevenueInPaise, getOrCreateDoctorProfile } from "@/lib/doctor";

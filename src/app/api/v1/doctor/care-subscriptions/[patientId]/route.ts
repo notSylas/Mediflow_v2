@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { requireDoctorSession } from "@/lib/api-auth";
+import { requireDoctorSession } from "@/lib/auth/api-auth";
 import { getOrCreateDoctorProfile } from "@/lib/doctor";
 import {
   activateSubscription,

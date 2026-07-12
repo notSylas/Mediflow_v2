@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { formatInTimeZone } from "date-fns-tz";
 import { Download, FileText } from "lucide-react";
-import { auth } from "@/lib/auth";
+import { auth } from "@/lib/auth/auth";
 import { getAppointmentForPatient } from "@/lib/appointments";
 import { getPrescriptionWithMedicines } from "@/lib/consult";
 import { getDoctorCard, getDoctorProfile } from "@/lib/doctor";

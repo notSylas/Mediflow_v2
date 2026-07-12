@@ -5,7 +5,7 @@ import { addDays } from "date-fns";
 import { formatInTimeZone, fromZonedTime } from "date-fns-tz";
 import { asc, eq } from "drizzle-orm";
 import { Ban, ChevronLeft, ChevronRight } from "lucide-react";
-import { auth } from "@/lib/auth";
+import { auth } from "@/lib/auth/auth";
 import { db } from "@/db";
 import { availabilityOverrides, availabilityRules } from "@/db/schema";
 import { listDoctorAppointments } from "@/lib/appointments";

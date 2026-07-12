@@ -4,7 +4,7 @@ import { z } from "zod";
 import { db } from "@/db";
 import { availabilityRules } from "@/db/schema";
 import { getOrCreateDoctorProfile } from "@/lib/doctor";
-import { requireDoctorSession } from "@/lib/api-auth";
+import { requireDoctorSession } from "@/lib/auth/api-auth";
 
 const timeSchema = z
   .string()

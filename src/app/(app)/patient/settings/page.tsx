@@ -1,7 +1,7 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { KeyRound, LogOut, Settings, ShieldCheck, UserRound } from "lucide-react";
-import { auth } from "@/lib/auth";
+import { auth } from "@/lib/auth/auth";
 import { getDoctorProfile } from "@/lib/doctor";
 import { getPatientCareStatus, toCareStatusDTO } from "@/lib/care-subscription";
 import { AccountSettings } from "@/components/account/AccountSettings";

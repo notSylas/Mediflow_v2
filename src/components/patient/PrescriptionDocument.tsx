@@ -3,7 +3,7 @@ import { formatInTimeZone } from "date-fns-tz";
 import { CalendarDays, HeartPulse, ShieldCheck, Stethoscope } from "lucide-react";
 import { type MedicineTimingLike } from "@/lib/medicines";
 import { ageFromDob, genderLabel } from "@/lib/patient-constants";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/core/utils";
 
 const MONTHS = [
   "Jan",

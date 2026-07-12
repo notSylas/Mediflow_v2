@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { payments } from "@/db/schema";
-import { requireSession } from "@/lib/api-auth";
+import { requireSession } from "@/lib/auth/api-auth";
 import { getAppointmentForPatient } from "@/lib/appointments";
 import {
   confirmAppointmentPayment,

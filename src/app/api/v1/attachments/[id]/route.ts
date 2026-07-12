@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { chatAttachments, conversations, doctorProfiles } from "@/db/schema";
-import { requireSession } from "@/lib/api-auth";
+import { requireSession } from "@/lib/auth/api-auth";
 import { patientCanMessageDoctor } from "@/lib/chat";
 
 /**

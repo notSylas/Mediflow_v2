@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef } from "react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/core/utils";
 
 /**
  * Leans its children in 3D toward the cursor on hover, then settles back.

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { requireSession } from "@/lib/api-auth";
+import { requireSession } from "@/lib/auth/api-auth";
 import { getAppointmentForPatient } from "@/lib/appointments";
 import { confirmAppointmentPayment, verifyCheckoutSignature } from "@/lib/payments";
 

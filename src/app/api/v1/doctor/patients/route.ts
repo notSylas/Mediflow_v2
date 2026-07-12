@@ -10,7 +10,7 @@ import {
   prescriptions,
   refillRequests,
 } from "@/db/schema";
-import { requireDoctorSession } from "@/lib/api-auth";
+import { requireDoctorSession } from "@/lib/auth/api-auth";
 import { listDoctorPatients } from "@/lib/appointments";
 import { getActiveSubscriberIds } from "@/lib/care-subscription";
 import { getOrCreateDoctorProfile } from "@/lib/doctor";

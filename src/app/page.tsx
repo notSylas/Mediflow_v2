@@ -16,11 +16,11 @@ import {
   Video,
   Webcam,
 } from "lucide-react";
-import { auth } from "@/lib/auth";
+import { auth } from "@/lib/auth/auth";
 import { db } from "@/db";
 import { doctorProfiles, user } from "@/db/schema";
-import { cn } from "@/lib/utils";
-import { TONES } from "@/lib/tones";
+import { cn } from "@/lib/core/utils";
+import { TONES } from "@/lib/core/tones";
 import { Button } from "@/components/ui/button";
 import { Reveal } from "@/components/Reveal";
 import { HeroBackground } from "@/components/landing/HeroBackground";

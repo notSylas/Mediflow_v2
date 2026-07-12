@@ -4,7 +4,7 @@ import { z } from "zod";
 import { db } from "@/db";
 import { appointments, medicalReports, payments } from "@/db/schema";
 import { getAvailableSlots } from "@/lib/availability";
-import { requireSession } from "@/lib/api-auth";
+import { requireSession } from "@/lib/auth/api-auth";
 import { listPatientAppointments } from "@/lib/appointments";
 import {
   CONSENT_SOURCES,
@@ -14,7 +14,7 @@ import {
   VISIT_REASON_VALUES,
 } from "@/lib/booking";
 import { getDoctorProfile } from "@/lib/doctor";
-import { isUniqueViolation } from "@/lib/db-errors";
+import { isUniqueViolation } from "@/lib/core/db-errors";
 import { getPatientProfile } from "@/lib/patient";
 import { getBookingProfileMissing } from "@/lib/patient-readiness";
 import { hasEmergencyRedFlag } from "@/lib/triage";

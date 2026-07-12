@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { medicalReports } from "@/db/schema";
-import { requireSession } from "@/lib/api-auth";
+import { requireSession } from "@/lib/auth/api-auth";
 import { ALLOWED_REPORT_TYPES, MAX_REPORT_SIZE_BYTES } from "@/lib/reports";
 
 export async function POST(request: Request) {

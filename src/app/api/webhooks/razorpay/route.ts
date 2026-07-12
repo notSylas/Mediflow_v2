@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { payments } from "@/db/schema";
-import { logger } from "@/lib/logger";
+import { logger } from "@/lib/core/logger";
 import { confirmAppointmentPayment, verifyWebhookSignature } from "@/lib/payments";
 
 /**

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { requireSession } from "@/lib/api-auth";
+import { requireSession } from "@/lib/auth/api-auth";
 import { requestFollowUp } from "@/lib/care-subscription";
 
 const schema = z.object({ note: z.string().trim().max(2000).optional() });

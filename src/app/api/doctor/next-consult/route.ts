@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { and, asc, eq, gt, lt } from "drizzle-orm";
 import { db } from "@/db";
 import { appointments, doctorProfiles, user } from "@/db/schema";
-import { requireDoctorSession } from "@/lib/api-auth";
+import { requireDoctorSession } from "@/lib/auth/api-auth";
 
 const LOOKAHEAD_MINUTES = 15;
 

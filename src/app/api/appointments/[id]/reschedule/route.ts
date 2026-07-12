@@ -3,10 +3,10 @@ import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
 import { appointments } from "@/db/schema";
-import { requireSession } from "@/lib/api-auth";
+import { requireSession } from "@/lib/auth/api-auth";
 import { getAppointmentForPatient } from "@/lib/appointments";
 import { getAvailableSlots } from "@/lib/availability";
-import { isUniqueViolation } from "@/lib/db-errors";
+import { isUniqueViolation } from "@/lib/core/db-errors";
 import { getDoctorProfile } from "@/lib/doctor";
 
 const schema = z.object({ startsAt: z.string().datetime() });

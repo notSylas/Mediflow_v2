@@ -1,6 +1,6 @@
 "use client";
 
-import { signOut } from "@/lib/auth-client";
+import { signOut } from "@/lib/auth/auth-client";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 

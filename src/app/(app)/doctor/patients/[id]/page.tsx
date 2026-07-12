@@ -16,7 +16,7 @@ import {
   RotateCcw,
   Stethoscope,
 } from "lucide-react";
-import { auth } from "@/lib/auth";
+import { auth } from "@/lib/auth/auth";
 import { db } from "@/db";
 import {
   conversations,
@@ -31,8 +31,8 @@ import { describeMedicineSchedule } from "@/lib/medicines";
 import { getOrCreateDoctorProfile } from "@/lib/doctor";
 import { ageFromDob, genderLabel, getPatientProfile } from "@/lib/patient";
 import { getDoctorPatientCareStatus } from "@/lib/care-subscription";
-import { cn } from "@/lib/utils";
-import { TONES } from "@/lib/tones";
+import { cn } from "@/lib/core/utils";
+import { TONES } from "@/lib/core/tones";
 import { startAsyncConsultAction as startWebAsyncConsultAction } from "@/app/(app)/doctor/actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";

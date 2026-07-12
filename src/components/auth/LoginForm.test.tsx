@@ -2,7 +2,7 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { LoginForm } from "./LoginForm";
-import { authClient } from "@/lib/auth-client";
+import { authClient } from "@/lib/auth/auth-client";
 
 const push = vi.fn();
 const refresh = vi.fn();
@@ -12,7 +12,7 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams("redirectTo=/patient"),
 }));
 
-vi.mock("@/lib/auth-client", () => ({
+vi.mock("@/lib/auth/auth-client", () => ({
   authClient: {
     emailOtp: { sendVerificationOtp: vi.fn() },
     signIn: { emailOtp: vi.fn(), social: vi.fn() },

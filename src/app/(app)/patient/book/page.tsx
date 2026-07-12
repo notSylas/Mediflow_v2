@@ -11,7 +11,7 @@ import {
   UserRoundCheck,
   Video,
 } from "lucide-react";
-import { auth } from "@/lib/auth";
+import { auth } from "@/lib/auth/auth";
 import { getDoctorCard, getDoctorProfile } from "@/lib/doctor";
 import { getPatientProfile } from "@/lib/patient";
 import { getBookingProfileMissing } from "@/lib/patient-readiness";

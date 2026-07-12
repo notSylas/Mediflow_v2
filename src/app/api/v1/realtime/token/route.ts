@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireSession } from "@/lib/api-auth";
+import { requireSession } from "@/lib/auth/api-auth";
 import { signRealtimeToken } from "@/lib/realtime-token";
 
 /** Issues a short-lived token the client presents to the socket server. */

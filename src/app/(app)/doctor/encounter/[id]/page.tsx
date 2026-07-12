@@ -4,7 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { formatInTimeZone } from "date-fns-tz";
 import { and, eq } from "drizzle-orm";
 import { AlertTriangle, CheckCircle2, FileText, RotateCcw } from "lucide-react";
-import { auth } from "@/lib/auth";
+import { auth } from "@/lib/auth/auth";
 import { db } from "@/db";
 import { followUps } from "@/db/schema";
 import {

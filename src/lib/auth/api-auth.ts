@@ -1,6 +1,6 @@
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
-import { auth, type Session } from "@/lib/auth";
+import { auth, type Session } from "@/lib/auth/auth";
 
 /**
  * Resolves the session for an API route, requiring only that the caller is

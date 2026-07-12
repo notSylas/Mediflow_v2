@@ -13,7 +13,7 @@ import {
   RotateCcw,
   type LucideIcon,
 } from "lucide-react";
-import { auth } from "@/lib/auth";
+import { auth } from "@/lib/auth/auth";
 import {
   declineRefillRequestAction,
   dismissCareFollowUpAction,
@@ -28,8 +28,8 @@ import { getOrCreateDoctorProfile } from "@/lib/doctor";
 import { listDoctorPendingFollowUps } from "@/lib/follow-ups";
 import { listPendingRefillRequests } from "@/lib/refills";
 import { listPendingCareFollowUps } from "@/lib/care-subscription";
-import { cn } from "@/lib/utils";
-import { TONES, type ToneName } from "@/lib/tones";
+import { cn } from "@/lib/core/utils";
+import { TONES, type ToneName } from "@/lib/core/tones";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {

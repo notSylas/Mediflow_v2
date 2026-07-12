@@ -12,7 +12,7 @@ import {
   Stethoscope,
   X,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/core/utils";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useChatSocket } from "@/components/chat/useChatSocket";

@@ -3,11 +3,11 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { HeartPulse } from "lucide-react";
-import type { Session } from "@/lib/auth";
+import type { Session } from "@/lib/auth/auth";
 import { LogoutButton } from "@/components/LogoutButton";
 import { Badge } from "@/components/ui/badge";
 import { NAV_ITEMS, isNavActive } from "@/components/nav/nav-items";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/core/utils";
 
 export function Sidebar({ user }: { user: Session["user"] }) {
   const pathname = usePathname() ?? "";

@@ -1,7 +1,7 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
-import { cn } from "@/lib/utils";
+import { auth } from "@/lib/auth/auth";
+import { cn } from "@/lib/core/utils";
 import { AmbientBackground } from "@/components/AmbientBackground";
 import { Sidebar } from "@/components/nav/Sidebar";
 import { MobileTopBar } from "@/components/nav/MobileTopBar";

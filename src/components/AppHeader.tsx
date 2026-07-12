@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { HeartPulse } from "lucide-react";
-import type { Session } from "@/lib/auth";
+import type { Session } from "@/lib/auth/auth";
 import { LogoutButton } from "@/components/LogoutButton";
 import { NavLinks, type NavLink } from "@/components/NavLinks";
 import { Badge } from "@/components/ui/badge";

@@ -11,7 +11,7 @@ import {
   Clock3,
   Video,
 } from "lucide-react";
-import { auth } from "@/lib/auth";
+import { auth } from "@/lib/auth/auth";
 import { AppointmentCard } from "@/components/patient/AppointmentCard";
 import { Reveal } from "@/components/Reveal";
 import { canCancelAppointment } from "@/lib/booking";

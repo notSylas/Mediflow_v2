@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { asc, eq } from "drizzle-orm";
 import { ArrowLeft } from "lucide-react";
-import { auth } from "@/lib/auth";
+import { auth } from "@/lib/auth/auth";
 import { db } from "@/db";
 import { availabilityOverrides, availabilityRules } from "@/db/schema";
 import { getOrCreateDoctorProfile } from "@/lib/doctor";

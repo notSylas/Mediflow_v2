@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef } from "react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/core/utils";
 
 /**
  * A surface that lights up with a soft glow following the cursor. Pass the

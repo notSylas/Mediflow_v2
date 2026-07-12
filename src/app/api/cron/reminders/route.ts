@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { and, eq, gt, isNull, lt } from "drizzle-orm";
 import { db } from "@/db";
 import { appointments } from "@/db/schema";
-import { logger } from "@/lib/logger";
+import { logger } from "@/lib/core/logger";
 import { sendAppointmentReminder } from "@/lib/notifications";
 
 const REMINDER_LEAD_MINUTES = 30;

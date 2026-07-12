@@ -8,7 +8,7 @@ import {
   refillRequests,
   user,
 } from "@/db/schema";
-import { requireDoctorSession } from "@/lib/api-auth";
+import { requireDoctorSession } from "@/lib/auth/api-auth";
 import { listDoctorPatients } from "@/lib/appointments";
 import { getMedicineHistory, getPatientHistory } from "@/lib/consult";
 import { getOrCreateDoctorProfile } from "@/lib/doctor";

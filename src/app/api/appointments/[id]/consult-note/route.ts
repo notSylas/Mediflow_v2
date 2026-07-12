@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
 import { consultNotes } from "@/db/schema";
-import { requireDoctorSession } from "@/lib/api-auth";
+import { requireDoctorSession } from "@/lib/auth/api-auth";
 import { getAppointmentForParticipant } from "@/lib/appointments";
 
 const soapSchema = z.object({

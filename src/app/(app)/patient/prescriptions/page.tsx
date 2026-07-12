@@ -14,7 +14,7 @@ import {
   ShieldCheck,
   Stethoscope,
 } from "lucide-react";
-import { auth } from "@/lib/auth";
+import { auth } from "@/lib/auth/auth";
 import { listPatientPrescriptions } from "@/lib/consult";
 import { describeMedicineSchedule } from "@/lib/medicines";
 import { getDoctorProfile } from "@/lib/doctor";

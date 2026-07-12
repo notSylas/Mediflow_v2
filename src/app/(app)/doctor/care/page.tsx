@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { formatInTimeZone } from "date-fns-tz";
 import { ArrowRight, HandHeart, Users } from "lucide-react";
-import { auth } from "@/lib/auth";
+import { auth } from "@/lib/auth/auth";
 import { listDoctorPatients } from "@/lib/appointments";
 import {
   listDoctorSubscribers,

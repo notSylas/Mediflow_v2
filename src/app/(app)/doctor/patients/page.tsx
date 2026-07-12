@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { formatInTimeZone } from "date-fns-tz";
 import { and, eq } from "drizzle-orm";
 import { ArrowRight, HandHeart, MessageCircle, RotateCcw, Search, Users } from "lucide-react";
-import { auth } from "@/lib/auth";
+import { auth } from "@/lib/auth/auth";
 import { db } from "@/db";
 import { conversations, followUps, refillRequests } from "@/db/schema";
 import { listDoctorPatients } from "@/lib/appointments";

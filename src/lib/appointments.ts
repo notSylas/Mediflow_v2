@@ -8,7 +8,7 @@ import {
   prescriptions,
   user,
 } from "@/db/schema";
-import type { Session } from "@/lib/auth";
+import type { Session } from "@/lib/auth/auth";
 
 /**
  * Creates a doctor-initiated async consult (no video, no payment) so the doctor

@@ -4,7 +4,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createAsyncConsult } from "@/lib/appointments";
-import { auth } from "@/lib/auth";
+import { auth } from "@/lib/auth/auth";
 import { createFollowUp, dismissFollowUp, snoozeFollowUp } from "@/lib/follow-ups";
 import { getOrCreateDoctorProfile } from "@/lib/doctor";
 import { getDoctorRefillRequest, setRefillRequestStatus } from "@/lib/refills";

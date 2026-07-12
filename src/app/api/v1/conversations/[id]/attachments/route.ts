@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { chatAttachments } from "@/db/schema";
-import { requireSession } from "@/lib/api-auth";
+import { requireSession } from "@/lib/auth/api-auth";
 import { getConversationForParticipant } from "@/lib/chat";
 import { ALLOWED_REPORT_TYPES, MAX_REPORT_SIZE_BYTES } from "@/lib/reports";
 

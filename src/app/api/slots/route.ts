@@ -1,6 +1,6 @@
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { auth } from "@/lib/auth/auth";
 import { getAvailableSlots } from "@/lib/availability";
 
 const DEFAULT_WINDOW_DAYS = 14;

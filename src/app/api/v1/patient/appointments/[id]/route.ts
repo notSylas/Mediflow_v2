@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireSession } from "@/lib/api-auth";
+import { requireSession } from "@/lib/auth/api-auth";
 import { getAppointmentForPatient } from "@/lib/appointments";
 import { canCancelAppointment } from "@/lib/booking";
 import { getPrescriptionWithMedicines } from "@/lib/consult";

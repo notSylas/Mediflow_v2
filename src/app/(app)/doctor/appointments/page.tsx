@@ -2,7 +2,7 @@ import Link from "next/link";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { formatInTimeZone } from "date-fns-tz";
-import { auth } from "@/lib/auth";
+import { auth } from "@/lib/auth/auth";
 import { listDoctorAppointments } from "@/lib/appointments";
 import { getOrCreateDoctorProfile } from "@/lib/doctor";
 import { Search } from "lucide-react";

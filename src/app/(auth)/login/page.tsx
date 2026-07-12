@@ -6,7 +6,7 @@ import { CalendarCheck2, FileText, HeartPulse, ShieldCheck, Video } from "lucide
 import { LoginForm } from "@/components/auth/LoginForm";
 import { Reveal } from "@/components/Reveal";
 import { AuthHeroPanel } from "@/components/auth/AuthHeroPanel";
-import { auth } from "@/lib/auth";
+import { auth } from "@/lib/auth/auth";
 
 const POINTS = [
   { icon: CalendarCheck2, text: "Book a guaranteed slot in two minutes" },

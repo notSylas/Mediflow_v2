@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 import Razorpay from "razorpay";
 import { db } from "@/db";
 import { appointments, payments } from "@/db/schema";
-import { logger } from "@/lib/logger";
+import { logger } from "@/lib/core/logger";
 import { sendBookingConfirmation } from "@/lib/notifications";
 
 export type PaymentProvider = "razorpay" | "mock";

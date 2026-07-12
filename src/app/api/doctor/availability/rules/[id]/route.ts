@@ -3,7 +3,7 @@ import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { availabilityRules } from "@/db/schema";
 import { getOrCreateDoctorProfile } from "@/lib/doctor";
-import { requireDoctorSession } from "@/lib/api-auth";
+import { requireDoctorSession } from "@/lib/auth/api-auth";
 
 export async function DELETE(
   _request: Request,

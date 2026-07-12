@@ -20,7 +20,7 @@ import {
   UserPen,
   Video,
 } from "lucide-react";
-import { auth } from "@/lib/auth";
+import { auth } from "@/lib/auth/auth";
 import { getDoctorCard, getDoctorProfile } from "@/lib/doctor";
 import { listPatientAppointments } from "@/lib/appointments";
 import { listPatientPrescriptions } from "@/lib/consult";

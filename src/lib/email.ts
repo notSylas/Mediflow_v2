@@ -1,5 +1,5 @@
 import { Resend } from "resend";
-import { logger } from "@/lib/logger";
+import { logger } from "@/lib/core/logger";
 
 const FROM = process.env.EMAIL_FROM ?? "MediFlow <onboarding@resend.dev>";
 

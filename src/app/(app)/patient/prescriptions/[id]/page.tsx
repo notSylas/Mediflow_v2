@@ -2,7 +2,7 @@ import Link from "next/link";
 import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
-import { auth } from "@/lib/auth";
+import { auth } from "@/lib/auth/auth";
 import { getPatientPrescriptionById } from "@/lib/consult";
 import { getDoctorCard, getDoctorProfile } from "@/lib/doctor";
 import { getPatientProfile } from "@/lib/patient";

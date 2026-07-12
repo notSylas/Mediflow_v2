@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireDoctorSession } from "@/lib/api-auth";
+import { requireDoctorSession } from "@/lib/auth/api-auth";
 import { listDoctorAppointments } from "@/lib/appointments";
 import { listDoctorConversations } from "@/lib/chat";
 import { getOrCreateDoctorProfile } from "@/lib/doctor";
