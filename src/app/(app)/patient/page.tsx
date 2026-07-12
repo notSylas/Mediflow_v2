@@ -31,10 +31,10 @@ import { describeMedicineSchedule } from "@/lib/consult/medicines";
 import { CareCard } from "@/components/patient/CareCard";
 import { dismissFollowUpAction } from "@/app/(app)/patient/actions";
 import { JoinCallButton } from "@/components/common/JoinCallButton";
-import { Reveal } from "@/components/Reveal";
-import { CountUp } from "@/components/CountUp";
-import { ProgressBar } from "@/components/ProgressBar";
-import { CountdownRing } from "@/components/wow/CountdownRing";
+import { Reveal } from "@/components/effects/Reveal";
+import { CountUp } from "@/components/effects/CountUp";
+import { ProgressBar } from "@/components/effects/ProgressBar";
+import { CountdownRing } from "@/components/effects/CountdownRing";
 import {
   PatientEmptyState,
   PatientHero,

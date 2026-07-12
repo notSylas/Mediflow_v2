@@ -2,7 +2,7 @@ import Link from "next/link";
 import { formatInTimeZone } from "date-fns-tz";
 import { CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { MagneticButton } from "@/components/wow/MagneticButton";
+import { MagneticButton } from "@/components/effects/MagneticButton";
 
 interface ConfirmationStepProps {
   startsAt: string;

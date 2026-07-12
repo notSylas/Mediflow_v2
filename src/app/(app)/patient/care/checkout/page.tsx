@@ -11,7 +11,7 @@ import {
   PatientPageShell,
   PatientSection,
 } from "@/components/patient/PatientPortal";
-import { Reveal } from "@/components/Reveal";
+import { Reveal } from "@/components/effects/Reveal";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 

@@ -23,7 +23,7 @@ import { requestRefillAction } from "@/app/(app)/patient/actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Reveal } from "@/components/Reveal";
+import { Reveal } from "@/components/effects/Reveal";
 import { Separator } from "@/components/ui/separator";
 import {
   PatientEmptyState,
@@ -33,7 +33,7 @@ import {
   PatientSideCard,
   PatientStatCard,
 } from "@/components/patient/PatientPortal";
-import { CountUp } from "@/components/CountUp";
+import { CountUp } from "@/components/effects/CountUp";
 
 export default async function PatientPrescriptionsPage() {
   const session = await auth.api.getSession({ headers: await headers() });

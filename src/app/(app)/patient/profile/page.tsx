@@ -22,8 +22,8 @@ import {
   PatientSideCard,
   PatientStatCard,
 } from "@/components/patient/PatientPortal";
-import { ProgressBar } from "@/components/ProgressBar";
-import { Reveal } from "@/components/Reveal";
+import { ProgressBar } from "@/components/effects/ProgressBar";
+import { Reveal } from "@/components/effects/Reveal";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 

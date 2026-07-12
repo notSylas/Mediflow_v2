@@ -22,10 +22,10 @@ import { doctorProfiles, user } from "@/db/schema";
 import { cn } from "@/lib/core/utils";
 import { TONES } from "@/lib/core/tones";
 import { Button } from "@/components/ui/button";
-import { Reveal } from "@/components/Reveal";
-import { HeroBackground } from "@/components/landing/HeroBackground";
-import { TiltCard } from "@/components/landing/TiltCard";
-import { MagneticButton } from "@/components/wow/MagneticButton";
+import { Reveal } from "@/components/effects/Reveal";
+import { HeroBackground } from "@/components/effects/HeroBackground";
+import { TiltCard } from "@/components/effects/TiltCard";
+import { MagneticButton } from "@/components/effects/MagneticButton";
 
 const STATS = [
   { value: "2 min", label: "to book a visit" },

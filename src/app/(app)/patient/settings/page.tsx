@@ -15,7 +15,7 @@ import {
   PatientSideCard,
   PatientStatCard,
 } from "@/components/patient/PatientPortal";
-import { Reveal } from "@/components/Reveal";
+import { Reveal } from "@/components/effects/Reveal";
 
 export default async function PatientSettingsPage() {
   const session = await auth.api.getSession({ headers: await headers() });

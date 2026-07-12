@@ -35,8 +35,8 @@ import {
 } from "@/lib/care/care-subscription";
 import { JoinCallButton } from "@/components/common/JoinCallButton";
 import { PresenceBadge } from "@/components/common/PresenceBadge";
-import { SpotlightCard } from "@/components/wow/SpotlightCard";
-import { CountdownRing } from "@/components/wow/CountdownRing";
+import { SpotlightCard } from "@/components/effects/SpotlightCard";
+import { CountdownRing } from "@/components/effects/CountdownRing";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {

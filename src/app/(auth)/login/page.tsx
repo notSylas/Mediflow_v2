@@ -4,7 +4,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { CalendarCheck2, FileText, HeartPulse, ShieldCheck, Video } from "lucide-react";
 import { LoginForm } from "@/components/auth/LoginForm";
-import { Reveal } from "@/components/Reveal";
+import { Reveal } from "@/components/effects/Reveal";
 import { AuthHeroPanel } from "@/components/auth/AuthHeroPanel";
 import { auth } from "@/lib/auth/auth";
 

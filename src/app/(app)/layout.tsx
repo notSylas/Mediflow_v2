@@ -2,7 +2,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth/auth";
 import { cn } from "@/lib/core/utils";
-import { AmbientBackground } from "@/components/AmbientBackground";
+import { AmbientBackground } from "@/components/effects/AmbientBackground";
 import { Sidebar } from "@/components/nav/Sidebar";
 import { MobileTopBar } from "@/components/nav/MobileTopBar";
 import { NextConsultBanner } from "@/components/doctor/NextConsultBanner";

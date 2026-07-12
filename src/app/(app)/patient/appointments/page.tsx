@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { auth } from "@/lib/auth/auth";
 import { AppointmentCard } from "@/components/patient/AppointmentCard";
-import { Reveal } from "@/components/Reveal";
+import { Reveal } from "@/components/effects/Reveal";
 import { canCancelAppointment } from "@/lib/booking/booking";
 import { listPatientAppointments } from "@/lib/booking/appointments";
 import { getDoctorProfile } from "@/lib/people/doctor";
@@ -25,7 +25,7 @@ import {
   PatientSideCard,
   PatientStatCard,
 } from "@/components/patient/PatientPortal";
-import { CountUp } from "@/components/CountUp";
+import { CountUp } from "@/components/effects/CountUp";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 

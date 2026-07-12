@@ -12,7 +12,7 @@ import { patientDocumentName } from "@/lib/people/patient-identity";
 import { statusLabel } from "@/lib/booking/appointment-status";
 import { JoinCallButton } from "@/components/common/JoinCallButton";
 import { RescheduleDialog } from "@/components/patient/RescheduleDialog";
-import { CountdownRing } from "@/components/wow/CountdownRing";
+import { CountdownRing } from "@/components/effects/CountdownRing";
 import { PrescriptionDocument } from "@/components/patient/PrescriptionDocument";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";

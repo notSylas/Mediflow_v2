@@ -1,4 +1,4 @@
-import { AmbientBackground } from "@/components/AmbientBackground";
+import { AmbientBackground } from "@/components/effects/AmbientBackground";
 
 export default function AuthLayout({
   children,
