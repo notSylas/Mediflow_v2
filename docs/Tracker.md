@@ -141,7 +141,8 @@ in `mobile/.env` to the dev machine's LAN URL (phone can't reach localhost).
 | AI scribe (transcript → draft SOAP + Rx) | 🧊 |
 | Branded prescription PDF | 🧊 |
 | WhatsApp reminders | 🧊 |
-| Medication tracker / records vault | 🧊 undecided |
+| Medical records vault (Vault Share) | 🔜 planned | Founder-decided 2026-08-11 — see `docs/designs/vault-share-prd.md`; Tier 1/2 concept predates this in `docs/designs/medical-vault.md` |
+| Medication tracker | 🧊 undecided |
 | Dashboards, diet/timeline, doctor signup | ❌ cut |
 
 ## Chat / messaging (added 2026-06-14)
