@@ -13,6 +13,8 @@ import {
   requestFollowUp,
   updateCarePreferences,
 } from "@/lib/care/care-subscription";
+import { revokeShare } from "@/lib/vault/vault-share";
+import { deleteVaultRecord } from "@/lib/vault/vault-records";
 
 async function requirePatient() {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -90,6 +92,22 @@ export async function requestCareFollowUpAction() {
     );
   }
   revalidateCareSurfaces();
+}
+
+/** Revokes an active Vault Share grant — the next redeem attempt fails immediately after. */
+export async function revokeVaultShareAction(formData: FormData) {
+  const user = await requirePatient();
+  const grantId = requiredString(formData, "grantId");
+  await revokeShare(grantId, user.id);
+  revalidatePath("/patient/vault");
+}
+
+/** Discards an unwanted/unconfirmed Tier 2 upload. */
+export async function discardVaultRecordAction(formData: FormData) {
+  const user = await requirePatient();
+  const recordId = requiredString(formData, "recordId");
+  await deleteVaultRecord(recordId, user.id);
+  revalidatePath("/patient/vault");
 }
 
 /** Updates digest / medicine-reminder preferences. */
