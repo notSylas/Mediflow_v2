@@ -50,6 +50,10 @@ export default function PatientLayout() {
       <Tabs.Screen name="settings" options={{ href: null }} />
       <Tabs.Screen name="care/checkout" options={{ href: null }} />
       <Tabs.Screen name="care/cancel" options={{ href: null }} />
+      <Tabs.Screen name="vault/index" options={{ href: null }} />
+      <Tabs.Screen name="vault/share" options={{ href: null }} />
+      <Tabs.Screen name="vault/add" options={{ href: null }} />
+      <Tabs.Screen name="vault/records/[id]" options={{ href: null }} />
     </Tabs>
   );
 }
