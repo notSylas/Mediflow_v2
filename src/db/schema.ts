@@ -4,6 +4,7 @@ import {
   customType,
   date,
   integer,
+  jsonb,
   pgEnum,
   pgTable,
   text,
@@ -642,4 +643,139 @@ export const doctorVerificationDocuments = pgTable("doctor_verification_document
   mimeType: text("mime_type").notNull(),
   data: bytea("data").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// ---------------------------------------------------------------------------
+// Vault Share — a patient shares a scoped, time-limited, read-only slice of
+// their MediFlow record (prescriptions + consult notes) with any doctor,
+// anywhere, via a short code. No receiving-side account. See
+// docs/designs/vault-share-trd.md. Flow A only (Flow B / doctor-requested
+// grants are deferred — see TRD §4.2 — so there is no `origin` column here).
+// ---------------------------------------------------------------------------
+
+export const vaultShareGrantStatus = pgEnum("vault_share_grant_status", [
+  "pending_otp_confirmation",
+  "active",
+  "expired",
+  "revoked",
+]);
+
+export const vaultShareAccessOutcome = pgEnum("vault_share_access_outcome", [
+  "viewed",
+  "invalid_code",
+  "expired_attempt",
+]);
+
+export const vaultShareGrants = pgTable(
+  "vault_share_grants",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    patientId: text("patient_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    status: vaultShareGrantStatus("status").notNull().default("pending_otp_confirmation"),
+    // Bundle scope, resolved to concrete timestamps at creation time (not
+    // re-interpreted later) — null scopeFrom means "everything up to scopeTo".
+    scopeFrom: timestamp("scope_from", { withTimezone: true }),
+    scopeTo: timestamp("scope_to", { withTimezone: true }).notNull(),
+    // Set at creation alongside scopeTo (not deferred to confirm) — the
+    // minute or two spent entering the OTP is negligible against the
+    // shortest duration option (2 hours), and this avoids a second column
+    // just to remember the chosen duration between the two requests.
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    // Self-confirmation step (proves the account holder, not just a logged-in
+    // device, authorized this disclosure) — a lightweight mechanism separate
+    // from Better Auth's login-OTP, cleared once confirmed.
+    otpHash: text("otp_hash"),
+    otpExpiresAt: timestamp("otp_expires_at", { withTimezone: true }),
+    otpAttempts: integer("otp_attempts").notNull().default(0),
+    // The human-facing share code — only its hash is ever stored. No
+    // attempt-counter needed here (unlike otpAttempts): at 8 Crockford-Base32
+    // characters the code space is ~1.1 trillion, looked up by exact hash
+    // match — brute-forcing it online is infeasible regardless of a per-grant
+    // cap, so entropy alone is the defense, not rate-limiting.
+    shareCodeHash: text("share_code_hash"),
+    // Envelope encryption (TRD §5): wrappedDek is the KMS-wrapped data key,
+    // bundleCiphertext is the AES-256-GCM output. Both null until confirmed.
+    wrappedDek: bytea("wrapped_dek"),
+    bundleCiphertext: bytea("bundle_ciphertext"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+  },
+  (t) => [uniqueIndex("uq_vault_share_code_hash").on(t.shareCodeHash)]
+);
+
+// Append-only. Powers the patient-visible "viewed by a doctor on <date>"
+// audit line and the DPDP access trail — never stores raw IP, only a hash.
+export const vaultShareAccessLog = pgTable("vault_share_access_log", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  grantId: uuid("grant_id")
+    .notNull()
+    .references(() => vaultShareGrants.id, { onDelete: "cascade" }),
+  viewedAt: timestamp("viewed_at", { withTimezone: true }).notNull().defaultNow(),
+  outcome: vaultShareAccessOutcome("outcome").notNull(),
+  viewerIpHash: text("viewer_ip_hash"),
+  viewerUserAgentCoarse: text("viewer_user_agent_coarse"),
+});
+
+// ---------------------------------------------------------------------------
+// Vault Tier 2 — a patient uploads a record from *any* doctor, not just
+// MediFlow's own (a photo/PDF of an old prescription, lab report, etc.).
+// Extraction ("read the document into structured fields") is a swappable
+// stub for now — src/lib/vault/vault-extraction.ts — so this table and
+// everything around it works today with manual entry, and gains real
+// extraction later as a pure implementation swap, no schema change.
+// Kept separate from `medical_reports`: that table is booking-intake
+// uploads tied to an appointment; this is standalone, vault-native, and
+// carries normalized fields ("MediFlow format") for uniform timeline/share
+// display alongside real prescriptions.
+// ---------------------------------------------------------------------------
+
+export const vaultRecordType = pgEnum("vault_record_type", [
+  "prescription",
+  "lab",
+  "scan",
+  "discharge_summary",
+  "vaccination",
+  "other",
+]);
+
+export const vaultRecordConfidence = pgEnum("vault_record_confidence", [
+  "high",
+  "medium",
+  "low",
+]);
+
+export const vaultRecords = pgTable("vault_records", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  patientId: text("patient_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  recordType: vaultRecordType("record_type").notNull().default("prescription"),
+  // Nullable: unknown at upload time until extraction or the patient fills
+  // it in on the review screen — never guessed, never defaulted to "today".
+  recordDate: date("record_date"),
+  // Deliberately free text, not a foreign key to any hospital/doctor entity
+  // — this table exists specifically to be generic, any source, no chain.
+  sourceFacility: text("source_facility"),
+  sourceDoctorName: text("source_doctor_name"),
+  diagnosis: text("diagnosis"),
+  advice: text("advice"),
+  // Array of {name, strength, route, morning/afternoon/evening/night,
+  // foodRelation, durationDays, instructions} — same shape as
+  // prescription_medicines rows ("MediFlow format"), stored as JSON rather
+  // than a child table since nothing else needs to relationally query into
+  // an individual Tier-2 medicine (no refill/formulary linkage, unlike real
+  // prescriptions).
+  medicines: jsonb("medicines"),
+  extractionConfidence: vaultRecordConfidence("extraction_confidence"),
+  originalFilename: text("original_filename").notNull(),
+  mimeType: text("mime_type").notNull(),
+  data: bytea("data").notNull(),
+  // Nothing here counts toward the vault timeline or a share bundle until
+  // the patient has reviewed/corrected the extracted fields and confirmed —
+  // medical data never gets auto-trusted from an extraction pass.
+  patientConfirmed: boolean("patient_confirmed").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
