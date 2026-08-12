@@ -4,7 +4,10 @@ import { getSessionCookie } from "better-auth/cookies";
 
 // "/" is the public landing page; signed-in visitors are routed onwards to
 // their portal by the page itself, not the proxy.
-const PUBLIC_PATHS = ["/", "/login", "/doctor/login", "/terms", "/privacy"];
+// "/vault/view" is Vault Share's public redeem page (Rules.md #11's second
+// named no-session exception) — a receiving doctor has no MediFlow account,
+// access is gated by the share code itself, not a login.
+const PUBLIC_PATHS = ["/", "/login", "/doctor/login", "/terms", "/privacy", "/vault/view"];
 
 export default function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
