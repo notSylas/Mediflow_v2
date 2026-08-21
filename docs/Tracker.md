@@ -75,11 +75,14 @@ Legend: ✅ done · 🔨 in progress · 🔜 planned (v1) · 🧊 v1.5 · ❌ cu
 | E2E: auth + booking | ✅ | Playwright, production build, DB truncated per run |
 | E2E: consult + prescription + returning patient | ✅ | Full clinic loop in one spec |
 | E2E: full suite green after UI overhaul | ✅ | 6/6 — caught a real logout regression (2026-06-13) |
+| E2E: suite green after the web/ + backend/ split | ✅ | 19/19 (2026-08-21). Fixed four pre-existing breakages: booking's patient-identity gate was never satisfied, three specs depended on "first appointment in the list", one asserted a label that no longer exists |
 | Vercel cron config + doctor-promote script | ✅ | `vercel.json`, `npm run promote-doctor` |
 | Emails (OTP, booking confirmation) | ✅ | Resend with console fallback when unconfigured |
 | Appointment reminder delivery | ✅ | Resend reminder + `/api/cron/reminders`; production scheduler must invoke it |
 | Deployment guide | ✅ | `docs/Deployment.md` |
-| Production deploy | 🔜 | Follow `docs/Deployment.md` |
+| Production deploy | 🟡 | **Testing deploy live on Cloud Run** (`asia-south1`) + Cloud SQL Postgres 17, 2026-08-21. Razorpay/Resend keys unset, so payments are mock and OTPs go to Cloud Run logs — not usable by real patients yet |
+| CI/CD (build + deploy on push to main) | ✅ | `.github/workflows/deploy.yml`, Workload Identity Federation — no SA key in GitHub |
+| Deployed-commit badge on login | ✅ | `web/components/common/BuildInfo.tsx`, baked in at image build |
 | Doctor seed script | 🔜 | |
 
 ## Patient experience (added 2026-06-13)
@@ -141,7 +144,7 @@ in `mobile/.env` to the dev machine's LAN URL (phone can't reach localhost).
 | AI scribe (transcript → draft SOAP + Rx) | 🧊 |
 | Branded prescription PDF | 🧊 |
 | WhatsApp reminders | 🧊 |
-| Medical records vault (Vault Share) | 🔜 planned | Founder-decided 2026-08-11 — see `docs/designs/vault-share-prd.md`; Tier 1/2 concept predates this in `docs/designs/medical-vault.md` |
+| Medical records vault (Vault Share) | ✅ built | `backend/vault/`, 11 endpoints under `/api/v1/patient/vault/*` + `/api/v1/vault/redeem`. Schema pushed locally; **still needs pushing to Cloud SQL**, and the KMS env vars are not in Secret Manager — see `docs/designs/vault-share-trd.md` |
 | Medication tracker | 🧊 undecided |
 | Dashboards, diet/timeline, doctor signup | ❌ cut |
 
@@ -163,7 +166,7 @@ updated `Rules.md` #1 and `AGENTS.md`.
 | Mobile chat (Expo, live, pagination, PDF open, read state) | ✅ | `components/chat-thread.tsx` |
 | Socket CORS allowlist (`REALTIME_ALLOWED_ORIGINS`) | ✅ | native apps unaffected (token auth) |
 | Tests (policy predicates + token) | ✅ | 10 unit tests |
-| Production realtime hosting | 🔜 | Vercel can't host the socket process — see `Deployment.md` |
+| Production realtime hosting | 🔜 | Not yet deployed. Cloud Run can hold a socket open (unlike Vercel), so it can go alongside the other two — see `Deployment.md` |
 | Push notifications (new-message alerts) | 🔜 | no `expo-notifications` yet; chat only updates while open |
 | Realtime E2E (socket delivery) test | 🔜 | only unit coverage today |
 
