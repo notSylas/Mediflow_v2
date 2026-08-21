@@ -129,6 +129,7 @@ jobs:
             --build-arg GIT_SHA="${{ github.sha }}" \
             --build-arg GIT_REF="${{ github.ref_name }}" \
             --build-arg BUILD_TIME="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --build-arg DEPLOYED_BY="${{ github.actor }}" \
             -t "$REGISTRY/web:${{ github.sha }}" \
             -t "$REGISTRY/web:latest" .
           docker push "$REGISTRY/web:${{ github.sha }}"
