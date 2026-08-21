@@ -15,18 +15,56 @@ Telemedicine app for a single doctor: patient books a paid slot → video consul
 - Slots are computed at query time from `availability_rules` minus `availability_overrides` minus booked appointments. Never materialize slots.
 - Double-booking is prevented by the partial unique index `uq_appointments_doctor_slot` in the DB, not by application code. Booking flow must cancel expired `pending_payment` holds for a slot before inserting.
 - Video via LiveKit Cloud (app only mints tokens; media never touches our server). Email via Resend. No self-hosted WebRTC, no Celery/Redis equivalents.
-- Patient↔doctor chat IS in scope (added post-v1). Realtime runs on a **separate self-hosted socket.io process** (`realtime/server.ts`, `npm run realtime`) fed by Postgres `LISTEN/NOTIFY`. Messages persist via REST first; the socket is best-effort delivery only. Transport is swappable behind `src/lib/realtime.ts`. Messaging is a **premium MediFlow Care subscription** feature — gated to patients with an **active subscription** (a one-off paid consult no longer unlocks it; gate lives in `patientCanMessageDoctor`, `src/lib/chat.ts`). Attachments are bound to their conversation + uploader.
+- Patient↔doctor chat IS in scope (added post-v1). Realtime runs on a **separate self-hosted socket.io process** (`realtime/server.ts`, `npm run realtime`) fed by Postgres `LISTEN/NOTIFY`. Messages persist via REST first; the socket is best-effort delivery only. Transport is swappable behind `backend/messaging/realtime.ts`. Messaging is a **premium MediFlow Care subscription** feature — gated to patients with an **active subscription** (a one-off paid consult no longer unlocks it; gate lives in `patientCanMessageDoctor`, `backend/messaging/chat.ts`). Attachments are bound to their conversation + uploader.
 - A minimal authenticated shell is in v1 scope: email-OTP login (`(auth)/login`), session-aware header with logout, and simple role-based landing pages (`/patient`, `/doctor`) — these are placeholders, not dashboards.
 - Out of v1 scope: medical records vault, complex dashboards, doctor signup/onboarding (creating `doctor_profiles` rows), doctor discovery. AI scribe (transcript → draft SOAP note) is v1.5.
 
 ## Stack
 
-Next.js 16 (App Router) + TypeScript + Tailwind 4. Postgres via Drizzle (`src/db/schema.ts`). Auth: Better Auth (`src/lib/auth.ts`) — email OTP (logs to console in dev) + optional Google; users have a `role` field (`patient` | `doctor`).
+Next.js 16 (App Router) + TypeScript + Tailwind 4. Postgres via Drizzle (`backend/db/schema.ts`). Auth: Better Auth (`backend/auth/auth.ts`) — email OTP (logs to console in dev) + optional Google; users have a `role` field (`patient` | `doctor`).
+
+### Code layout
+
+Four sibling top-level apps — there is no `src/`:
+
+```
+web/        Next.js app (the website)
+backend/    all server-only logic + the standalone API
+realtime/   socket.io process
+mobile/     Expo app
+```
+
+- `backend/` — **all** server-only logic, and **no web framework**: nothing under it may import `next/*`. Domain modules are vertical slices (`booking/`, `care/`, `consult/`, `messaging/`, `payments/`, `people/`, `video/`, `notifications/`), with `db/`, `auth/`, and `core/` (cross-cutting infra) underneath. Vitest specs sit next to what they test.
+- `backend/api/` — the HTTP layer. Every endpoint is written **once** here as an `ApiHandler`: a plain `(Request, { params }) => Response`. See `backend/api/http.ts`.
+- `backend/server/` — the standalone Hono process (`npm run backend`, :4100) that mounts those handlers. Independently deployable; this is where the API is headed.
+- `web/app` — Next.js routing only, and thin. Page routes, plus `api/*` route files that are one-line `nextRoute(handler)` re-exports of `backend/api/`. **Never put endpoint logic in a `route.ts`** — it belongs in `backend/api/` so both transports share it and can't drift.
+- `web/components` — all UI. `web/lib` — client-side helpers (`cn`, tone tokens, the Better Auth browser client).
+
+The Next project root is `web/`, so the scripts pass it explicitly (`next dev web`). Two consequences worth knowing: `web/next.config.ts` has to load the repo-root `.env` itself (Next would only look in `web/`), and `web/tsconfig.json` extends the root one.
+
+Import aliases: `~backend/*` → `backend/*`, `@/*` → `web/*`. The prefixes differ on purpose — these are separate apps, not folders in one tree.
+
+### How the website talks to the backend
+
+Two paths, both live:
+
+1. **In-process import** — server components and `web/app/api/**` import `~backend/*` directly. No HTTP hop. This is how most of the app works today.
+2. **HTTP proxy** — set `BACKEND_ORIGIN` and the web app rewrites the endpoints in `backend/api/routes.json` to the standalone backend. The rewrite is same-origin (`beforeFiles` in `web/next.config.ts`), so session cookies keep working and no CORS setup is needed; client code keeps calling relative `/api/...` URLs. Unset = everything in-process, which is the default.
+
+   **Next bakes rewrites into the build**, so `BACKEND_ORIGIN` must be set at *build* time in production (`BACKEND_ORIGIN=... npm run build`), not just at runtime. `next dev` re-reads the config, so runtime is enough there.
+
+`backend/api/routes.json` is the single source of truth for what the backend serves. `manifest.ts` pairs each entry with a handler and **throws at startup** if either side is missing, so the proxy list and the mounted routes can't drift.
+
+**Migration status: complete.** All 64 endpoints live in `backend/api/` and are served by both transports. Every `web/app/api/**/route.ts` is a one-line `nextRoute(...)` re-export — the sole exception is `/api/auth/[...all]`, the Better Auth mount, which stays web-app-local on purpose (the web app issues its own session cookies).
+
+Adding an endpoint means: write the handler in `backend/api/`, register it in `manifest.ts`, add it to `routes.json`, and add the thin `route.ts`. Miss either of the middle two and the backend refuses to start.
 
 ## Dev
 
 - DB: Docker container `mediflow-v2-pg`, Postgres 17 on **port 5433** (5432 belongs to the old repo). Start: `docker start mediflow-v2-pg`. Creds in `.env`.
-- `npm run dev` — app on :3000
+- `npm run dev` — website on :3000 (`next dev web`)
+- `npm run backend` — standalone API on :4100 (`/healthz` to check)
+- `npm run realtime` — socket.io process
 - `npm run db:push` / `db:generate` / `db:studio` — Drizzle
 - Money is stored in paise (integer), times as timestamptz; doctor timezone default `Asia/Kolkata`.
 

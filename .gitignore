@@ -16,9 +16,11 @@
 /test-results/
 /blob-report/
 
-# next.js
+# next.js (the app lives in web/)
 /.next/
+/web/.next/
 /out/
+/web/out/
 
 # production
 /build
@@ -59,3 +61,6 @@ certs/
 
 # Generated graph/code analysis output
 graphify-out/
+.db-root-password.txt
+.db-app-password.txt
+.cron-secret.txt

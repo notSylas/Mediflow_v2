@@ -15,7 +15,7 @@ The map of what's authoritative vs reference. When two docs disagree on **scope*
 |---|---|
 | [TechSpec.md](TechSpec.md) | Stack + key technical designs. |
 | [AppFlow.md](AppFlow.md) | User flows + appointment state machine. |
-| [Schema.md](Schema.md) | Database reference (keep in sync with `src/db/schema.ts`). |
+| [Schema.md](Schema.md) | Database reference (keep in sync with `backend/db/schema.ts`). |
 | [Rules.md](Rules.md) | Engineering non-negotiables (the long form of AGENTS.md). |
 | [Deployment.md](Deployment.md) | Production deploy guide (Vercel + Neon + LiveKit + Razorpay + Resend + realtime host). |
 

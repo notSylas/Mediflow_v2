@@ -104,7 +104,7 @@ Legend: ✅ done · 🔨 in progress · 🔜 planned (v1) · 🧊 v1.5 · ❌ cu
 | Auditable consent persisted + server-enforced | ✅ | version/timestamp/source on appointment; server sets version |
 | Server-side triage recheck | ✅ | re-runs red-flag check; records triageFlaggedAt; warns (block undecided) |
 | Irreversible-action safety (issue / complete / no-show) | ✅ | confirm dialogs + completion warnings; no-show separated |
-| Consolidated status labels | ✅ | `src/lib/appointment-status.ts` — patient 'Missed' vs doctor 'No-show' |
+| Consolidated status labels | ✅ | `backend/booking/appointment-status.ts` — patient 'Missed' vs doctor 'No-show' |
 | Loading skeletons on every route | ✅ | all (app) routes now have loading.tsx |
 | Nav-feedback audit | ✅ | no feedback-less async actions found |
 
@@ -153,8 +153,8 @@ updated `Rules.md` #1 and `AGENTS.md`.
 | Item | Status | Notes |
 |---|---|---|
 | Schema (conversations, messages, chat_attachments) | ✅ | attachments bound to conversation + uploader |
-| Realtime infra (Postgres NOTIFY → socket.io) | ✅ | `realtime/server.ts`, `npm run realtime`; swappable behind `src/lib/realtime.ts` |
-| Short-lived HMAC socket tokens (15 min, refresh on reconnect) | ✅ | `src/lib/realtime-token.ts` |
+| Realtime infra (Postgres NOTIFY → socket.io) | ✅ | `realtime/server.ts`, `npm run realtime`; swappable behind `backend/messaging/realtime.ts` |
+| Short-lived HMAC socket tokens (15 min, refresh on reconnect) | ✅ | `backend/messaging/realtime-token.ts` |
 | REST API (conversations, messages, read, attachments) | ✅ | `/api/v1/conversations/*` |
 | Messaging gated to **active MediFlow Care** | ✅ | Premium subscription gate lives in `patientCanMessageDoctor` in `chat.ts` |
 | Attachment authorization (uploader + conversation bound) | ✅ | `chat-policy.ts`; unit-tested |

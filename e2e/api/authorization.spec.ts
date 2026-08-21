@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { signIn, signInDoctorWithAvailability, signOut } from "../helpers";
+import { completePatientProfile, signIn, signInDoctorWithAvailability, signOut } from "../helpers";
 
 /**
  * API-level authorization: every protected route rejects the unauthenticated,
@@ -48,6 +48,7 @@ test("a patient cannot read another patient's appointment (IDOR)", async ({ page
   // Patient A books — a pending hold is enough to own an appointment row.
   const patientA = `e2e+${Date.now()}-a@example.com`;
   await signIn(page, patientA);
+  await completePatientProfile(page);
 
   const slotsRes = await page.request.get("/api/slots");
   expect(slotsRes.ok()).toBeTruthy();

@@ -1,6 +1,6 @@
 # MediFlow v2 — Database Schema
 
-Source of truth: `src/db/schema.ts` (Drizzle). Dev DB: Docker `mediflow-v2-pg`, Postgres 17, port **5433**. Apply changes with `npm run db:push`.
+Source of truth: `backend/db/schema.ts` (Drizzle). Dev DB: Docker `mediflow-v2-pg`, Postgres 17, port **5433**. Apply changes with `npm run db:push`.
 
 ## Entity map
 
@@ -52,7 +52,7 @@ Booking code must cancel expired `pending_payment` holds for a slot before inser
 N per prescription (cascade). `name` (required), `strength`, `route`, timing flags `morning`/`afternoon`/`evening`/`night`, `foodRelation`, `durationDays`, `instructions`, `sortOrder`.
 
 ### medical_reports
-Patient uploads (pdf/jpg/png, size-capped in `src/lib/reports.ts`). `patientId` FK (cascade), optional `appointmentId` (set-null), `filename`, `mimeType`, **`data` bytea** — stored inline; a single-doctor app doesn't need object storage. Revisit if files grow.
+Patient uploads (pdf/jpg/png, size-capped in `backend/consult/reports.ts`). `patientId` FK (cascade), optional `appointmentId` (set-null), `filename`, `mimeType`, **`data` bytea** — stored inline; a single-doctor app doesn't need object storage. Revisit if files grow.
 
 ## Conventions
 
@@ -60,4 +60,4 @@ Patient uploads (pdf/jpg/png, size-capped in `src/lib/reports.ts`). `patientId` 
 - All timestamps `timestamptz`; wall-clock fields (`time`, `date`) are doctor-timezone-local.
 - Money: integer paise, never floats.
 - Enums are Postgres enums (`pgEnum`) — adding a value is a migration.
-- History queries (`src/lib/consult.ts`) rely on `prescriptions.patientId`/`doctorId` denormalization — keep them written on insert.
+- History queries (`backend/consult/consult.ts`) rely on `prescriptions.patientId`/`doctorId` denormalization — keep them written on insert.

@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import {
+  completePatientProfile,
   getSignInOtp,
   signIn,
   signInDoctorWithAvailability,
@@ -82,6 +83,9 @@ test("doctor sets weekly availability and patient sees a matching slot", async (
   const patientEmail = `e2e+${Date.now()}-patient@example.com`;
   await signIn(page, patientEmail);
   await expect(page).toHaveURL(/\/patient/);
+
+  // Booking is gated on patient identity being on file (name/DOB/gender).
+  await completePatientProfile(page);
 
   // The redesigned patient home surfaces the CTA more than once (hero + card).
   await page.getByRole("link", { name: /book a consultation/i }).first().click();

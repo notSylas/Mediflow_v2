@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { db } from "@/db";
+import { db } from "~backend/db";
 
 /**
  * Empties every table before a test run so specs are deterministic: exactly

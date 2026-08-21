@@ -7,8 +7,8 @@
  *        DATABASE_URL=...mediflow_test tsx load/mint-cookie.ts
  */
 import { desc, eq } from "drizzle-orm";
-import { db } from "@/db";
-import { verification } from "@/db/schema";
+import { db } from "~backend/db";
+import { verification } from "~backend/db/schema";
 
 const BASE = process.env.LOAD_BASE_URL ?? "http://localhost:3100";
 const email = process.env.LOAD_EMAIL ?? `load-${Date.now()}@example.com`;

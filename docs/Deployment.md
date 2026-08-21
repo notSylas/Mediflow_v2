@@ -145,4 +145,4 @@ npx playwright test            # e2e (truncates the local DB!)
 - The e2e global setup **truncates the database it points at** — never point `.env`'s `DATABASE_URL` at Neon when running Playwright.
 - Vercel functions are stateless: anything in-memory (none today) won't survive between requests. The DB is the only state.
 - Razorpay webhook is the authoritative payment confirmation; the client callback is best-effort. If a patient pays and closes the tab, the webhook still confirms.
-- `medical_reports` stores files in Postgres (bytea). Watch Neon storage if report volume grows; the swap to object storage is isolated in `src/lib/reports.ts` + the upload/download routes.
+- `medical_reports` stores files in Postgres (bytea). Watch Neon storage if report volume grows; the swap to object storage is isolated in `backend/consult/reports.ts` + the upload/download routes.

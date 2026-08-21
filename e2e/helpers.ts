@@ -1,7 +1,7 @@
 import { desc, eq } from "drizzle-orm";
 import type { Page } from "@playwright/test";
-import { db } from "@/db";
-import { user, verification } from "@/db/schema";
+import { db } from "~backend/db";
+import { user, verification } from "~backend/db/schema";
 
 /**
  * The one doctor every spec shares. `getDoctorProfile()` returns the first
@@ -23,6 +23,33 @@ export async function signIn(page: Page, email: string): Promise<void> {
   await page.getByLabel("Verification code").fill(otp);
   await page.getByRole("button", { name: /verify & sign in/i }).click();
   await page.waitForURL(/\/(patient|doctor)/);
+}
+
+/**
+ * Fills the identity fields booking requires (full name, date of birth,
+ * gender). Video consultations are gated on these so the doctor can prescribe
+ * safely and the prescription carries valid patient details — see
+ * `getBookingProfileMissing` in backend/people/patient-readiness.ts. Without
+ * this, `/patient/book` renders "Complete profile before booking" instead of
+ * the intake form and every booking spec times out.
+ *
+ * Driven through the API rather than the profile form: these specs are about
+ * booking, not about the form's Select widgets, and `page.request` reuses the
+ * browser's session cookie.
+ */
+export async function completePatientProfile(page: Page): Promise<void> {
+  const response = await page.request.put("/api/patient/profile", {
+    data: {
+      name: "E2E Test Patient",
+      dateOfBirth: "1990-01-01",
+      gender: "female",
+    },
+  });
+  if (!response.ok()) {
+    throw new Error(
+      `completePatientProfile failed: ${response.status()} ${await response.text()}`
+    );
+  }
 }
 
 export async function signOut(page: Page): Promise<void> {
@@ -57,11 +84,18 @@ export async function signInDoctorWithAvailability(page: Page): Promise<void> {
  * Books the first available slot as the signed-in patient (assumes the
  * shared doctor has availability). Ends on the confirmation step (mock
  * payment provider).
+ *
+ * Returns the new appointment's id. Specs that then act as the doctor should
+ * navigate to it directly rather than clicking the first row of
+ * /doctor/appointments — the suite shares one doctor and one database, so by
+ * the later specs that list holds appointments from earlier ones and "first"
+ * is whichever slot sorts earliest, not necessarily this booking.
  */
 export async function bookFirstAvailableSlot(
   page: Page,
   symptoms: string
-): Promise<void> {
+): Promise<string> {
+  await completePatientProfile(page);
   await page.goto("/patient/book");
   await page.getByLabel("Tell us more").fill(symptoms);
   // Consent is required before continuing.
@@ -72,8 +106,15 @@ export async function bookFirstAvailableSlot(
   await page.getByRole("button", { name: /^\d{1,2}:\d{2} (AM|PM)$/ }).first().click();
 
   await page.waitForURL(/\/patient\/book\?appointment=/);
+  const appointmentId = new URL(page.url()).searchParams.get("appointment");
+  if (!appointmentId) {
+    throw new Error(`no appointment id in booking URL: ${page.url()}`);
+  }
+
   await page.getByRole("button", { name: /pay & confirm booking/i }).click();
   await page.getByText(/consultation is confirmed/i).waitFor();
+
+  return appointmentId;
 }
 
 /**

@@ -4,7 +4,10 @@ Non-negotiables for anyone (human or AI) working in this repo. `AGENTS.md` is th
 
 ## Architecture (settled — don't re-litigate)
 
-1. The Next.js app is the system of record and handles all reads/writes. The **one** permitted auxiliary process is the self-hosted socket.io realtime server (`realtime/server.ts`) for chat delivery — it owns no data, only fans out Postgres `NOTIFY` events to connected clients. No other separate backend, no Celery/Redis equivalents. Chat messages are always persisted via REST first; realtime is best-effort and the app stays fully functional if the socket server is down.
+1. Postgres is the system of record; all reads/writes go through `backend/`. Exactly **three** processes are permitted, and no more — no Celery/Redis equivalents:
+   - `web/` — the Next.js website (pages, and the API endpoints not yet migrated).
+   - `backend/server/` — the standalone Hono API. Serves the endpoints in `backend/api/routes.json`; the website reaches it via a same-origin rewrite when `BACKEND_ORIGIN` is set. The API is migrating here; the split is a deployment boundary, not a second system of record.
+   - `realtime/server.ts` — socket.io chat delivery. Owns no data, only fans out Postgres `NOTIFY` events. Chat messages are always persisted via REST first; realtime is best-effort and the app stays fully functional if the socket server is down.
 2. Slots are **computed, never materialized**.
 3. Double-booking prevention lives in the **database** (partial unique index), not application logic. Any new booking path must cancel expired holds for the slot, then insert, and map error 23505 → 409.
 4. Issued prescriptions are **immutable**. No edit/delete path, ever — corrections happen on the next consult.
@@ -16,7 +19,7 @@ Non-negotiables for anyone (human or AI) working in this repo. `AGENTS.md` is th
 
 8. Money: integer paise. Floats never touch currency.
 9. Timestamps: `timestamptz`; wall-clock values are doctor-timezone-local; render with `formatInTimeZone`.
-10. Schema changes go in `src/db/schema.ts` → `npm run db:push` (dev). Keep `docs/Schema.md` in sync.
+10. Schema changes go in `backend/db/schema.ts` → `npm run db:push` (dev). Keep `docs/Schema.md` in sync.
 11. Patient data is medical data: no PII in logs (log ids, not names/emails/notes), ownership check on **every** resource access. **Sole named exception:** a forwardable prescription-view link (signed, revocable, public token in the URL) is intentionally accessible with no session — a pharmacy has no app account. Scope this exception to that one link type only; never extend it to any other resource without writing the exception down here first.
 
 ## API
@@ -25,18 +28,20 @@ Non-negotiables for anyone (human or AI) working in this repo. `AGENTS.md` is th
 13. Error contract: `{ error: string | issues }` with correct status (400/401/403/404/409/410/503). User-actionable messages.
 14. State transitions are validated server-side (e.g. only `confirmed` → `completed`/`no_show`).
 
+> **Endpoint logic lives in `backend/api/`,** written once as an `ApiHandler` — a plain `(Request, { params }) => Response` (see `backend/api/http.ts`). A `web/app/api/**/route.ts` file is a one-line `nextRoute(handler)` re-export and nothing else; the Hono server in `backend/server/app.ts` mounts the same function. This is what stops the two API surfaces from drifting. Nothing under `backend/` may import `next/*` — no `next/headers`, no `NextResponse`; read `request.headers` and return `Response.json`. A new endpoint must be registered in **both** `backend/api/manifest.ts` and `backend/api/routes.json`, or the backend throws at startup.
+
 > **Endpoint namespace:** new API routes go under `/api/v1/*` — the versioned mobile + external contract. The un-versioned `/api/*` routes are legacy web-first endpoints kept for compatibility; don't add to them, and don't rename them (URLs are load-bearing). Externally-pinned routes never move: `/api/auth/*` (Better Auth mount), `/api/webhooks/razorpay` (URL registered in the Razorpay dashboard), `/api/cron/reminders` (referenced in `vercel.json`).
 
 ## Frontend
 
-15. shadcn/ui components from `src/components/ui/` — add via CLI, don't hand-roll.
+15. shadcn/ui components from `web/components/ui/` — add via CLI, don't hand-roll. Client-side helpers (`cn`, tone tokens) live in `web/lib/`, never in `backend/`.
 16. Server components for data; small focused client components for interactivity. Client components never import server-only modules (`livekit-server-sdk`, `db` …) — split pure logic into its own file (see `call-window.ts`).
 17. Status enums get human labels (`STATUS_LABELS`), never rendered raw.
 18. Irreversible actions get a confirmation dialog stating the consequence.
 
 ## Quality
 
-19. Pure logic (slot math, windows, rules) lives in `src/lib/` and gets Vitest coverage **when written**, not later.
+19. Pure logic (slot math, windows, rules) lives in `backend/` and gets Vitest coverage **when written**, not later.
 20. `npx tsc --noEmit` clean before any task is called done. Playwright suite green at milestone boundaries.
 21. E2E runs against a production build with a real DB; never mock the DB in e2e.
 

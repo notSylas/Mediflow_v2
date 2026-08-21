@@ -1,0 +1,45 @@
+# Production image for the standalone MediFlow API (backend/server).
+#
+# Deliberately built from backend/package.json rather than the repo root one, so
+# the container installs 13 dependencies instead of ~50 — no React, no Next, no
+# Expo, no socket.io. Nothing under backend/ imports a web framework, which is
+# what makes that possible.
+#
+# Layout inside the image mirrors backend/ at the root, so the "~backend/*" →
+# "./*" mapping in backend/tsconfig.json resolves unchanged.
+#
+#   docker build -f Dockerfile.backend -t mediflow-backend .
+#   docker run --rm -p 4100:4100 --env-file .env mediflow-backend
+
+# ---- deps ----------------------------------------------------------------
+FROM node:22-alpine AS deps
+WORKDIR /app
+COPY backend/package.json ./
+# No lockfile for this sub-project yet, so `npm install` rather than `npm ci`.
+# Ranges are caret-pinned and match the root lockfile's resolved majors.
+RUN npm install --omit=dev --no-audit --no-fund
+
+# ---- runtime -------------------------------------------------------------
+FROM node:22-alpine AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
+# db-f1-micro allows ~25 connections total. Keep each container's pool small so
+# several Cloud Run instances can't exhaust it. See docs/Deployment.md.
+ENV POSTGRES_MAX_CONNECTIONS=3
+ENV LOG_LEVEL=info
+
+# tsx runs the TypeScript directly and resolves the tsconfig path alias at
+# runtime; it is a production dependency of the image, not a build tool.
+RUN npm install -g tsx@4.22.4 --no-audit --no-fund
+
+COPY --from=deps /app/node_modules ./node_modules
+COPY backend/ ./
+
+# Drop root before running.
+USER node
+
+# Cloud Run injects PORT and expects the container to bind it; index.ts reads
+# PORT first, then BACKEND_PORT, then falls back to 4100.
+EXPOSE 4100
+CMD ["tsx", "server/index.ts"]

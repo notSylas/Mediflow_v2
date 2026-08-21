@@ -7,9 +7,9 @@
 // by /api/v1/realtime/token (cookies don't cross the origin boundary).
 import { createServer } from "node:http";
 import { Server } from "socket.io";
-import { sql } from "../src/db";
-import { CHAT_CHANNEL, type ChatEvent } from "../src/lib/messaging/realtime";
-import { verifyRealtimeToken } from "../src/lib/messaging/realtime-token";
+import { sql } from "../backend/db";
+import { CHAT_CHANNEL, type ChatEvent } from "../backend/messaging/realtime";
+import { verifyRealtimeToken } from "../backend/messaging/realtime-token";
 
 const PORT = Number(process.env.REALTIME_PORT ?? 4000);
 

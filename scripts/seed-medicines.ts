@@ -1,8 +1,8 @@
 // Seeds / refreshes the medicines table from the baseline formulary.
 //   npm run seed:medicines
-import { db } from "../src/db";
-import { medicines } from "../src/db/schema";
-import { MEDICINE_SEED } from "../src/lib/consult/medicine-seed";
+import { db } from "../backend/db";
+import { medicines } from "../backend/db/schema";
+import { MEDICINE_SEED } from "../backend/consult/medicine-seed";
 
 async function main() {
   for (const m of MEDICINE_SEED) {
