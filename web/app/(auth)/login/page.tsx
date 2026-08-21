@@ -27,6 +27,8 @@ export default async function LoginPage() {
   );
 
   return (
+    <>
+      <BuildInfo />
     <div className="animate-in fade-in slide-in-from-bottom-4 w-full max-w-4xl overflow-hidden rounded-3xl border bg-card shadow-2xl shadow-primary/10 duration-500 lg:grid lg:grid-cols-2">
       {/* Brand panel — cobalt→violet, role-agnostic (docs/Design.md) */}
       <div className="relative hidden flex-col justify-between overflow-hidden p-10 text-primary-foreground lg:flex">
@@ -59,12 +61,9 @@ export default async function LoginPage() {
           </ul>
         </div>
 
-        <div className="relative z-10 flex flex-wrap items-center justify-between gap-2">
-          <p className="text-xs text-primary-foreground/60">
-            Not for medical emergencies — call your local emergency number.
-          </p>
-          <BuildInfo className="text-primary-foreground/50" />
-        </div>
+        <p className="relative z-10 text-xs text-primary-foreground/60">
+          Not for medical emergencies — call your local emergency number.
+        </p>
       </div>
 
       {/* Form panel */}
@@ -93,19 +92,15 @@ export default async function LoginPage() {
           No passwords to remember. We email you a single-use code each time.
         </div>
 
-        <div className="mt-6 flex flex-wrap items-center justify-between gap-2 border-t pt-4">
-          <p className="text-xs text-muted-foreground">
-            Clinic staff?{" "}
-            <Link href="/doctor/login" className="font-medium text-primary hover:underline">
-              Sign in here
-            </Link>
-            .
-          </p>
-          {/* The side panel is hidden below lg, so testers on a phone still
-              get the build reference here. */}
-          <BuildInfo className="text-muted-foreground/70 lg:hidden" />
-        </div>
+        <p className="mt-6 border-t pt-4 text-xs text-muted-foreground">
+          Clinic staff?{" "}
+          <Link href="/doctor/login" className="font-medium text-primary hover:underline">
+            Sign in here
+          </Link>
+          .
+        </p>
       </div>
     </div>
+    </>
   );
 }

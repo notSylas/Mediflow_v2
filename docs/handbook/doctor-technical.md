@@ -7,25 +7,25 @@ Companion: [patient-technical.md](patient-technical.md).
 
 ## 1. Global chrome
 
-`src/app/(app)/layout.tsx` renders the sidebar (`src/components/nav/
-Sidebar.tsx`, driven by `src/components/nav/nav-items.ts`) and a
+`web/app/(app)/layout.tsx` renders the sidebar (`web/components/nav/
+Sidebar.tsx`, driven by `web/components/nav/nav-items.ts`) and a
 site-wide `NextConsultBanner` that polls `GET /api/doctor/next-consult`
 every 60s. Auth gating for every doctor page is `requireDoctorSession()`
-(`src/lib/auth/api-auth.ts`) — session must exist **and**
+(`backend/auth/api-auth.ts`) — session must exist **and**
 `session.user.role === "doctor"`, a field that's `input: false` in the
 Better Auth config (see patient-technical.md §1) and therefore cannot be
 set by any client payload.
 
-## 2. Dashboard — `src/app/(app)/doctor/page.tsx`
+## 2. Dashboard — `web/app/(app)/doctor/page.tsx`
 
 Pure server component, no client fetches. Direct lib calls:
 `listDoctorAppointments`, `getDoctorRevenueInPaise`,
-`getOrCreateDoctorProfile` (`src/lib/booking/appointments.ts`,
-`src/lib/people/doctor.ts`), `listDoctorConversations`
-(`src/lib/messaging/chat.ts`), `listDoctorPendingFollowUps`
-(`src/lib/care/follow-ups.ts`), `listPendingRefillRequests`
-(`src/lib/care/refills.ts`), `countActiveSubscribers` +
-`listPendingCareFollowUps` (`src/lib/care/care-subscription.ts`), plus a
+`getOrCreateDoctorProfile` (`backend/booking/appointments.ts`,
+`backend/people/doctor.ts`), `listDoctorConversations`
+(`backend/messaging/chat.ts`), `listDoctorPendingFollowUps`
+(`backend/care/follow-ups.ts`), `listPendingRefillRequests`
+(`backend/care/refills.ts`), `countActiveSubscribers` +
+`listPendingCareFollowUps` (`backend/care/care-subscription.ts`), plus a
 direct `db.select` on `availabilityRules`. Tables read: `appointments`,
 `prescriptions`, `availabilityRules`, `conversations`, `followUps`,
 `refillRequests`, `careSubscriptions`, `careFollowUpRequests`.
@@ -40,7 +40,7 @@ lib calls into one JSON payload for the client-fetch home screen.
 | Web list | server component, `listDoctorAppointments` | search `q`, status filter, `count` pagination |
 | Mobile list | `GET /api/v1/doctor/appointments` | thin wrapper, same lib call |
 | No-show | `POST /api/appointments/[id]/status {status:"no_show"}` | web: `AppointmentQuickActions`; mobile: on the encounter screen |
-| Cancel | `POST /api/appointments/[id]/cancel` | gated by `canCancelAppointment` (`src/lib/booking/booking.ts`) |
+| Cancel | `POST /api/appointments/[id]/cancel` | gated by `canCancelAppointment` (`backend/booking/booking.ts`) |
 | Complete | `POST /api/appointments/[id]/status {status:"completed"}` | `OutcomeButtons`, confirm dialog surfaces documentation warnings |
 
 ## 4. Schedule / Availability
@@ -56,7 +56,7 @@ Both web (`AvailabilityRulesEditor`/`OverridesEditor`/`DayBlockToggle`)
 and mobile (`schedule.tsx`'s `HoursEditorSheet`/`ExceptionSheet`) call the
 same four endpoints — the divergence noted in the Level 1 doc is purely
 *where* the editing UI lives, not a different backend contract. Free
-slots for booking are computed by `src/lib/booking/slots.ts` from
+slots for booking are computed by `backend/booking/slots.ts` from
 `availabilityRules` − `availabilityOverrides` − non-cancelled
 `appointments`, at query time, every time — never materialized.
 
@@ -68,7 +68,7 @@ slots for booking are computed by `src/lib/booking/slots.ts` from
 | SOAP autosave | `PUT`/`POST /api/appointments/[id]/consult-note` → upserts `consultNotes` |
 | Prescription draft save | `PUT /api/appointments/[id]/prescription` |
 | Prescription issue (lock) | `POST /api/appointments/[id]/prescription/issue` — flips `prescriptions.status` `draft → issued`, sets `issuedAt`; **no route exists to un-issue or edit after this** at any layer, by design (Rules.md #4) |
-| Follow-up recommendation | web: `createFollowUpAction` server action; mobile: `POST /api/v1/follow-ups` — both call the same `createFollowUp` lib function (`src/lib/care/follow-ups.ts`), which deletes any existing pending follow-up for the same source appointment before inserting the new one |
+| Follow-up recommendation | web: `createFollowUpAction` server action; mobile: `POST /api/v1/follow-ups` — both call the same `createFollowUp` lib function (`backend/care/follow-ups.ts`), which deletes any existing pending follow-up for the same source appointment before inserting the new one |
 
 Mobile's "workflow checklist" (review snapshot / save SOAP / Rx decision
 / follow-up decision / red-flag reviewed) is **client-only component
@@ -118,11 +118,11 @@ described as a Care benefit in patient-facing copy.
    conditional-increment of `followUpCreditsUsed` to guard concurrent
    double-spend).
 
-Work-queue actions: web (`src/app/(app)/doctor/work-queue/page.tsx`) uses
+Work-queue actions: web (`web/app/(app)/doctor/work-queue/page.tsx`) uses
 `"use server"` form actions for every category (`markMessageReadAction`,
 `declineRefillRequestAction`, `fulfillCareFollowUpAction`/
 `dismissCareFollowUpAction`, `snoozeFollowUpAction`/`dismissFollowUpAction`
-— all in `src/app/(app)/doctor/actions.ts`). Mobile
+— all in `web/app/(app)/doctor/actions.ts`). Mobile
 (`GET /api/v1/doctor/work-queue`) is a client-fetch screen; only Care
 follow-ups get an inline action (`POST /api/v1/doctor/care-follow-ups/[id]
 {action}`) — refills, unread messages, and doctor follow-ups are
@@ -130,7 +130,7 @@ tap-through only on mobile.
 
 ## 9. MediFlow Care — implementation reality
 
-### Schema (`src/db/schema.ts:478-538`)
+### Schema (`backend/db/schema.ts:478-538`)
 - `careSubscriptions`: unique on `(patientId, doctorId)`. `status` enum
   `active|inactive|cancelled|manual_trial`. `digestEnabled`/
   `medicineRemindersEnabled` booleans, default `true` — **stored and
@@ -142,7 +142,7 @@ tap-through only on mobile.
   for one specifically to guard against double-sending a digest email;
   it was never added, consistent with the digest never being built.
 
-### Policy (`src/lib/care/care-subscription-policy.ts`)
+### Policy (`backend/care/care-subscription-policy.ts`)
 - `isSubscriptionActive(sub, now)` = status ∈ `{active, manual_trial}`
   **and** `now` within `[currentPeriodStart, currentPeriodEnd]` — an
   `active`-status row with an elapsed period is functionally inactive.
@@ -150,13 +150,13 @@ tap-through only on mobile.
 - `computeCancellationBreakdown` — pure pro-ration (7 working-day refund
   window), backs `GET /api/v1/patient/care/cancellation`.
 
-### Data layer (`src/lib/care/care-subscription.ts`)
+### Data layer (`backend/care/care-subscription.ts`)
 - `activateSubscription` — upsert via `onConflictDoUpdate`, opens a fresh
   period from `now`, resets credit, clears `cancelledAt`. Same function
   serves the doctor's "Grant trial/Activate" toggle and the patient's
   self-serve "Start care plan."
 - **`rollElapsedPeriods(now)` is defined but has zero call sites anywhere
-  in the codebase** (confirmed by grep). No `src/app/api/cron/care-*`
+  in the codebase** (confirmed by grep). No `web/app/api/cron/care-*`
   route exists — the only cron route in the app is `/api/cron/reminders`
   (appointment reminders, unrelated). **Consequence**: an elapsed active
   subscription does not automatically roll to a new period or reset its
@@ -164,14 +164,14 @@ tap-through only on mobile.
   reactivates it (or the patient resubscribes), which re-opens a fresh
   period as a side effect of `activateSubscription`.
 
-### Messaging gate (`src/lib/messaging/chat.ts`)
+### Messaging gate (`backend/messaging/chat.ts`)
 - `patientCanMessageDoctor` = `patientHasActiveSubscription(...)` — the
   single gate; appointment status is never consulted.
 - `listDoctorConversations` **inner-joins `careSubscriptions`** filtered
   to active status + current period — a doctor's conversation list
   *already* only contains active members. This makes the `isMember` flag
   computed on top of it in `GET /api/v1/conversations` and consumed by
-  `mobile/src/app/(doctor)/messages.tsx` effectively always `true` today
+  `mobile/web/app/(doctor)/messages.tsx` effectively always `true` today
   — a harmless but redundant computation, not a bug, worth knowing if
   touching that code.
 

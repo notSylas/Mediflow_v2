@@ -1,6 +1,63 @@
 # MediFlow v2 — Deployment Guide
 
-Target setup: **Vercel** (app) + **Neon** (Postgres) + **LiveKit Cloud** (video) + **Razorpay** (payments) + **Resend** (email) + a persistent Node host for realtime chat. Total cost at single-doctor scale: roughly free-tier everything except Razorpay's per-transaction fee and the realtime host.
+**Current target: Google Cloud Run + Cloud SQL** (`asia-south1` / Mumbai), with LiveKit Cloud (video), Razorpay (payments), Resend (email), and a persistent Node host for realtime chat.
+
+Two Cloud Run services, both scaling to zero:
+
+| Service | Image | Notes |
+|---|---|---|
+| `mediflow-web` | `Dockerfile.web` | Next standalone. Serves pages, `/api/auth/*`, and proxies the endpoints in `backend/api/routes.json` to the backend. |
+| `mediflow-backend` | `Dockerfile.backend` | Hono API. 13 deps, no React/Next. |
+
+Both connect to Cloud SQL over the IAM-authenticated unix socket (`--add-cloudsql-instances`), so the instance keeps **zero authorized networks** and is unreachable from the internet. A Serverless VPC connector would cost ~$8-10/month and is not needed for this.
+
+**Cost:** Cloud SQL `db-f1-micro` is roughly **$11-14/month** — Cloud SQL has no free tier. Cloud Run at single-clinic traffic is effectively free (scales to zero). Everything else is free-tier except Razorpay's per-transaction fee and the realtime host.
+
+## Automated deploys
+
+`.github/workflows/deploy.yml` deploys both services on push to `main`; pull requests run the checks only. Auth is Workload Identity Federation — **no service-account key is stored in GitHub**. Nothing to configure per-repo; the pool, OIDC provider (pinned to this repository), and `github-deployer` service account already exist.
+
+Two things that will bite if changed:
+
+- **`BACKEND_ORIGIN` is a Docker build arg, not a runtime env var.** Next bakes rewrites into `routes-manifest.json` at build time. Set at runtime it silently does nothing and every `/api/*` call stays in-process.
+- **`/healthz` is intercepted by Google Frontend on `*.run.app`** and never reaches the container. Use **`/health`**.
+
+## Manual deploy (reference)
+
+```bash
+# backend
+docker buildx build --platform linux/amd64 -f Dockerfile.backend \
+  -t asia-south1-docker.pkg.dev/mediflow-v2-app/mediflow/backend:TAG --push .
+gcloud run deploy mediflow-backend --region=asia-south1 \
+  --image=asia-south1-docker.pkg.dev/mediflow-v2-app/mediflow/backend:TAG \
+  --add-cloudsql-instances=mediflow-v2-app:asia-south1:mediflow-db
+
+# web (BACKEND_ORIGIN must be a build arg)
+docker buildx build --platform linux/amd64 -f Dockerfile.web \
+  --build-arg BACKEND_ORIGIN=https://<backend-url> \
+  -t asia-south1-docker.pkg.dev/mediflow-v2-app/mediflow/web:TAG --push .
+```
+
+## Connection pooling
+
+`db-f1-micro` allows **25 connections total**. Both images set `POSTGRES_MAX_CONNECTIONS=3` and Cloud Run max-instances are capped (web 3, backend 4), so worst case is 21. Raise the instance tier before raising either.
+
+## Schema
+
+Push through the Cloud SQL Auth Proxy — never open the instance to the internet:
+
+```bash
+cloud-sql-proxy --port 5434 mediflow-v2-app:asia-south1:mediflow-db
+DATABASE_URL='postgresql://mediflow_app:<pw>@127.0.0.1:5434/mediflow' npm run db:push
+```
+
+The proxy uses Application Default Credentials, which are separate from the `gcloud` CLI login: `gcloud auth application-default login`.
+
+---
+
+## Alternative: Vercel + Neon
+
+The original target, kept because it still works and is cheaper (Neon has a real free tier). Vercel cannot host the realtime socket process either way — see 5c.
 
 ## 0. Prerequisites
 

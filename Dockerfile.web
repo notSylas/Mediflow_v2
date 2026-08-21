@@ -53,9 +53,11 @@ ENV LOG_LEVEL=info
 ARG GIT_SHA=""
 ARG GIT_REF=""
 ARG BUILD_TIME=""
+ARG DEPLOYED_BY=""
 ENV COMMIT_SHA=$GIT_SHA
 ENV COMMIT_REF=$GIT_REF
 ENV BUILD_TIME=$BUILD_TIME
+ENV DEPLOYED_BY=$DEPLOYED_BY
 
 COPY --from=builder /app/web/.next/standalone ./
 # The minimal server doesn't include these two by default.

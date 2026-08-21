@@ -66,7 +66,7 @@ Flow B is not in this diagram — see §4.2.
 ## 3. Data model — exact fields
 
 Two new tables for this build. Naming and column conventions match
-`src/db/schema.ts` exactly (uuid PK default random, `text` FK to `user.id`,
+`backend/db/schema.ts` exactly (uuid PK default random, `text` FK to `user.id`,
 `timestamp(withTimezone: true)`, `pgEnum` for fixed vocabularies).
 
 ### vault_share_grants
@@ -145,7 +145,7 @@ State machine on a single `vault_share_grants` row:
    resolved from the preset, generates a 6-digit numeric OTP, stores its
    hash + a 5-minute `otpExpiresAt`, and sends it by email.
    - **Email mechanism, precisely:** a new, lightweight action-confirmation
-     OTP — reuses the Resend integration (`src/lib/email.ts`) and its
+     OTP — reuses the Resend integration (`backend/notifications/email.ts`) and its
      console-fallback-in-dev behavior (`Rules.md` #6), but is **not** a call
      into Better Auth's login-OTP internals. Login-OTP authenticates a
      session; this confirms a specific sensitive action from an
@@ -358,7 +358,7 @@ use — each wave its own PR.
 
 **Wave 1 — schema + crypto plumbing, no user-visible surface**
 `vault_share_grants` + `vault_share_access_log` in `schema.ts` → `db:push`.
-A `src/lib/vault-crypto.ts` module wrapping KMS `GenerateDataKey`/`Decrypt`
+A `backend/vault/vault-crypto.ts` module wrapping KMS `GenerateDataKey`/`Decrypt`
 and the AES-256-GCM encrypt/decrypt helpers, pure-logic-tested per `Rules.md`
 #19.
 

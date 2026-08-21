@@ -7,7 +7,7 @@ File paths are repo-relative from the project root. Companion:
 
 ## Stack recap
 
-Next.js 16 (App Router) + TypeScript, Postgres via Drizzle (`src/db/schema.ts`),
+Next.js 16 (App Router) + TypeScript, Postgres via Drizzle (`backend/db/schema.ts`),
 Better Auth for auth, Razorpay for payments, LiveKit for video, a self-hosted
 socket.io process for realtime chat delivery, AWS KMS (with a dev-only
 software fallback) for Vault Share encryption. Mobile is Expo/React Native,
@@ -15,7 +15,7 @@ calling the same backend.
 
 ## 1. Auth — email OTP, sessions, mobile session handling
 
-**Mechanism** (`src/lib/auth/auth.ts`, `better-auth` + `emailOTP` plugin):
+**Mechanism** (`backend/auth/auth.ts`, `better-auth` + `emailOTP` plugin):
 - Session: signed, httpOnly cookie; default 7-day expiry, 1-day rolling
   refresh. Every request re-validates against the `session` table via
   `auth.api.getSession({ headers })` — not stateless JWT, a real DB check
@@ -29,11 +29,11 @@ calling the same backend.
   `promote-doctor` script). This is what makes `requireDoctorSession()`
   trustworthy.
 - Route guard: `requireSession()` / `requireDoctorSession()`
-  (`src/lib/auth/api-auth.ts`) — every protected route calls one of these
+  (`backend/auth/api-auth.ts`) — every protected route calls one of these
   first and short-circuits with `NextResponse` on failure (401/403).
 - **Mobile**: session cookie is held in `expo-secure-store` (iOS
   Keychain / Android Keystore), not a cookie jar. `apiFetch`/`apiUpload`
-  (`mobile/src/lib/api.ts`) manually read it via `authClient.getCookie()`
+  (`mobile/backend/api/`) manually read it via `authClient.getCookie()`
   and attach it as an explicit `Cookie:` header on every request
   (`credentials: "omit"` — RN has no automatic cookie handling).
 - Change-email is two-step (OTP to the *new* address proves control;
@@ -50,8 +50,8 @@ calling the same backend.
 
 `GET /api/v1/patient/home` — aggregates upcoming appointment, Care status,
 follow-up prompts, active medicines in one payload for the mobile home
-screen. Web's home page (`src/app/(app)/patient/page.tsx`) is a server
-component that queries the same underlying `src/lib/*` functions directly
+screen. Web's home page (`web/app/(app)/patient/page.tsx`) is a server
+component that queries the same underlying `backend/*` functions directly
 (no API round-trip needed — same process).
 
 ## 3. Booking
@@ -82,11 +82,11 @@ calls — same underlying tables, different transport.
    assigned doctor. Not found → `404`, not `403` — doesn't even confirm the
    appointment exists to an unrelated caller.
 3. `isVideoConfigured()` check → `503` if LiveKit env unset.
-4. `getJoinDenial(appointment, now)` (`src/lib/video/call-window.ts`) — pure
+4. `getJoinDenial(appointment, now)` (`backend/video/call-window.ts`) — pure
    function, window is `[start − 10min, end + 30min]`, `403` outside it.
    Same function backs the client's disabled-button state, but only the
    server call is a real boundary.
-5. Issues a LiveKit `AccessToken` (`src/lib/video/video.ts`): `identity =
+5. Issues a LiveKit `AccessToken` (`backend/video/video.ts`): `identity =
    access.id` (the real user id, not client-suppliable), grant scoped to
    exactly one room (`roomJoin/canPublish/canSubscribe`, no admin grant),
    **1-hour TTL**. Room name is deterministic per appointment
@@ -144,7 +144,7 @@ Full detail already lives in [`../designs/vault-share-trd.md`](../designs/vault-
 - **Tier 2 upload**: `POST .../vault/records` (multipart, reuses
   `ALLOWED_REPORT_TYPES`/`MAX_REPORT_SIZE_BYTES` from the existing report-
   upload validation) → extraction is a deliberate stub
-  (`src/lib/vault/vault-extraction.ts`, always returns low-confidence/empty)
+  (`backend/vault/vault-extraction.ts`, always returns low-confidence/empty)
   → `PATCH .../vault/records/[id]` for the patient's manual
   confirm/correct, which is what actually sets `patientConfirmed=true` and
   makes the record real.
@@ -155,7 +155,7 @@ Full detail already lives in [`../designs/vault-share-trd.md`](../designs/vault-
   `GET /api/v1/patient/care/cancellation` (pro-rated breakdown) —
   `care_subscriptions` table, one row per patient↔doctor pair.
 - Messaging gate is a single predicate, `patientCanMessageDoctor`
-  (`src/lib/messaging/chat.ts`) — active subscription only; a paid
+  (`backend/messaging/chat.ts`) — active subscription only; a paid
   consult alone never unlocks it.
 - **Realtime delivery**: `GET /api/v1/realtime/token` mints a compact
   HMAC-SHA256 token (`userId + role + 5-min-exp`, keyed by

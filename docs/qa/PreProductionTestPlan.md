@@ -72,7 +72,7 @@ workaround on a rarely-used path can still be P2.
 - Every Bug moved to `Fixed` returns to its author for retest on the **build that
   contains the fix** (record the build/commit on the retest comment).
 - A `Failed` Test cannot be marked `Passed` until **all** its linked Bugs are `Closed`.
-- **Regression scope on any fix touching shared logic** (`src/lib/*`, auth, DB
+- **Regression scope on any fix touching shared logic** (`backend/*`, auth, DB
   indexes, payment/webhook, realtime token): re-run the linked automated spec **plus**
   the smoke set (§5) before closing.
 - Reopen (not new ticket) if the same defect recurs within 2 builds.
@@ -168,7 +168,7 @@ against the launch exit criteria (§6) before production deploy.
 - **Preconditions:** Realtime server running (`npm run realtime`); app + server share the secret.
 - **Steps:** 1) Get a token from `/api/v1/realtime/token`. 2) Connect socket — succeeds. 3) Tamper the token → rejected. 4) Wait past expiry → reconnect issues a fresh token. 5) Connect from a disallowed browser Origin → blocked; from native (no Origin) → allowed.
 - **Expected:** Only valid, unexpired, correctly-signed tokens connect; CORS enforced for browsers.
-- **Automation:** `src/lib/realtime-token.test.ts` (unit). Manual = live socket + CORS.
+- **Automation:** `backend/messaging/realtime-token.test.ts` (unit). Manual = live socket + CORS.
 
 #### MFQA-24 — Production env safety audit (`check:env:strict`) & CRON_SECRET
 - **Component:** Security/AuthZ · **Owner:** Both · **Priority:** P0 · **Labels:** launch-blocker, deployment
@@ -192,7 +192,7 @@ against the launch exit criteria (§6) before production deploy.
 - **Steps:** 1) Set a weekly rule (e.g. Mon 10:00–13:00). 2) Patient sees matching free slots on that date. 3) Add a **block** override for that date → slots disappear. 4) Add an **extra** session override → new slots appear. 5) Book one slot → it disappears from the list.
 - **Expected:** Slot list reflects rules minus overrides minus bookings, in the doctor's timezone; DST/offset correct for `Asia/Kolkata`.
 - **Negative/edge:** Overlapping rules; override on a day with no rule; past-date slots not offered; slot straddling midnight.
-- **Automation:** `e2e/booking.spec.ts` ("doctor sets weekly availability and patient sees a matching slot"); `src/lib/slots.test.ts`, `availability` unit tests.
+- **Automation:** `e2e/booking.spec.ts` ("doctor sets weekly availability and patient sees a matching slot"); `backend/booking/slots.test.ts`, `availability` unit tests.
 
 #### MFQA-32 — Doctor week schedule view (availability + bookings)
 - **Component:** Clinical/Encounter · **Owner:** Tester B · **Priority:** P2 · **Labels:** web, doctor
@@ -209,7 +209,7 @@ against the launch exit criteria (§6) before production deploy.
 - **Steps:** 1) `/patient/book` → pick visit reason + symptoms. 2) Upload a report → confirm it attaches. 3) Enter red-flag symptoms (e.g. "chest pain, can't breathe") → triage warning shows. 4) Attempt to proceed without ticking consent → blocked. 5) Tick consent → proceed.
 - **Expected:** Triage flags red-flag input; consent required; consent **version/timestamp/source** persisted on the appointment (server sets version, not client); report stored and later visible to the doctor.
 - **Negative/edge:** Oversized/wrong-type upload rejected; empty symptoms; consent version is server-authoritative (client can't spoof).
-- **Automation:** `src/lib/triage.test.ts` (unit). Manual = upload + consent persistence.
+- **Automation:** `backend/consult/triage.test.ts` (unit). Manual = upload + consent persistence.
 
 #### MFQA-41 — Slot hold (10-min), expiry, and refresh-safe resume
 - **Component:** Booking · **Owner:** Tester A · **Priority:** P0 · **Labels:** web, patient
@@ -226,14 +226,14 @@ against the launch exit criteria (§6) before production deploy.
 - **Steps:** 1) Reach payment step → Razorpay popup opens. 2) Pay with a test card → appointment → `confirmed`; receipt available. 3) Repeat, but **close the tab** right after paying → confirm the webhook still flips it to `confirmed`. 4) Force a failed payment → stays `pending_payment`, slot releasable. 5) Confirm webhook shows 200 in Razorpay dashboard.
 - **Expected:** Client callback best-effort; webhook authoritative; signature mismatch rejected; mock provider only when keys blank (dev/e2e).
 - **Negative/edge:** Replayed/forged webhook signature rejected; double `verify` idempotent (no double confirm); amount tampering rejected.
-- **Automation:** `src/lib/payments.test.ts` (signature). Manual = live popup + webhook + tab-close recovery.
+- **Automation:** `backend/payments/payments.test.ts` (signature). Manual = live popup + webhook + tab-close recovery.
 
 #### MFQA-43 — Double-booking concurrency: exactly one of two racing bookings wins
 - **Component:** Booking · **Owner:** Both · **Priority:** P0 · **Labels:** api, e2e-covered, launch-blocker
 - **Objective / risk:** The partial unique index `uq_appointments_doctor_slot` is the final guard; the loser of a race gets 409 "Slot is no longer available". Expired `pending_payment` holds are cancelled before insert.
 - **Steps:** Run `e2e/api/concurrency.spec.ts`; additionally fire two near-simultaneous booking POSTs for one slot manually and confirm exactly one 2xx + one 409.
 - **Expected:** Never two confirmed appointments for one doctor-slot; loser 409; no partial/orphaned rows.
-- **Automation:** `e2e/api/concurrency.spec.ts` ("concurrent bookings for one slot: exactly one wins"), `src/lib/booking.test.ts`.
+- **Automation:** `e2e/api/concurrency.spec.ts` ("concurrent bookings for one slot: exactly one wins"), `backend/booking/booking.test.ts`.
 
 #### MFQA-44 — Booking confirmation + email + resume summary
 - **Component:** Booking · **Owner:** Tester A · **Priority:** P1 · **Labels:** web, patient, e2e-covered
@@ -249,7 +249,7 @@ against the launch exit criteria (§6) before production deploy.
 - **Steps:** 1) `/patient/appointments` lists Upcoming/Past. 2) Open detail → join button state correct. 3) Cancel >2h before → succeeds. 4) Try to cancel <2h before → blocked with reason. 5) Reschedule a confirmed appointment → new slot picker → confirms. 6) Open `/patient/appointments/[id]/receipt` → print/PDF.
 - **Expected:** 2h cancellation window enforced; reschedule frees old slot + holds new; receipt shows fee in ₹.
 - **Negative/edge:** Cancel a completed/no-show appointment blocked; reschedule into an already-booked slot → 409.
-- **Automation:** `src/lib/call-window.test.ts`, `booking.test.ts` (window logic). Manual = reschedule + receipt UI.
+- **Automation:** `backend/video/call-window.test.ts`, `booking.test.ts` (window logic). Manual = reschedule + receipt UI.
 
 ### VIDEO CONSULTATION
 
@@ -260,7 +260,7 @@ against the launch exit criteria (§6) before production deploy.
 - **Steps:** 1) Before window → join disabled ("too early"). 2) Within window → `/call/[id]` pre-join camera/mic check → join. 3) Doctor joins from a second device → two-way audio/video. 4) After close window → "too late". 5) Non-participant patient requests a token → denied. 6) Unset LiveKit env → friendly error page.
 - **Expected:** Window + participant + status gating exactly per `call-window.ts` (10 early / 30 late; `not_confirmed`/`too_early`/`too_late`); real media both directions.
 - **Negative/edge:** Token for a cancelled appointment; token for someone else's room (`appt_<id>`); mic/cam permission denied handled.
-- **Automation:** `src/lib/call-window.test.ts`, `realtime-token.test.ts` adjacent. Media = **manual, two devices**.
+- **Automation:** `backend/video/call-window.test.ts`, `realtime-token.test.ts` adjacent. Media = **manual, two devices**.
 
 ### ENCOUNTER, PRESCRIPTION & OUTCOME (DOCTOR)
 
@@ -284,7 +284,7 @@ against the launch exit criteria (§6) before production deploy.
 - **Component:** Clinical/Encounter · **Owner:** Tester B · **Priority:** P1 · **Labels:** web, doctor
 - **Objective / risk:** Irreversible outcome actions require confirm dialogs; no-show is separated from complete; patient sees consolidated status labels (patient "Missed" vs doctor "No-show").
 - **Steps:** Mark completed → confirm dialog + completion warnings (SOAP/Rx checklist) → status updates + toast. On another appointment mark no-show → separate confirm. Verify patient-side label mapping.
-- **Automation:** none direct — manual; labels in `src/lib/appointment-status.ts`.
+- **Automation:** none direct — manual; labels in `backend/booking/appointment-status.ts`.
 
 ### PRESCRIPTIONS, REFILLS & FOLLOW-UPS
 
@@ -323,7 +323,7 @@ against the launch exit criteria (§6) before production deploy.
 - **Objective / risk:** `/patient/care/cancel` shows a deterministic pro-rated breakdown — used days non-refundable, unused remainder refunded (7 working days) — identical on the confirm screen and server-side.
 - **Steps:** Activate, advance part-way through a period (test data), open cancel → verify used/remaining days, deduction, refund match `computeCancellationBreakdown`; confirm → subscription ends.
 - **Negative/edge:** Cancel on day 0 (near-full refund); cancel at period end (near-zero refund); no active sub.
-- **Automation:** `src/lib/care-subscription-policy.test.ts` (unit). Manual = UI parity.
+- **Automation:** `backend/care/care-subscription-policy.test.ts` (unit). Manual = UI parity.
 
 #### MFQA-62 — Care follow-up credit: one per period; doctor fulfil/dismiss
 - **Component:** Care Subscription · **Owner:** Both · **Priority:** P1 · **Labels:** web, e2e-covered
@@ -344,7 +344,7 @@ against the launch exit criteria (§6) before production deploy.
 - **Steps:** 1) Patient with a paid consult but no subscription → messaging locked (conversation not created; `/api/v1/conversations` returns nothing/denied). 2) Activate Care → messaging unlocks. 3) Let the period elapse (status `active` but past end) → access revoked. 4) Doctor's conversation list only shows active subscribers.
 - **Expected:** Gate matches `chat.ts` + `care-subscription-policy.isSubscriptionActive` (active/manual_trial AND now within period).
 - **Negative/edge:** `manual_trial` unlocks; deactivated mid-conversation → thread becomes inaccessible.
-- **Automation:** `e2e/api/care-plan.spec.ts`, `src/lib/chat-policy.test.ts`, `care-subscription-policy.test.ts`.
+- **Automation:** `e2e/api/care-plan.spec.ts`, `backend/messaging/chat-policy.test.ts`, `care-subscription-policy.test.ts`.
 
 #### MFQA-71 — Messaging: send/receive, pagination, read receipts, unread counters
 - **Component:** Messaging/Realtime · **Owner:** Both · **Priority:** P1 · **Labels:** web
@@ -356,7 +356,7 @@ against the launch exit criteria (§6) before production deploy.
 - **Component:** Messaging/Realtime · **Owner:** Both · **Priority:** P0 · **Labels:** web, api, unit-covered, launch-blocker
 - **Objective / risk:** An attachment may only be sent by its uploader into the same conversation it was uploaded to; a leaked/guessed `attachmentId` cannot be attached elsewhere to read another user's file.
 - **Steps:** Upload an attachment in conversation A; attempt to reference that `attachmentId` from conversation B / as a different sender via `/api/v1/conversations/[id]/messages` and `/api/v1/attachments/[id]` → denied.
-- **Automation:** `src/lib/chat-policy.test.ts` (`attachmentUsableBy`), `e2e/api/idor.spec.ts`. Manual = end-to-end file open.
+- **Automation:** `backend/messaging/chat-policy.test.ts` (`attachmentUsableBy`), `e2e/api/idor.spec.ts`. Manual = end-to-end file open.
 
 #### MFQA-73 — Realtime live delivery, token refresh, REST fallback when socket down
 - **Component:** Messaging/Realtime · **Owner:** Both · **Priority:** P1 · **Labels:** web, third-party
@@ -504,7 +504,7 @@ Command: `npm run lint && npx tsc --noEmit && npm test && npx playwright test`.
 
 #### MFQA-909 — [TASK][Ops] Object-storage plan for report + chat-attachment bytea growth
 - **Priority:** P3 · **Labels:** deployment · **Owner:** Both
-- `medical_reports` + chat attachments stored inline as Postgres bytea. Fine at single-doctor scale; document the S3/R2 swap trigger (isolated in `src/lib/reports.ts` + upload/download routes).
+- `medical_reports` + chat attachments stored inline as Postgres bytea. Fine at single-doctor scale; document the S3/R2 swap trigger (isolated in `backend/consult/reports.ts` + upload/download routes).
 
 ---
 
