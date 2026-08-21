@@ -54,6 +54,7 @@ next-env.d.ts
 
 # Local AI agent/skill tooling (personal, not product code)
 .agents/
+.codex/
 
 # Local dev TLS cert (LAN HTTPS for video) — never commit
 certs/

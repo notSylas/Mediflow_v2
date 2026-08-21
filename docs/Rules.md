@@ -20,7 +20,9 @@ Non-negotiables for anyone (human or AI) working in this repo. `AGENTS.md` is th
 8. Money: integer paise. Floats never touch currency.
 9. Timestamps: `timestamptz`; wall-clock values are doctor-timezone-local; render with `formatInTimeZone`.
 10. Schema changes go in `backend/db/schema.ts` → `npm run db:push` (dev). Keep `docs/Schema.md` in sync.
-11. Patient data is medical data: no PII in logs (log ids, not names/emails/notes), ownership check on **every** resource access. **Sole named exception:** a forwardable prescription-view link (signed, revocable, public token in the URL) is intentionally accessible with no session — a pharmacy has no app account. Scope this exception to that one link type only; never extend it to any other resource without writing the exception down here first.
+11. Patient data is medical data: no PII in logs (log ids, not names/emails/notes), ownership check on **every** resource access. **Named exceptions to the no-session rule** (scope each to exactly the resource named; never extend either without writing a new exception down here first):
+    - A forwardable prescription-view link (signed, revocable, public token in the URL) — a pharmacy has no app account.
+    - Vault Share's anywhere-share redeem link (`/vault/view` + `/api/v1/vault/redeem`, added 2026-08-11 — see `docs/designs/vault-share-trd.md`) — a receiving doctor off-platform has no app account. Gated by a short-lived, rate-limited, hashed-at-rest share code the patient generates and controls, not a long-lived token.
 
 ## API
 

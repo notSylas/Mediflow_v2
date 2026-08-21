@@ -23,7 +23,15 @@ The map of what's authoritative vs reference. When two docs disagree on **scope*
 | Doc | What it is |
 |---|---|
 | [Design.md](Design.md) | The shipped design system — fonts, colors, spacing, motion. Read before any UI change. |
-| [designs/](designs/) | Per-feature design briefs: care subscription, triage+booking flow, medical vault, launch-readiness. |
+| [designs/](designs/) | Per-feature design briefs: care subscription, triage+booking flow, medical vault, launch-readiness, Vault Share (PRD/TRD/business), feature ideation passes. |
+
+## Handbook (complete end-to-end walkthrough)
+| Doc | What it is |
+|---|---|
+| [handbook/patient-journey.md](handbook/patient-journey.md) | Every patient-facing page, web + mobile, UX-level with flow diagrams. Stakeholder-meeting ready. |
+| [handbook/patient-technical.md](handbook/patient-technical.md) | Same scope, technical: APIs, DB tables, encryption/security mechanisms. |
+| [handbook/doctor-journey.md](handbook/doctor-journey.md) | Every doctor-facing page, web + mobile, UX-level with flow diagrams. Includes honest gaps (e.g. Care digest not yet live). |
+| [handbook/doctor-technical.md](handbook/doctor-technical.md) | Same scope, technical: APIs, DB tables, web/mobile parity gaps, what's designed-but-not-wired-up. |
 
 ## QA / launch (pre-production)
 | Doc | What it is |

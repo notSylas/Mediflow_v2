@@ -63,7 +63,18 @@
     { "method": "GET",    "path": "/api/v1/patient/home" },
     { "method": "GET",    "path": "/api/v1/patient/prescriptions" },
     { "method": "POST",   "path": "/api/v1/patient/refill-requests" },
+    { "method": "GET",    "path": "/api/v1/patient/vault" },
+    { "method": "GET",    "path": "/api/v1/patient/vault/export" },
+    { "method": "POST",   "path": "/api/v1/patient/vault/records" },
+    { "method": "DELETE", "path": "/api/v1/patient/vault/records/:id" },
+    { "method": "GET",    "path": "/api/v1/patient/vault/records/:id" },
+    { "method": "PATCH",  "path": "/api/v1/patient/vault/records/:id" },
+    { "method": "GET",    "path": "/api/v1/patient/vault/share" },
+    { "method": "POST",   "path": "/api/v1/patient/vault/share" },
+    { "method": "POST",   "path": "/api/v1/patient/vault/share/:id/revoke" },
+    { "method": "POST",   "path": "/api/v1/patient/vault/share/confirm" },
     { "method": "GET",    "path": "/api/v1/realtime/token" },
+    { "method": "POST",   "path": "/api/v1/vault/redeem" },
     { "method": "POST",   "path": "/api/webhooks/razorpay" }
   ]
 }

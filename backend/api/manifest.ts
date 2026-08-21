@@ -86,6 +86,19 @@ import {
   mintVideoToken,
 } from "./video";
 import { razorpayWebhook } from "./webhooks";
+import {
+  confirmShareHandler,
+  createRecord,
+  createShare,
+  deleteRecord,
+  exportVaultHandler,
+  getRecord,
+  getVault,
+  listSharesHandler,
+  redeemShare,
+  revokeShareHandler,
+  updateRecord,
+} from "./v1/vault";
 
 /**
  * Every endpoint the standalone backend serves, keyed by "METHOD path".
@@ -156,6 +169,17 @@ const HANDLERS: Record<string, ApiHandler> = {
   "POST /api/v1/patient/refill-requests": requestRefill,
   "GET /api/v1/realtime/token": getRealtimeToken,
   "POST /api/webhooks/razorpay": razorpayWebhook,
+  "GET /api/v1/patient/vault": getVault,
+  "POST /api/v1/patient/vault/records": createRecord,
+  "GET /api/v1/patient/vault/records/:id": getRecord,
+  "PATCH /api/v1/patient/vault/records/:id": updateRecord,
+  "DELETE /api/v1/patient/vault/records/:id": deleteRecord,
+  "GET /api/v1/patient/vault/export": exportVaultHandler,
+  "GET /api/v1/patient/vault/share": listSharesHandler,
+  "POST /api/v1/patient/vault/share": createShare,
+  "POST /api/v1/patient/vault/share/confirm": confirmShareHandler,
+  "POST /api/v1/patient/vault/share/:id/revoke": revokeShareHandler,
+  "POST /api/v1/vault/redeem": redeemShare,
 };
 
 const key = (route: BackendRoute) => `${route.method} ${route.path}`;

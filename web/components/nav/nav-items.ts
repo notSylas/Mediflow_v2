@@ -3,6 +3,7 @@ import {
   CalendarPlus,
   CalendarRange,
   FileText,
+  FolderHeart,
   HandHeart,
   Home,
   LayoutDashboard,
@@ -28,6 +29,7 @@ export const NAV_ITEMS: Record<string, NavItem[]> = {
     { href: "/patient/appointments", label: "Appointments", icon: CalendarDays },
     { href: "/messages", label: "Messages", icon: MessageCircle },
     { href: "/patient/prescriptions", label: "Prescriptions", icon: FileText },
+    { href: "/patient/vault", label: "Vault", icon: FolderHeart },
     { href: "/patient/profile", label: "Medical profile", icon: UserPen },
   ],
   doctor: [

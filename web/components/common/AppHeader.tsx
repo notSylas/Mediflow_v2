@@ -19,6 +19,7 @@ const NAV_LINKS: Record<string, NavLink[]> = {
     { href: "/patient/book", label: "Book" },
     { href: "/patient/appointments", label: "Appointments" },
     { href: "/patient/prescriptions", label: "Prescriptions" },
+    { href: "/patient/vault", label: "Vault" },
     { href: "/patient/profile", label: "Profile" },
   ],
 };
