@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { signIn, signInDoctorWithAvailability, signOut } from "../helpers";
+import { completePatientProfile, signIn, signInDoctorWithAvailability, signOut } from "../helpers";
 
 /**
  * The double-booking guarantee rests on the partial unique index
@@ -13,6 +13,8 @@ test("concurrent bookings for one slot: exactly one wins", async ({ page }) => {
   await signOut(page);
 
   await signIn(page, `e2e+${Date.now()}-concurrency@example.com`);
+  // Booking is gated on patient identity; without this every POST is a 403.
+  await completePatientProfile(page);
 
   const slotsRes = await page.request.get("/api/slots");
   expect(slotsRes.ok()).toBeTruthy();

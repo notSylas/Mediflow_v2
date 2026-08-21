@@ -1,0 +1,170 @@
+name: Deploy to Cloud Run
+
+# Pushes to main build and deploy both services. Pull requests run the checks
+# only — nothing is deployed from a PR.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  PROJECT_ID: mediflow-v2-app
+  REGION: asia-south1
+  REGISTRY: asia-south1-docker.pkg.dev/mediflow-v2-app/mediflow
+  BACKEND_SERVICE: mediflow-backend
+  WEB_SERVICE: mediflow-web
+  CLOUDSQL: mediflow-v2-app:asia-south1:mediflow-db
+
+jobs:
+  # ---------------------------------------------------------------------
+  # Gate. Deploys wait on this, so a red build never reaches Cloud Run.
+  # ---------------------------------------------------------------------
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npm run lint
+      - run: npm test
+      # `next build` evaluates modules that construct the DB client, so it
+      # needs a syntactically valid URL. Nothing connects — every route is
+      # dynamic. The real value comes from Secret Manager at runtime.
+      - run: npm run build
+        env:
+          DATABASE_URL: postgresql://build:build@localhost:5432/build
+
+  deploy-backend:
+    needs: check
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # required to mint the OIDC token for Google auth
+    outputs:
+      url: ${{ steps.deploy.outputs.url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: projects/702335727862/locations/global/workloadIdentityPools/github/providers/github-provider
+          service_account: github-deployer@mediflow-v2-app.iam.gserviceaccount.com
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+
+      - name: Build and push backend
+        run: |
+          docker build -f Dockerfile.backend \
+            -t "$REGISTRY/backend:${{ github.sha }}" \
+            -t "$REGISTRY/backend:latest" .
+          docker push "$REGISTRY/backend:${{ github.sha }}"
+          docker push "$REGISTRY/backend:latest"
+
+      - id: deploy
+        name: Deploy backend
+        run: |
+          gcloud run deploy "$BACKEND_SERVICE" \
+            --project="$PROJECT_ID" --region="$REGION" \
+            --image="$REGISTRY/backend:${{ github.sha }}" \
+            --add-cloudsql-instances="$CLOUDSQL" \
+            --port=4100 --min-instances=0 --max-instances=4 \
+            --cpu=1 --memory=512Mi --concurrency=40 --timeout=60 \
+            --allow-unauthenticated \
+            --set-env-vars=NODE_ENV=production,POSTGRES_MAX_CONNECTIONS=3,LOG_LEVEL=info \
+            --set-secrets=DATABASE_URL=mediflow-database-url:latest,BETTER_AUTH_SECRET=mediflow-auth-secret:latest,CRON_SECRET=mediflow-cron-secret:latest,LIVEKIT_URL=mediflow-livekit-url:latest,LIVEKIT_API_KEY=mediflow-livekit-key:latest,LIVEKIT_API_SECRET=mediflow-livekit-secret:latest \
+            --quiet
+          echo "url=$(gcloud run services describe "$BACKEND_SERVICE" \
+            --project="$PROJECT_ID" --region="$REGION" --format='value(status.url)')" >> "$GITHUB_OUTPUT"
+
+      - name: Smoke test backend
+        run: |
+          URL="${{ steps.deploy.outputs.url }}"
+          # /healthz is intercepted by Google Frontend on run.app — /health is
+          # the alias that actually reaches the container.
+          curl -fsS "$URL/health" | grep -q "backend ok"
+          # An auth-gated route must answer 401, not 5xx: that proves the
+          # handler ran rather than the container falling over.
+          test "$(curl -s -o /dev/null -w '%{http_code}' "$URL/api/slots")" = "401"
+          echo "backend healthy at $URL"
+
+  deploy-web:
+    needs: deploy-backend
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: projects/702335727862/locations/global/workloadIdentityPools/github/providers/github-provider
+          service_account: github-deployer@mediflow-v2-app.iam.gserviceaccount.com
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+
+      # BACKEND_ORIGIN must be a BUILD arg: Next bakes rewrites into
+      # routes-manifest.json, so passing it at runtime would silently leave
+      # every /api/* call handled in-process instead of proxied.
+      - name: Build and push web
+        run: |
+          docker build -f Dockerfile.web \
+            --build-arg BACKEND_ORIGIN="${{ needs.deploy-backend.outputs.url }}" \
+            --build-arg GIT_SHA="${{ github.sha }}" \
+            --build-arg GIT_REF="${{ github.ref_name }}" \
+            --build-arg BUILD_TIME="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            -t "$REGISTRY/web:${{ github.sha }}" \
+            -t "$REGISTRY/web:latest" .
+          docker push "$REGISTRY/web:${{ github.sha }}"
+          docker push "$REGISTRY/web:latest"
+
+      - id: deploy
+        name: Deploy web
+        run: |
+          WEB_URL=$(gcloud run services describe "$WEB_SERVICE" \
+            --project="$PROJECT_ID" --region="$REGION" --format='value(status.url)' 2>/dev/null || echo "")
+          gcloud run deploy "$WEB_SERVICE" \
+            --project="$PROJECT_ID" --region="$REGION" \
+            --image="$REGISTRY/web:${{ github.sha }}" \
+            --add-cloudsql-instances="$CLOUDSQL" \
+            --port=3000 --min-instances=0 --max-instances=3 \
+            --cpu=1 --memory=1Gi --concurrency=40 --timeout=60 \
+            --allow-unauthenticated \
+            --set-env-vars=NODE_ENV=production,POSTGRES_MAX_CONNECTIONS=3,LOG_LEVEL=info,BETTER_AUTH_URL=$WEB_URL \
+            --set-secrets=DATABASE_URL=mediflow-database-url:latest,BETTER_AUTH_SECRET=mediflow-auth-secret:latest,LIVEKIT_URL=mediflow-livekit-url:latest,LIVEKIT_API_KEY=mediflow-livekit-key:latest,LIVEKIT_API_SECRET=mediflow-livekit-secret:latest \
+            --quiet
+          echo "url=$(gcloud run services describe "$WEB_SERVICE" \
+            --project="$PROJECT_ID" --region="$REGION" --format='value(status.url)')" >> "$GITHUB_OUTPUT"
+
+      - name: Smoke test web
+        run: |
+          URL="${{ steps.deploy.outputs.url }}"
+          test "$(curl -s -o /dev/null -w '%{http_code}' "$URL/login")" = "200"
+          # The login page renders the deployed commit; confirm it is this one.
+          curl -fsS "$URL/login" | grep -q "$(echo '${{ github.sha }}' | cut -c1-7)"
+          echo "web healthy at $URL — serving ${{ github.sha }}"
+
+      - name: Summary
+        run: |
+          {
+            echo "### Deployed \`${{ github.sha }}\`"
+            echo ""
+            echo "- web: ${{ steps.deploy.outputs.url }}"
+            echo "- backend: ${{ needs.deploy-backend.outputs.url }}"
+          } >> "$GITHUB_STEP_SUMMARY"

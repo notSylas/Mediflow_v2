@@ -139,7 +139,7 @@ export default function VaultShare() {
             <ChoiceChips options={VAULT_SHARE_DURATION_OPTIONS} value={duration} onChange={setDuration} />
           </View>
           <Muted>
-            You'll confirm with a one-time code sent to your email before the share is created.
+            You&apos;ll confirm with a one-time code sent to your email before the share is created.
           </Muted>
           <Button label="Send code" loading={start.isPending} onPress={() => start.mutate()} />
         </View>

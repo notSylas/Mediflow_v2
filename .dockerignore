@@ -1,7 +1,9 @@
 # Build context exclusions (the dev image only needs package*.json for `npm ci`;
 # source is bind-mounted at runtime). Keeps the context small and secrets out.
 node_modules
+**/node_modules
 .next
+**/.next
 .git
 .github
 mobile
@@ -13,6 +15,12 @@ drizzle/meta
 *.log
 .env
 .env.*
+# Local credential files — these are NOT matched by .env* and would otherwise
+# be copied into the image by `COPY . .`.
+.db-root-password.txt
+.db-app-password.txt
+.cron-secret.txt
+certs
 .DS_Store
 README.md
 docs

@@ -2,8 +2,8 @@
 // signed in once (which creates their user row):
 //   npx tsx scripts/promote-doctor.ts doctor@example.com
 import { eq } from "drizzle-orm";
-import { db } from "../src/db";
-import { user } from "../src/db/schema";
+import { db } from "../backend/db";
+import { user } from "../backend/db/schema";
 
 process.loadEnvFile?.();
 

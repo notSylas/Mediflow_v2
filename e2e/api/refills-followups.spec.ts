@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import { expect, test } from "@playwright/test";
-import { db } from "@/db";
-import { appointments, doctorProfiles, prescriptions, user } from "@/db/schema";
+import { db } from "~backend/db";
+import { appointments, doctorProfiles, prescriptions, user } from "~backend/db/schema";
 import { DOCTOR_EMAIL, signIn, signInDoctorWithAvailability, signOut } from "../helpers";
 
 /**

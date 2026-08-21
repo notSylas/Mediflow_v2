@@ -1,8 +1,8 @@
 // Seeds / refreshes the specialties taxonomy from the baseline list.
 //   npm run seed:specialties
-import { db } from "../src/db";
-import { specialties } from "../src/db/schema";
-import { SPECIALTY_SEED } from "../src/lib/people/specialty-seed";
+import { db } from "../backend/db";
+import { specialties } from "../backend/db/schema";
+import { SPECIALTY_SEED } from "../backend/people/specialty-seed";
 
 async function main() {
   for (let i = 0; i < SPECIALTY_SEED.length; i++) {

@@ -132,7 +132,7 @@ export default function VaultRecordReview() {
       {lowConfidence ? (
         <Card tone="accent">
           <Muted>
-            We couldn't read this document automatically — fill in the details below yourself.
+            We couldn&apos;t read this document automatically — fill in the details below yourself.
             Nothing is saved until you confirm.
           </Muted>
         </Card>

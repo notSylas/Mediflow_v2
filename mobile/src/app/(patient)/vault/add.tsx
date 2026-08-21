@@ -61,7 +61,7 @@ export default function VaultAddRecord() {
             Photograph or pick a PDF of a prescription, lab report, or discharge summary
           </Body>
           <Muted>
-            You'll review and confirm every detail before it's saved — nothing is added
+            You&apos;ll review and confirm every detail before it&apos;s saved — nothing is added
             automatically.
           </Muted>
           {fileName ? <Muted>{fileName}</Muted> : null}

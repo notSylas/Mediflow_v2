@@ -20,13 +20,17 @@ test("consultation, prescription, and returning-patient history", async ({ page 
   // --- First visit: patient books. ---
   const patientEmail = `e2e+${Date.now()}-consult@example.com`;
   await signIn(page, patientEmail);
-  await bookFirstAvailableSlot(page, "Sore throat and mild fever for two days.");
+  const appointmentId = await bookFirstAvailableSlot(
+    page,
+    "Sore throat and mild fever for two days."
+  );
   await signOut(page);
 
   // --- Doctor runs the consultation. ---
   await signIn(page, "e2e-doctor@example.com");
-  await page.goto("/doctor/appointments");
-  await page.locator('a[href^="/doctor/encounter/"]').first().click();
+  // Straight to this booking's encounter: the shared doctor accumulates
+  // appointments from earlier specs, so "the first row" isn't this one.
+  await page.goto(`/doctor/encounter/${appointmentId}`);
   await expect(page).toHaveURL(/\/doctor\/encounter\//);
 
   // Intake is visible, and this is a first visit.
@@ -79,19 +83,25 @@ test("consultation, prescription, and returning-patient history", async ({ page 
   await expect(page.getByText("Paracetamol")).toBeVisible();
   await expect(page.getByText(/Morning, Night · After food · 3 days/)).toBeVisible();
 
-  // Appointment detail shows the outcome too. Link to the appointment from the
-  // prescription card (text-agnostic — the label has changed before).
+  // Appointment detail shows the prescription document too. Assert on the
+  // clinical content rather than a section label — the label has been renamed
+  // more than once, and "Your prescription" no longer exists at all.
   await page.locator('a[href^="/patient/appointments/"]').first().click();
-  await expect(page.getByText("Your prescription")).toBeVisible();
+  await expect(page).toHaveURL(/\/patient\/appointments\//);
+  await expect(page.getByText("Acute viral pharyngitis").first()).toBeVisible();
+  await expect(page.getByText("Paracetamol").first()).toBeVisible();
 
   // --- Second visit: returning patient. ---
-  await bookFirstAvailableSlot(page, "Follow-up: throat is better, cough remains.");
+  const secondAppointmentId = await bookFirstAvailableSlot(
+    page,
+    "Follow-up: throat is better, cough remains."
+  );
   await signOut(page);
 
   await signIn(page, "e2e-doctor@example.com");
-  await page.goto("/doctor/appointments");
-  // The confirmed (newest) appointment links from the top of the list.
-  await page.locator('a[href^="/doctor/encounter/"]').first().click();
+  // Go straight to this booking, not the first row of a list that also holds
+  // other specs' appointments.
+  await page.goto(`/doctor/encounter/${secondAppointmentId}`);
 
   await expect(page.getByText("Returning patient")).toBeVisible();
   await expect(page.getByText("Past consultations")).toBeVisible();

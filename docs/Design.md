@@ -19,7 +19,7 @@
 
 ## System
 
-- **Component library**: shadcn/ui on Tailwind 4 (`src/components/ui/`) — button, card, badge, input, label, textarea, select, radio-group, alert-dialog, separator. Add via `npx shadcn@latest add <name>`; don't hand-roll equivalents. The glass/gradient treatment below is a styling layer on top of these components, not a replacement for them.
+- **Component library**: shadcn/ui on Tailwind 4 (`web/components/ui/`) — button, card, badge, input, label, textarea, select, radio-group, alert-dialog, separator. Add via `npx shadcn@latest add <name>`; don't hand-roll equivalents. The glass/gradient treatment below is a styling layer on top of these components, not a replacement for them.
 - **Icons**: lucide-react, 16px (`h-4 w-4`), always with a text label except where `aria-label` is provided.
 
 ### Typography — one family, many weights
