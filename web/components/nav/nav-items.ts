@@ -10,6 +10,7 @@ import {
   ListChecks,
   MessageCircle,
   Pill,
+  ScanText,
   Settings,
   UserPen,
   Users,
@@ -30,6 +31,7 @@ export const NAV_ITEMS: Record<string, NavItem[]> = {
     { href: "/messages", label: "Messages", icon: MessageCircle },
     { href: "/patient/prescriptions", label: "Prescriptions", icon: FileText },
     { href: "/patient/vault", label: "Vault", icon: FolderHeart },
+    { href: "/patient/prescription-analyzer", label: "Analyze a prescription", icon: ScanText },
     { href: "/patient/profile", label: "Medical profile", icon: UserPen },
   ],
   doctor: [

@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rx Analyzer — Prescription Intelligence</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Spline+Sans+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    :root{
+      --bg:#f6f8fb; --ink:#0b1220; --ink2:#475569; --muted:#94a3b8;
+      --line:#e6ebf2; --card:#ffffff;
+      --brand:#0ea5a4; --brand-d:#0f766e; --accent:#2563eb;
+      --good:#10b981; --good-bg:#e7f8f0; --good-ink:#0b6b4f;
+      --warn:#f59e0b; --warn-bg:#fff7e6; --warn-ink:#92600a;
+      --bad:#ef4444; --bad-bg:#fdecec; --bad-ink:#9b1c1c;
+      --shadow:0 1px 2px rgba(16,24,40,.04), 0 8px 24px rgba(16,24,40,.06);
+      --radius:16px;
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0}
+    body{
+      font-family:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      background:
+        radial-gradient(1200px 500px at 100% -10%, #e9fbf8 0%, transparent 55%),
+        radial-gradient(1000px 460px at -10% 0%, #eef2ff 0%, transparent 50%),
+        var(--bg);
+      color:var(--ink); -webkit-font-smoothing:antialiased; min-height:100vh;
+    }
+    .topbar{
+      position:sticky; top:0; z-index:20; backdrop-filter:saturate(180%) blur(10px);
+      background:rgba(255,255,255,.72); border-bottom:1px solid var(--line);
+    }
+    .topbar .inner{max-width:980px; margin:0 auto; padding:14px 22px; display:flex; align-items:center; gap:12px;}
+    .logo{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;color:#fff;font-size:18px;
+          background:linear-gradient(135deg,var(--brand),var(--brand-d)); box-shadow:0 6px 16px rgba(13,148,136,.35);}
+    .brand-name{font-weight:800; letter-spacing:-.02em; font-size:16px;}
+    .brand-tag{color:var(--muted); font-size:12px; margin-top:-2px;}
+    .wrap{max-width:980px; margin:0 auto; padding:34px 22px 90px;}
+    .hero{margin-bottom:22px;}
+    .hero h1{font-size:30px; line-height:1.15; letter-spacing:-.03em; margin:0 0 8px; font-weight:800;}
+    .hero p{color:var(--ink2); margin:0; font-size:15px; max-width:640px;}
+
+    /* Upload */
+    .drop{
+      background:var(--card); border:1.5px dashed #cdd7e3; border-radius:var(--radius);
+      padding:40px 24px; text-align:center; box-shadow:var(--shadow); transition:.18s ease;
+    }
+    .drop.drag{border-color:var(--brand); background:linear-gradient(180deg,#f0fdfa, #fff); transform:translateY(-1px);}
+    .drop .ic{width:56px;height:56px;border-radius:14px;margin:0 auto 14px;display:grid;place-items:center;
+              background:#eafaf8;color:var(--brand-d);font-size:26px;}
+    .drop h3{margin:0 0 4px; font-size:17px; font-weight:700; letter-spacing:-.01em;}
+    .drop .hint{color:var(--muted); font-size:13px; margin:0 0 18px;}
+    .row{display:flex; gap:10px; justify-content:center; flex-wrap:wrap;}
+    .btn{border:none; border-radius:11px; padding:11px 20px; font-size:14px; font-weight:600;
+         cursor:pointer; font-family:inherit; transition:.15s ease; display:inline-flex; align-items:center; gap:8px;}
+    .btn-primary{background:linear-gradient(135deg,var(--brand),var(--brand-d)); color:#fff; box-shadow:0 8px 18px rgba(13,148,136,.30);}
+    .btn-primary:hover{filter:brightness(1.05); transform:translateY(-1px);}
+    .btn-primary:disabled{opacity:.5; cursor:not-allowed; transform:none; box-shadow:none;}
+    .btn-ghost{background:#f1f5f9; color:var(--ink); border:1px solid var(--line);}
+    .btn-ghost:hover{background:#e9eef5;}
+    .filechip{margin-top:16px; display:inline-flex; align-items:center; gap:10px; background:#f6f9fc;
+              border:1px solid var(--line); border-radius:999px; padding:7px 14px; font-size:13px; color:var(--ink2);}
+    .filechip .x{cursor:pointer; color:var(--muted); font-weight:700;}
+
+    /* loading */
+    .spinner{width:18px;height:18px;border:2.5px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;
+             animation:spin .7s linear infinite;}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .loadcard{display:flex;align-items:center;gap:14px;}
+    .dot-pulse{width:40px;height:40px;border-radius:12px;background:#eafaf8;display:grid;place-items:center;font-size:20px;
+               animation:breathe 1.4s ease-in-out infinite;}
+    @keyframes breathe{0%,100%{opacity:.55} 50%{opacity:1}}
+
+    /* results */
+    .fade{animation:rise .4s ease both;}
+    @keyframes rise{from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:none}}
+    .grid2{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+    @media(max-width:680px){.grid2{grid-template-columns:1fr}}
+    .card{background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+          padding:18px 20px; box-shadow:var(--shadow);}
+    .card + .card, .grid2, .summary, .warnbox{margin-top:16px;}
+    .card-h{display:flex; align-items:center; gap:8px; margin:0 0 14px;}
+    .card-h .ci{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;font-size:14px;background:#f1f5f9;}
+    .card-h h2{font-size:13px; margin:0; text-transform:uppercase; letter-spacing:.07em; color:var(--ink2); font-weight:700;}
+    .kv{display:grid; grid-template-columns:120px 1fr; gap:9px 14px; font-size:14px;}
+    .kv b{color:var(--muted); font-weight:500;}
+    .kv span{font-weight:500;}
+
+    .summary{background:linear-gradient(135deg,#0b3b39,#0f766e); color:#fff; border-radius:var(--radius);
+             padding:18px 22px; display:flex; align-items:center; justify-content:space-between; gap:16px;
+             box-shadow:0 14px 30px rgba(13,148,136,.28);}
+    .summary .lbl{font-size:12px; text-transform:uppercase; letter-spacing:.08em; opacity:.8;}
+    .summary .big{font-size:26px; font-weight:800; letter-spacing:-.02em;}
+    .meter{height:8px; width:200px; background:rgba(255,255,255,.25); border-radius:999px; overflow:hidden; margin-top:8px;}
+    .meter > i{display:block; height:100%; background:#fff; border-radius:999px;}
+    .sum-actions{display:flex; gap:8px;}
+    .sum-actions .btn{background:rgba(255,255,255,.16); color:#fff; border:1px solid rgba(255,255,255,.25);}
+    .sum-actions .btn:hover{background:rgba(255,255,255,.26);}
+
+    .warnbox{background:var(--warn-bg); border:1px solid #fde68a; border-radius:var(--radius); padding:16px 18px;}
+    .warnbox .wh{display:flex; align-items:center; gap:8px; font-weight:700; color:var(--warn-ink); font-size:14px;}
+    .warnbox ul{margin:10px 0 0; padding-left:20px; color:#7c4a05; font-size:13.5px; line-height:1.7;}
+
+    .pill{font-size:11px; font-weight:700; padding:4px 9px; border-radius:999px; white-space:nowrap; letter-spacing:.02em;}
+    .hi{background:var(--good-bg); color:var(--good-ink);}
+    .mid{background:#fef6e0; color:var(--warn-ink);}
+    .lo{background:var(--bad-bg); color:var(--bad-ink);}
+
+    .chips{display:flex; flex-wrap:wrap; gap:10px;}
+    .stat{border:1px solid var(--line); border-radius:12px; padding:10px 14px; min-width:96px; background:#fbfdff;}
+    .stat .n{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em;}
+    .stat .v{font-size:17px; font-weight:700; margin-top:2px;}
+
+    table{width:100%; border-collapse:collapse; font-size:14px;}
+    th,td{text-align:left; padding:9px 10px; border-bottom:1px solid var(--line);}
+    th{color:var(--muted); font-weight:600; font-size:11px; text-transform:uppercase; letter-spacing:.05em;}
+    tr:last-child td{border-bottom:none;}
+    .status{font-size:11px; font-weight:700; padding:2px 8px; border-radius:6px;}
+    .s-normal{background:var(--good-bg); color:var(--good-ink);}
+    .s-high{background:var(--bad-bg); color:var(--bad-ink);}
+    .s-low{background:#fef6e0; color:var(--warn-ink);}
+
+    .med{border:1px solid var(--line); border-radius:13px; padding:14px 16px; margin-bottom:11px; transition:.15s;}
+    .med:hover{border-color:#cfe9e7; box-shadow:0 6px 16px rgba(13,148,136,.08);}
+    .med:last-child{margin-bottom:0;}
+    .med-top{display:flex; justify-content:space-between; align-items:center; gap:10px;}
+    .med-name{font-weight:700; font-size:15.5px; letter-spacing:-.01em;}
+    .med-meta{color:var(--ink2); font-size:13px; margin-top:7px; line-height:1.7;}
+    .tagrow{display:flex; flex-wrap:wrap; gap:6px; margin-top:9px;}
+    .tag{font-size:12px; background:#f1f5f9; color:#334155; border-radius:7px; padding:3px 9px; font-weight:500;}
+    .raw-as{color:var(--muted); font-style:italic; font-size:12.5px; margin-top:7px;}
+
+    .list{margin:0; padding-left:20px; font-size:14px; line-height:1.8;}
+    details{margin-top:16px;}
+    summary{cursor:pointer; color:var(--brand-d); font-size:14px; font-weight:600; padding:6px 0;}
+    pre{white-space:pre-wrap; background:#0b1220; color:#cbd5e1; border-radius:12px; padding:16px;
+        font-family:"Spline Sans Mono",monospace; font-size:12.5px; line-height:1.6; overflow:auto; margin-top:10px;}
+    .legend{display:flex; gap:14px; justify-content:center; margin-top:14px; font-size:12px; color:var(--muted);}
+    .legend i{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:5px;vertical-align:middle;}
+    .errbox{background:var(--bad-bg); border:1px solid #fbcaca; color:var(--bad-ink); border-radius:12px;
+            padding:14px 16px; margin-top:16px; font-size:14px;}
+    .empty{color:var(--muted); font-size:13px;}
+    .footnote{text-align:center; color:var(--muted); font-size:12px; margin-top:30px; line-height:1.6;}
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useCallback, useRef } = React;
+    const API = "http://localhost:8000/analyze";
+
+    const cls = c => c >= 0.85 ? "hi" : c >= 0.5 ? "mid" : "lo";
+    const pct = c => Math.round((c || 0) * 100) + "%";
+    const fsize = b => b < 1024 ? b + " B" : b < 1048576 ? (b/1024).toFixed(0)+" KB" : (b/1048576).toFixed(1)+" MB";
+
+    function Card({icon, title, right, children}) {
+      return (
+        <div className="card fade">
+          <div className="card-h">
+            <span className="ci">{icon}</span><h2>{title}</h2>
+            <span style={{marginLeft:"auto"}}>{right}</span>
+          </div>
+          {children}
+        </div>
+      );
+    }
+
+    function App() {
+      const [file, setFile] = useState(null);
+      const [loading, setLoading] = useState(false);
+      const [result, setResult] = useState(null);
+      const [error, setError] = useState(null);
+      const [drag, setDrag] = useState(false);
+      const inputRef = useRef(null);
+
+      const submit = useCallback(async () => {
+        if (!file) return;
+        setLoading(true); setError(null); setResult(null);
+        try {
+          const fd = new FormData(); fd.append("file", file);
+          const res = await fetch(API, { method:"POST", body:fd });
+          if (!res.ok) { const d = await res.json().catch(()=>({})); throw new Error(d.detail || ("HTTP "+res.status)); }
+          setResult(await res.json());
+        } catch(e) { setError(e.message || "Request failed. Is the API running on :8000?"); }
+        finally { setLoading(false); }
+      }, [file]);
+
+      const reset = () => { setResult(null); setFile(null); setError(null); };
+      const onDrop = e => { e.preventDefault(); setDrag(false); if (e.dataTransfer.files?.[0]) setFile(e.dataTransfer.files[0]); };
+      const download = () => {
+        const blob = new Blob([JSON.stringify(result,null,2)], {type:"application/json"});
+        const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
+        a.download = "prescription.json"; a.click();
+      };
+      const copy = () => navigator.clipboard.writeText(JSON.stringify(result,null,2));
+
+      const r = result;
+      return (
+        <>
+          <div className="topbar"><div className="inner">
+            <div className="logo">℞</div>
+            <div><div className="brand-name">Rx Analyzer</div><div className="brand-tag">Prescription intelligence</div></div>
+          </div></div>
+
+          <div className="wrap">
+            {!r && (
+              <div className="hero">
+                <h1>Turn a messy prescription into a clean, structured record.</h1>
+                <p>Upload a prescription PDF or photo. It reads the doctor's context and handwriting with vision AI, then extracts medications, vitals and labs — every field confidence-scored and flagged for review.</p>
+              </div>
+            )}
+
+            {!r && (
+              <div className={"drop"+(drag?" drag":"")}
+                   onDragOver={e=>{e.preventDefault();setDrag(true);}}
+                   onDragLeave={()=>setDrag(false)} onDrop={onDrop}>
+                <div className="ic">⬆</div>
+                <h3>{file ? "Ready to analyze" : "Drop your prescription here"}</h3>
+                <p className="hint">PDF, JPG or PNG · multi-page supported</p>
+                <input ref={inputRef} type="file" accept=".pdf,image/*" style={{display:"none"}}
+                       onChange={e=>setFile(e.target.files[0])} />
+                <div className="row">
+                  <button className="btn btn-ghost" onClick={()=>inputRef.current.click()}>Choose file</button>
+                  <button className="btn btn-primary" onClick={submit} disabled={!file||loading}>
+                    {loading ? <><span className="spinner"></span> Analyzing…</> : <>Analyze ℞</>}
+                  </button>
+                </div>
+                {file && !loading &&
+                  <div className="filechip">📄 {file.name} · {fsize(file.size)}
+                    <span className="x" onClick={()=>setFile(null)}>✕</span></div>}
+                <div className="legend">
+                  <span><i style={{background:"var(--good)"}}></i>High confidence</span>
+                  <span><i style={{background:"var(--warn)"}}></i>Medium</span>
+                  <span><i style={{background:"var(--bad)"}}></i>Verify</span>
+                </div>
+              </div>
+            )}
+
+            {loading && !r &&
+              <div className="card" style={{marginTop:16}}><div className="loadcard">
+                <div className="dot-pulse">🔎</div>
+                <div><div style={{fontWeight:700}}>Reading the prescription…</div>
+                <div style={{color:"var(--ink2)",fontSize:13,marginTop:2}}>Pass 1: doctor context · Pass 2: interpreting handwriting</div></div>
+              </div></div>}
+
+            {error && <div className="errbox fade">⚠ {error}</div>}
+
+            {r && (
+              <div className="fade">
+                <div className="summary">
+                  <div>
+                    <div className="lbl">Overall confidence</div>
+                    <div className="big">{pct(r.overall_confidence)}</div>
+                    <div className="meter"><i style={{width:pct(r.overall_confidence)}}></i></div>
+                    <div style={{fontSize:12,opacity:.8,marginTop:6}}>{r.pages_analyzed} page(s) analyzed</div>
+                  </div>
+                  <div className="sum-actions">
+                    <button className="btn" onClick={copy}>Copy JSON</button>
+                    <button className="btn" onClick={download}>Download</button>
+                    <button className="btn" onClick={reset}>New ℞</button>
+                  </div>
+                </div>
+
+                {r.warnings?.length > 0 &&
+                  <div className="warnbox fade">
+                    <div className="wh">⚠ Please verify · {r.warnings.length} item(s)</div>
+                    <ul>{r.warnings.map((w,i)=><li key={i}>{w}</li>)}</ul>
+                  </div>}
+
+                <div className="grid2">
+                  <Card icon="🩺" title="Doctor" right={<span className={"pill "+cls(r.doctor?.confidence)}>{pct(r.doctor?.confidence)}</span>}>
+                    <div className="kv">
+                      <b>Name</b><span>{r.doctor?.name || "—"}</span>
+                      <b>Specialty</b><span>{r.doctor?.specialty || "—"}</span>
+                      <b>Qualifications</b><span>{(r.doctor?.qualifications||[]).join(", ") || "—"}</span>
+                      <b>Clinic</b><span>{r.doctor?.clinic_or_hospital || "—"}</span>
+                      <b>Reg. No.</b><span>{r.doctor?.registration_no || "—"}</span>
+                    </div>
+                  </Card>
+                  <Card icon="👤" title="Patient">
+                    <div className="kv">
+                      <b>Name</b><span>{r.patient?.name || "—"}</span>
+                      <b>Age / Sex</b><span>{(r.patient?.age||"—")+" / "+(r.patient?.sex||"—")}</span>
+                      <b>Weight</b><span>{r.patient?.weight || "—"}</span>
+                      <b>Date</b><span>{r.patient?.date || "—"}</span>
+                    </div>
+                  </Card>
+                </div>
+
+                {r.diagnosis?.length > 0 &&
+                  <Card icon="🧾" title="Diagnosis"><ul className="list">{r.diagnosis.map((d,i)=><li key={i}>{d}</li>)}</ul></Card>}
+
+                {r.vitals?.length > 0 &&
+                  <Card icon="❤" title="Vitals">
+                    <div className="chips">
+                      {r.vitals.map((v,i)=>(
+                        <div className="stat" key={i}><div className="n">{v.name}</div><div className="v">{v.value||"—"}</div></div>
+                      ))}
+                    </div>
+                  </Card>}
+
+                {r.lab_findings?.length > 0 &&
+                  <Card icon="🧪" title="Lab Findings">
+                    <table>
+                      <thead><tr><th>Test</th><th>Value</th><th>Status</th><th>Conf.</th></tr></thead>
+                      <tbody>{r.lab_findings.map((l,i)=>(
+                        <tr key={i}>
+                          <td style={{fontWeight:600}}>{l.name}</td><td>{l.value||"—"}</td>
+                          <td>{l.status ? <span className={"status s-"+l.status}>{l.status}</span> : "—"}</td>
+                          <td><span className={"pill "+cls(l.confidence)}>{pct(l.confidence)}</span></td>
+                        </tr>))}
+                      </tbody>
+                    </table>
+                  </Card>}
+
+                <Card icon="💊" title={"Medications · "+(r.medications?.length||0)}>
+                  {(r.medications||[]).length===0 && <div className="empty">No medications extracted.</div>}
+                  {(r.medications||[]).map((m,i)=>(
+                    <div className="med" key={i}>
+                      <div className="med-top">
+                        <span className="med-name">{m.name || m.raw_text || "Unknown"}</span>
+                        <span className={"pill "+cls(m.confidence)}>{m.needs_verification?"VERIFY · ":""}{pct(m.confidence)}</span>
+                      </div>
+                      <div className="tagrow">
+                        {[["💪",m.strength],["▢",m.form],["#",m.dose],["⏱",m.frequency],["→",m.route],["📅",m.duration]]
+                          .filter(x=>x[1]).map((x,k)=><span className="tag" key={k}>{x[0]} {x[1]}</span>)}
+                      </div>
+                      {m.instructions && <div className="med-meta">📝 {m.instructions}</div>}
+                      {m.generic_name && <div className="med-meta">Generic: {m.generic_name}</div>}
+                      {m.raw_text && m.raw_text !== m.name && <div className="raw-as">as written: “{m.raw_text}”</div>}
+                    </div>
+                  ))}
+                </Card>
+
+                {r.investigations?.length > 0 &&
+                  <Card icon="🔬" title="Investigations Ordered"><ul className="list">{r.investigations.map((t,i)=><li key={i}>{t}</li>)}</ul></Card>}
+                {r.advice?.length > 0 &&
+                  <Card icon="🌿" title="Advice"><ul className="list">{r.advice.map((a,i)=><li key={i}>{a}</li>)}</ul></Card>}
+                {r.follow_up && <Card icon="📆" title="Follow-up"><div style={{fontSize:14}}>{r.follow_up}</div></Card>}
+
+                {r.raw_transcription &&
+                  <details><summary>Show raw transcription (everything read, incl. uncertain bits)</summary>
+                    <pre>{r.raw_transcription}</pre></details>}
+
+                <div className="footnote">
+                  ⚕ This is a decision-support aid, not a prescriber. Always have a pharmacist or doctor
+                  verify — especially items marked <b>VERIFY</b> or with low confidence.
+                </div>
+              </div>
+            )}
+          </div>
+        </>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+  </script>
+</body>
+</html>

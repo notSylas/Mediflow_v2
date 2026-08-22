@@ -779,3 +779,63 @@ export const vaultRecords = pgTable("vault_records", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+// ---------------------------------------------------------------------------
+// Prescription Analyzer — a vision-LLM pass over an uploaded prescription that
+// returns structured medications/vitals/labs with per-field confidence.
+//
+// The analysis runs in a separate Python container (prescription-analyzer/) as
+// a Cloud Run Job, because it needs PyMuPDF and a vision model. The job reads
+// the uploaded bytes from this table and writes its result back here, so the
+// file never has to leave Postgres — same approach as medical_reports and
+// chat_attachments.
+//
+// Two 300-DPI vision passes take 20-60s, which is why this is a queued job
+// with a polled status rather than a request the browser waits on.
+// ---------------------------------------------------------------------------
+
+export const prescriptionAnalysisStatus = pgEnum("prescription_analysis_status", [
+  "queued",
+  "processing",
+  "succeeded",
+  "failed",
+]);
+
+export const prescriptionAnalyses = pgTable("prescription_analyses", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  // Whoever uploaded it — a patient analysing their own prescription, or the
+  // doctor analysing one brought in from elsewhere.
+  uploaderId: text("uploader_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  // Set when the analysis was started from a vault record, so the extracted
+  // fields can be written back to it.
+  vaultRecordId: uuid("vault_record_id").references(() => vaultRecords.id, {
+    onDelete: "cascade",
+  }),
+
+  filename: text("filename").notNull(),
+  mimeType: text("mime_type").notNull(),
+  byteSize: integer("byte_size").notNull(),
+  data: bytea("data").notNull(),
+
+  status: prescriptionAnalysisStatus("status").notNull().default("queued"),
+  // The Cloud Run Job execution this row was handed to, e.g.
+  // "prescription-analyzer-abc12". Used to poll progress and to spot a job
+  // that died without ever writing a result back.
+  jobExecution: text("job_execution"),
+  attempts: integer("attempts").notNull().default(0),
+
+  // The analyzer's AnalyzedPrescription payload (see
+  // prescription-analyzer/prescription_analyzer/schema.py). Stored verbatim so
+  // the UI can render new fields without a migration.
+  result: jsonb("result"),
+  // Convenience copy of result.overall_confidence for sorting/filtering
+  // without unpacking the JSON.
+  overallConfidence: integer("overall_confidence"),
+  error: text("error"),
+
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  startedAt: timestamp("started_at", { withTimezone: true }),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
+});
