@@ -1,0 +1,35 @@
+# Cloud Run Job image for the prescription analyzer (prescription-analyzer/).
+#
+# A Job, not a Service: there is no HTTP surface. Cloud Run runs the container
+# once per upload with ANALYSIS_ID set, job.py analyses that row and exits.
+# Two 300-DPI vision passes take 20-60s, well past what a request should hold.
+#
+#   docker build -f Dockerfile.analyzer -t mediflow-analyzer .
+#   docker run --rm -e ANALYSIS_ID=<uuid> -e DATABASE_URL=... mediflow-analyzer
+#
+# PyMuPDF ships manylinux wheels, so no system PDF libraries are needed — the
+# slim base is enough and keeps the image small.
+
+FROM python:3.12-slim AS runtime
+
+WORKDIR /app
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1
+
+COPY prescription-analyzer/requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Only the pipeline itself — not the venv, the local FastAPI server, or the
+# sample PDF (see .dockerignore).
+COPY prescription-analyzer/config.py ./
+COPY prescription-analyzer/job.py ./
+COPY prescription-analyzer/prescription_analyzer ./prescription_analyzer
+
+# Cloud Run Jobs run as root by default; drop to an unprivileged user since
+# this container handles patient documents.
+RUN useradd --create-home --uid 1001 analyzer && chown -R analyzer:analyzer /app
+USER analyzer
+
+ENTRYPOINT ["python", "job.py"]

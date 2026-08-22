@@ -25,3 +25,14 @@ certs
 README.md
 docs
 load
+
+# prescription-analyzer: never ship the local venv, the local FastAPI server,
+# the zero-build demo page, or the sample prescription PDF into an image.
+prescription-analyzer/.venv
+prescription-analyzer/api.py
+prescription-analyzer/main.py
+prescription-analyzer/web
+prescription-analyzer/*.pdf
+prescription-analyzer/result.json
+**/__pycache__
+*.pyc

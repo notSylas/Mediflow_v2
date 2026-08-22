@@ -65,3 +65,15 @@ graphify-out/
 .db-root-password.txt
 .db-app-password.txt
 .cron-secret.txt
+
+# Captured runtime logs. Never committed: Cloud Run logs contain OTP codes,
+# patient emails, and (from the first failed deploy) a DATABASE_URL with its
+# password. Rules.md #11 — no PII in anything that leaves the machine.
+backend/logs/
+
+# Python (prescription-analyzer)
+.venv/
+__pycache__/
+*.pyc
+prescription-analyzer/result.json
+prescription-analyzer/*.pdf
