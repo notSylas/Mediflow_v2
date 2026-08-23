@@ -133,6 +133,13 @@ export const doctorProfiles = pgTable("doctor_profiles", {
   registrationNo: text("registration_no"), // medical council registration
   yearsExperience: integer("years_experience"),
   languages: text("languages"), // comma-separated, e.g. "English, Hindi"
+  // Signature image shown on issued prescriptions (backend/patient/
+  // PrescriptionDocument.tsx). One per doctor — same cardinality as
+  // photoUrl above, so it's a column here rather than a separate bytea
+  // table like medical_reports (which is genuinely many-per-patient).
+  // Uploading a new one replaces the old, there's no history kept.
+  signatureMimeType: text("signature_mime_type"),
+  signatureData: bytea("signature_data"),
   // --- Marketplace fields (Phase 1) ---
   // System of medicine — drives the search filter and (later) prescription scope.
   systemOfMedicine: systemOfMedicine("system_of_medicine").notNull().default("allopathy"),

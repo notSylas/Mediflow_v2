@@ -27,6 +27,7 @@ import {
   listAvailabilityRules,
   readDoctorProfile,
   updateDoctorProfile,
+  uploadDoctorSignature,
 } from "./doctor";
 import { searchMedicines } from "./medicines";
 import {
@@ -136,6 +137,7 @@ const HANDLERS: Record<string, ApiHandler> = {
   "GET /api/doctor/next-consult": getNextConsult,
   "GET /api/doctor/profile": readDoctorProfile,
   "PATCH /api/doctor/profile": updateDoctorProfile,
+  "POST /api/doctor/signature": uploadDoctorSignature,
   "GET /api/medicines": searchMedicines,
   "GET /api/patient/profile": readPatientProfile,
   "PUT /api/patient/profile": updatePatientProfile,

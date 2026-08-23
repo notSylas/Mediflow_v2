@@ -25,6 +25,7 @@
     { "method": "GET",    "path": "/api/doctor/next-consult" },
     { "method": "GET",    "path": "/api/doctor/profile" },
     { "method": "PATCH",  "path": "/api/doctor/profile" },
+    { "method": "POST",   "path": "/api/doctor/signature" },
     { "method": "GET",    "path": "/api/medicines" },
     { "method": "GET",    "path": "/api/patient/profile" },
     { "method": "PUT",    "path": "/api/patient/profile" },
