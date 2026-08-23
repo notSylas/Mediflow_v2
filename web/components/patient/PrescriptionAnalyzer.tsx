@@ -18,7 +18,8 @@ interface Analysis {
   error: string | null;
 }
 
-const MAX_BYTES = 5 * 1024 * 1024;
+// Mirrors MAX_ANALYSIS_BYTES — Cloud Run's request-body ceiling.
+const MAX_BYTES = 32 * 1024 * 1024;
 const POLL_MS = 2000;
 /** Two 300-DPI vision passes; used only to pace the progress bar. */
 const TYPICAL_SECONDS = 45;
@@ -69,7 +70,7 @@ export function PrescriptionAnalyzer() {
   const upload = useCallback(async (file: File) => {
     setError(null);
     if (file.size > MAX_BYTES) {
-      setError("That file is larger than 5 MB. Try a smaller scan or photo.");
+      setError("That file is larger than 32 MB. Try compressing the scan.");
       return;
     }
 
@@ -151,7 +152,7 @@ export function PrescriptionAnalyzer() {
             Drop a prescription here, or choose a file
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
-            PDF or photo, up to 5 MB. Reading it takes about a minute.
+            PDF or photo. Reading it takes about a minute.
           </p>
           <input
             ref={inputRef}

@@ -31,7 +31,7 @@ class PrescriptionAnalyzer:
 
         # --- Pass 1: who is the doctor? (context) ---
         try:
-            ctx = self.llm.complete_json(CONTEXT_SYSTEM, CONTEXT_USER, images, max_tokens=1200)
+            ctx = self.llm.complete_json(CONTEXT_SYSTEM, CONTEXT_USER, images, max_tokens=2000)
         except Exception as e:
             logger.warning("Context pass failed: %s", e)
             ctx = {}
@@ -61,7 +61,7 @@ class PrescriptionAnalyzer:
         )
         user = ANALYZE_USER.format(doctor_context=context_str)
         try:
-            body = self.llm.complete_json(ANALYZE_SYSTEM, user, images, max_tokens=3500)
+            body = self.llm.complete_json(ANALYZE_SYSTEM, user, images, max_tokens=16000)
         except Exception as e:
             logger.error("Analysis pass failed: %s", e)
             return AnalyzedPrescription(

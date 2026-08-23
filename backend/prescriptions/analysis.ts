@@ -73,8 +73,16 @@ export const ALLOWED_ANALYSIS_TYPES = [
   "image/bmp",
 ] as const;
 
-/** Same ceiling as medical reports and chat attachments. */
-export const MAX_ANALYSIS_BYTES = 5 * 1024 * 1024;
+/**
+ * No product-level cap: a multi-page scan of a hospital prescription is
+ * routinely larger than the 5 MB used for chat attachments, and refusing it
+ * helped nobody.
+ *
+ * 32 MB is Cloud Run's hard request-body limit, not a choice — a larger upload
+ * is rejected by the platform before any of our code runs. Checking it here
+ * only means the user gets a sentence instead of an opaque 413.
+ */
+export const MAX_ANALYSIS_BYTES = 32 * 1024 * 1024;
 
 export interface NewAnalysis {
   uploaderId: string;
