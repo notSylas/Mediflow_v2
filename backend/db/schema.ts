@@ -548,6 +548,10 @@ export const medicines = pgTable("medicines", {
   strengths: text("strengths").array().notNull().default(sql`'{}'::text[]`),
   route: text("route").notNull().default("oral"),
   category: text("category"),
+  // Real-catalog fields (see scripts/import-medicines-dataset.ts) — null for
+  // any row that only ever came from the old hand-picked seed list.
+  manufacturer: text("manufacturer"),
+  composition: text("composition"),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });

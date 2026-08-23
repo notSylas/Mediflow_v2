@@ -27,6 +27,8 @@ export const searchMedicines: ApiHandler = async (request) => {
       strengths: medicines.strengths,
       route: medicines.route,
       klass: medicines.category,
+      manufacturer: medicines.manufacturer,
+      composition: medicines.composition,
     })
     .from(medicines)
     .where(
@@ -47,6 +49,8 @@ export const searchMedicines: ApiHandler = async (request) => {
       strengths: row.strengths,
       route: row.route,
       klass: row.klass ?? "Medicine",
+      manufacturer: row.manufacturer,
+      composition: row.composition,
     })),
   });
 };
