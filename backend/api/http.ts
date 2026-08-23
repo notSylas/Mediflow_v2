@@ -37,3 +37,20 @@ export function nextRoute(handler: ApiHandler) {
     ctx?: { params: Promise<Record<string, string>> }
   ): Promise<Response> => handler(request, { params: ctx ? await ctx.params : {} });
 }
+
+/**
+ * The origin a link in a response body should point back at — never
+ * `new URL(request.url).origin` alone, which behind a reverse proxy (Caddy
+ * on LAN, Cloud Run's load balancer) resolves to the internal upstream
+ * address (e.g. `http://app:3000`), not whatever the browser/phone actually
+ * used to reach it. Reverse proxies set `X-Forwarded-Proto`/`-Host` (Caddy's
+ * `reverse_proxy` does this by default; Cloud Run's LB sets Proto and
+ * preserves the real `Host` header) — prefer those, fall back to the raw
+ * request URL for the no-proxy case (`next dev`/`npm run backend` direct).
+ */
+export function resolveOrigin(request: Request): string {
+  const proto = request.headers.get("x-forwarded-proto");
+  const host = request.headers.get("x-forwarded-host") ?? request.headers.get("host");
+  if (proto && host) return `${proto}://${host}`;
+  return new URL(request.url).origin;
+}

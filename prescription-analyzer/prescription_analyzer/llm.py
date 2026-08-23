@@ -1,7 +1,8 @@
 """Thin vision-LLM wrapper supporting OpenAI and Ollama (qwen2.5vl) via one interface."""
 
 import json
-from typing import List, Optional
+import urllib.request
+from typing import List
 
 from openai import OpenAI
 
@@ -13,9 +14,7 @@ class VisionLLM:
         self.provider = Config.LLM_PROVIDER
         self.model = Config.model()
         if self.provider == "ollama":
-            # Ollama exposes an OpenAI-compatible endpoint at /v1
-            base = Config.OLLAMA_HOST.rstrip("/") + "/v1"
-            self.client = OpenAI(base_url=base, api_key="ollama")
+            self.ollama_host = Config.OLLAMA_HOST.rstrip("/")
         else:
             self.client = OpenAI(api_key=Config.OPENAI_API_KEY)
 
@@ -27,11 +26,18 @@ class VisionLLM:
         max_tokens: int = 8000,
     ) -> dict:
         """Send text + page images, return the parsed JSON object."""
+        if self.provider == "ollama":
+            return self._complete_json_ollama(system, user_text, image_data_uris, max_tokens)
+        return self._complete_json_openai(system, user_text, image_data_uris, max_tokens)
+
+    def _complete_json_openai(
+        self, system: str, user_text: str, image_data_uris: List[str], max_tokens: int
+    ) -> dict:
         content = [{"type": "text", "text": user_text}]
         for uri in image_data_uris:
             content.append({"type": "image_url", "image_url": {"url": uri, "detail": "high"}})
 
-        kwargs = dict(
+        resp = self.client.chat.completions.create(
             model=self.model,
             messages=[
                 {"role": "system", "content": system},
@@ -39,25 +45,73 @@ class VisionLLM:
             ],
             temperature=0,
             max_tokens=max_tokens,
+            frequency_penalty=0.4,
+            presence_penalty=0.4,
+            response_format={"type": "json_object"},
         )
-        # OpenAI supports strict JSON mode; Ollama's compat layer may not.
-        if self.provider == "openai":
-            kwargs["response_format"] = {"type": "json_object"}
-
-        resp = self.client.chat.completions.create(**kwargs)
         choice = resp.choices[0]
-
-        # A truncated response is still *valid* as far as the API is concerned:
-        # it just stops mid-object, and json.loads then reports a misleading
-        # "Expecting ',' delimiter" deep in the string. Catch it at the source
-        # so the failure names the real cause.
         if choice.finish_reason == "length":
             raise ValueError(
                 f"model output hit the {max_tokens}-token limit and was truncated "
                 "before the JSON closed — raise max_tokens for this pass"
             )
-
         raw = (choice.message.content or "").strip()
+        return _parse_json(raw)
+
+    def _complete_json_ollama(
+        self, system: str, user_text: str, image_data_uris: List[str], max_tokens: int
+    ) -> dict:
+        # Deliberately NOT using the OpenAI SDK / Ollama's /v1 compat endpoint
+        # here. Verified directly against this Ollama instance: the compat
+        # endpoint silently ignores num_ctx (both the top-level field and the
+        # nested {"options": {...}} shape) and always (re)loads the model at
+        # the stock 4096-token context, even when a larger context was
+        # already warm from a prior native-API call — confirmed via
+        # GET /api/ps before/after each variant. Only the native /api/chat
+        # endpoint with a top-level "options" object actually resizes the
+        # loaded context. A single rendered page image can itself use over
+        # 1k tokens, so without this the model runs out of context mid
+        # response well before max_tokens is ever reached, and Ollama's
+        # compat layer reports that as an opaque 400 "exceeds context size"
+        # rather than a clean truncation signal.
+        images_b64 = [uri.split(",", 1)[1] if "," in uri else uri for uri in image_data_uris]
+
+        body = {
+            "model": self.model,
+            "messages": [
+                {"role": "system", "content": system},
+                {"role": "user", "content": user_text, "images": images_b64},
+            ],
+            "format": "json",
+            "stream": False,
+            "options": {
+                "temperature": 0,
+                "num_predict": max_tokens,
+                "num_ctx": max_tokens + 8000,
+                # Native equivalent of the frequency/presence penalty guard
+                # against greedy-decoding repetition loops on the open-ended
+                # "transcribe everything" instruction.
+                "repeat_penalty": 1.3,
+            },
+        }
+        req = urllib.request.Request(
+            f"{self.ollama_host}/api/chat",
+            data=json.dumps(body).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        # Generous timeout: a dense multi-page prescription on a local GPU
+        # can genuinely take a couple of minutes at a large context size.
+        with urllib.request.urlopen(req, timeout=300) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+
+        if data.get("done_reason") == "length":
+            raise ValueError(
+                f"model output hit the {max_tokens}-token limit and was truncated "
+                "before the JSON closed — raise max_tokens for this pass"
+            )
+
+        raw = (data.get("message", {}).get("content") or "").strip()
         return _parse_json(raw)
 
 

@@ -1,9 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   AlertTriangle,
   FileText,
+  FolderHeart,
   Loader2,
   Minus,
   Moon,
@@ -144,50 +146,73 @@ export function PrescriptionAnalyzer() {
   return (
     <div className="space-y-6">
       {!busy && (
-        <div
-          onDragOver={(e) => {
-            e.preventDefault();
-            setDragging(true);
-          }}
-          onDragLeave={() => setDragging(false)}
-          onDrop={(e) => {
-            e.preventDefault();
-            setDragging(false);
-            const file = e.dataTransfer.files?.[0];
-            if (file) void upload(file);
-          }}
-          className={cn(
-            "rounded-xl border-2 border-dashed p-8 text-center transition-colors",
-            dragging ? "border-primary bg-primary/5" : "border-muted-foreground/25"
-          )}
-        >
-          <Upload className="mx-auto h-8 w-8 text-muted-foreground" aria-hidden />
-          <p className="mt-3 text-sm font-medium">
-            Drop a prescription here, or choose a file
-          </p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            PDF or photo. Reading it takes about a minute.
-          </p>
-          <input
-            ref={inputRef}
-            type="file"
-            accept=".pdf,image/png,image/jpeg,image/webp,image/tiff,image/bmp"
-            className="sr-only"
-            aria-label="Prescription file"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) void upload(file);
-              e.target.value = "";
+        <div>
+          <div
+            onDragOver={(e) => {
+              e.preventDefault();
+              setDragging(true);
             }}
-          />
-          <Button
-            type="button"
-            variant="outline"
-            className="mt-4"
-            onClick={() => inputRef.current?.click()}
+            onDragLeave={() => setDragging(false)}
+            onDrop={(e) => {
+              e.preventDefault();
+              setDragging(false);
+              const file = e.dataTransfer.files?.[0];
+              if (file) void upload(file);
+            }}
+            className={cn(
+              "rounded-xl border-2 border-dashed p-8 text-center transition-all duration-300 ease-out",
+              dragging
+                ? "scale-[1.015] border-primary bg-primary/5 shadow-sm"
+                : "border-muted-foreground/25"
+            )}
           >
-            Choose file
-          </Button>
+            <Upload
+              className={cn(
+                "mx-auto h-8 w-8 transition-colors",
+                dragging ? "text-primary" : "text-muted-foreground"
+              )}
+              aria-hidden
+            />
+            <p className="mt-3 text-sm font-medium">
+              Drop a prescription here, or choose a file
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              PDF or photo. Reading it takes about a minute.
+            </p>
+            <input
+              ref={inputRef}
+              type="file"
+              accept=".pdf,image/png,image/jpeg,image/webp,image/tiff,image/bmp"
+              className="sr-only"
+              aria-label="Prescription file"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) void upload(file);
+                e.target.value = "";
+              }}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              className="mt-4"
+              onClick={() => inputRef.current?.click()}
+            >
+              Choose file
+            </Button>
+          </div>
+
+          <ul className="mt-4 flex flex-wrap justify-center gap-2" aria-label="What this reads">
+            {["Reads handwriting", "Normalizes dosing shorthand", "Flags anything uncertain"].map(
+              (capability) => (
+                <li
+                  key={capability}
+                  className="rounded-full border bg-card px-3 py-1 text-xs text-muted-foreground"
+                >
+                  {capability}
+                </li>
+              )
+            )}
+          </ul>
         </div>
       )}
 
@@ -200,6 +225,7 @@ export function PrescriptionAnalyzer() {
 
       {busy && (
         <ProgressPanel
+          key={status}
           status={status}
           uploadPct={uploadPct}
           elapsed={elapsed}
@@ -226,6 +252,7 @@ export function PrescriptionAnalyzer() {
         <AnalysisResult
           result={analysis.result}
           filename={analysis.filename}
+          analysisId={analysis.id}
           onReset={() => setAnalysis(null)}
         />
       )}
@@ -436,19 +463,40 @@ function LabStatus({ status }: { status: string | null }) {
 function AnalysisResult({
   result,
   filename,
+  analysisId,
   onReset,
 }: {
   result: AnalyzedPrescription;
   filename: string;
+  analysisId: string;
   onReset: () => void;
 }) {
+  const router = useRouter();
   const [showRaw, setShowRaw] = useState(false);
+  const [pushing, setPushing] = useState(false);
+  const [pushError, setPushError] = useState<string | null>(null);
   const scheduled = result.medications
     .map((m) => ({ med: m, slots: slotsFor(m) }))
     .filter((r) => r.slots !== null) as { med: AnalyzedMedication; slots: Record<string, boolean> }[];
 
+  const saveToVault = async () => {
+    setPushing(true);
+    setPushError(null);
+    try {
+      const res = await fetch(`/api/v1/prescription-analyses/${analysisId}/push-to-vault`, {
+        method: "POST",
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(typeof json?.error === "string" ? json.error : "Couldn't save to vault");
+      router.push(`/patient/vault/records/${json.vaultRecordId}`);
+    } catch (e) {
+      setPushError(e instanceof Error ? e.message : "Couldn't save to vault");
+      setPushing(false);
+    }
+  };
+
   return (
-    <div className="space-y-6">
+    <div className="animate-in fade-in zoom-in-95 space-y-6 duration-500">
       {/* Hero. docs/Design.md allows depth on "the prescription panel" — this is
           that surface, so it carries the identity gradient the rest of the page
           deliberately does not. */}
@@ -464,10 +512,22 @@ function AnalysisResult({
               {result.doctor.specialty ? ` · ${result.doctor.specialty}` : ""}
             </p>
           </div>
-          <Button type="button" variant="outline" size="sm" onClick={onReset}>
-            Analyse another
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" size="sm" onClick={saveToVault} disabled={pushing}>
+              <FolderHeart className="mr-2 h-4 w-4" />
+              {pushing ? "Saving…" : "Save to Vault"}
+            </Button>
+            <Button type="button" variant="outline" size="sm" onClick={onReset}>
+              Analyse another
+            </Button>
+          </div>
         </div>
+        {pushError && (
+          <p className="mt-2 flex items-center gap-2 text-sm text-destructive">
+            <AlertTriangle className="h-3.5 w-3.5 shrink-0" aria-hidden />
+            {pushError}
+          </p>
+        )}
 
         <div className="mt-4 grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
           <ConfidenceMeter value={result.overall_confidence} label="Overall read confidence" />

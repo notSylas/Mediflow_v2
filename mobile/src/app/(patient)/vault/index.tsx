@@ -4,7 +4,8 @@ import { router } from "expo-router";
 import { StyleSheet, Text, View } from "react-native";
 import { AuroraScreen } from "@/components/aurora-screen";
 import { ListSkeleton } from "@/components/skeleton";
-import { FadeInView } from "@/components/motion";
+import { FadeInView, PressableScale } from "@/components/motion";
+import { VaultDoctorConsentModal } from "@/components/vault-doctor-consent-modal";
 import { Body, Button, Card, EmptyState, ErrorState, Muted } from "@/components/ui";
 import { useToast } from "@/components/toast";
 import { apiFetch } from "@/lib/api";
@@ -49,17 +50,19 @@ export default function PatientVault() {
   const pastShares = grants.filter((g) => g.status !== "active");
 
   return (
-    <AuroraScreen
-      variant="patient"
-      compactHeader
-      title="Health Vault"
-      subtitle="Your prescriptions and notes, ready to share with any doctor"
-      refreshing={timelineQuery.isRefetching}
-      onRefresh={() => {
-        timelineQuery.refetch();
-        sharesQuery.refetch();
-      }}
-    >
+    <>
+      <VaultDoctorConsentModal />
+      <AuroraScreen
+        variant="patient"
+        compactHeader
+        title="Health Vault"
+        subtitle="Your prescriptions and notes, ready to share with any doctor"
+        refreshing={timelineQuery.isRefetching}
+        onRefresh={() => {
+          timelineQuery.refetch();
+          sharesQuery.refetch();
+        }}
+      >
       {timelineQuery.error ? (
         <ErrorState message={timelineQuery.error.message} onRetry={() => timelineQuery.refetch()} />
       ) : null}
@@ -72,7 +75,7 @@ export default function PatientVault() {
             </View>
             <View style={{ flex: 1 }}>
               <Body strong>Currently shared</Body>
-              <Muted>Expires {formatDateTime(activeShare.expiresAt)}</Muted>
+              <Muted>Active since {formatDateTime(activeShare.createdAt)}</Muted>
             </View>
           </View>
           <Muted>
@@ -114,30 +117,46 @@ export default function PatientVault() {
         <View style={styles.list}>
           {items.map((item, index) => (
             <FadeInView key={item.id} index={index}>
-              <Card>
-                <View style={styles.itemRow}>
-                  <View style={styles.itemIcon}>
-                    <MaterialCommunityIcons
-                      name={item.type === "prescription" ? "pill" : "notebook-outline"}
-                      size={18}
-                      color={colors.doctor}
-                    />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <View style={styles.itemTitleRow}>
-                      <Body strong>{item.summary}</Body>
-                      {item.source === "added" ? (
-                        <View style={styles.addedTag}>
-                          <Text style={styles.addedTagText}>Added by you</Text>
-                        </View>
-                      ) : null}
+              <PressableScale
+                accessibilityRole="button"
+                onPress={() =>
+                  item.type === "added_record"
+                    ? router.push({
+                        pathname: "/(patient)/vault/records/[id]",
+                        params: { id: item.id },
+                      })
+                    : router.push({
+                        pathname: "/(patient)/appointments/[id]",
+                        params: { id: item.appointmentId! },
+                      })
+                }
+              >
+                <Card>
+                  <View style={styles.itemRow}>
+                    <View style={styles.itemIcon}>
+                      <MaterialCommunityIcons
+                        name={item.type === "prescription" ? "pill" : "notebook-outline"}
+                        size={18}
+                        color={colors.doctor}
+                      />
                     </View>
-                    <Muted>
-                      {item.doctorName} · {formatDate(item.date)}
-                    </Muted>
+                    <View style={{ flex: 1 }}>
+                      <View style={styles.itemTitleRow}>
+                        <Body strong>{item.summary}</Body>
+                        {item.source === "added" ? (
+                          <View style={styles.addedTag}>
+                            <Text style={styles.addedTagText}>Added by you</Text>
+                          </View>
+                        ) : null}
+                      </View>
+                      <Muted>
+                        {item.doctorName} · {formatDate(item.date)}
+                      </Muted>
+                    </View>
+                    <MaterialCommunityIcons name="chevron-right" size={18} color={colors.textFaint} />
                   </View>
-                </View>
-              </Card>
+                </Card>
+              </PressableScale>
             </FadeInView>
           ))}
         </View>
@@ -148,20 +167,17 @@ export default function PatientVault() {
           <Text style={styles.pastHeading}>Share history</Text>
           {pastShares.map((g) => (
             <View key={g.id} style={styles.pastRow}>
-              <MaterialCommunityIcons
-                name={g.status === "revoked" ? "cancel" : "clock-outline"}
-                size={15}
-                color={colors.textFaint}
-              />
+              <MaterialCommunityIcons name="cancel" size={15} color={colors.textFaint} />
               <Text style={styles.pastText}>
-                {g.status === "revoked" ? "Revoked" : "Expired"} · created {formatDate(g.createdAt)}
+                Revoked · created {formatDate(g.createdAt)}
                 {g.viewCount > 0 ? ` · viewed ${g.viewCount}×` : " · never viewed"}
               </Text>
             </View>
           ))}
         </View>
       ) : null}
-    </AuroraScreen>
+      </AuroraScreen>
+    </>
   );
 }
 

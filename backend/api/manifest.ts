@@ -89,10 +89,10 @@ import { razorpayWebhook } from "./webhooks";
 import {
   getAnalysis,
   listAnalysesHandler,
+  pushAnalysisToVault,
   uploadAnalysis,
 } from "./v1/prescription-analyzer";
 import {
-  confirmShareHandler,
   createRecord,
   createShare,
   deleteRecord,
@@ -100,6 +100,8 @@ import {
   getRecord,
   getVault,
   listSharesHandler,
+  previewShareHandler,
+  recordDoctorConsent,
   redeemShare,
   revokeShareHandler,
   updateRecord,
@@ -177,7 +179,9 @@ const HANDLERS: Record<string, ApiHandler> = {
   "GET /api/v1/prescription-analyses": listAnalysesHandler,
   "POST /api/v1/prescription-analyses": uploadAnalysis,
   "GET /api/v1/prescription-analyses/:id": getAnalysis,
+  "POST /api/v1/prescription-analyses/:id/push-to-vault": pushAnalysisToVault,
   "GET /api/v1/patient/vault": getVault,
+  "POST /api/v1/patient/vault/doctor-consent": recordDoctorConsent,
   "POST /api/v1/patient/vault/records": createRecord,
   "GET /api/v1/patient/vault/records/:id": getRecord,
   "PATCH /api/v1/patient/vault/records/:id": updateRecord,
@@ -185,7 +189,7 @@ const HANDLERS: Record<string, ApiHandler> = {
   "GET /api/v1/patient/vault/export": exportVaultHandler,
   "GET /api/v1/patient/vault/share": listSharesHandler,
   "POST /api/v1/patient/vault/share": createShare,
-  "POST /api/v1/patient/vault/share/confirm": confirmShareHandler,
+  "GET /api/v1/patient/vault/share/preview": previewShareHandler,
   "POST /api/v1/patient/vault/share/:id/revoke": revokeShareHandler,
   "POST /api/v1/vault/redeem": redeemShare,
 };

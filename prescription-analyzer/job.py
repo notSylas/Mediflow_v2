@@ -102,13 +102,10 @@ def _fail(conn: psycopg.Connection, analysis_id: str, message: str) -> None:
         )
 
 
-def main() -> int:
-    analysis_id = os.environ.get("ANALYSIS_ID")
-    if not analysis_id:
-        logger.error("ANALYSIS_ID is required")
-        return 2
-
-    conn = _connect()
+def run_analysis(conn: psycopg.Connection, analysis_id: str) -> int:
+    """Claims one row, analyses it, writes back a terminal state. Shared by
+    the Cloud Run Job entrypoint below and prescription-analyzer/dev_worker.py
+    (the local dev stand-in for Cloud Run Jobs) — same logic either way."""
     try:
         row = _claim(conn, analysis_id)
         if row is None:
@@ -149,6 +146,17 @@ def main() -> int:
         except Exception:
             logger.exception("could not record the failure for %s", analysis_id)
         return 1
+
+
+def main() -> int:
+    analysis_id = os.environ.get("ANALYSIS_ID")
+    if not analysis_id:
+        logger.error("ANALYSIS_ID is required")
+        return 2
+
+    conn = _connect()
+    try:
+        return run_analysis(conn, analysis_id)
     finally:
         conn.close()
 

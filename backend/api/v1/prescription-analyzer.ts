@@ -7,6 +7,7 @@ import {
   listAnalyses,
 } from "~backend/prescriptions/analysis";
 import { runAnalysisJob } from "~backend/prescriptions/job-runner";
+import { createVaultRecordFromAnalysis } from "~backend/vault/vault-records";
 import type { ApiHandler } from "../http";
 
 /**
@@ -73,4 +74,21 @@ export const listAnalysesHandler: ApiHandler = async (request) => {
   if (access instanceof Response) return access;
 
   return Response.json({ analyses: await listAnalyses(access.id) });
+};
+
+/**
+ * POST /api/v1/prescription-analyses/:id/push-to-vault — the "Save to Vault"
+ * bridge from the standalone analyzer page. Creates a new vault record
+ * pre-filled from an already-succeeded analysis; the patient still lands on
+ * the normal review/confirm screen — nothing here bypasses that step.
+ */
+export const pushAnalysisToVault: ApiHandler = async (request, { params }) => {
+  const access = await requireSession(request.headers);
+  if (access instanceof Response) return access;
+
+  const result = await createVaultRecordFromAnalysis(access.id, params.id);
+  if (!result.record) {
+    return Response.json({ error: result.error ?? "Couldn't save to vault" }, { status: 400 });
+  }
+  return Response.json({ vaultRecordId: result.record.id }, { status: 201 });
 };

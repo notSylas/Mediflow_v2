@@ -30,6 +30,7 @@ import type {
   Prescription,
   Report,
 } from "@/lib/types";
+import type { VaultTimelineItem } from "@/lib/vault-types";
 
 interface HistoryRow {
   appointment: Appointment;
@@ -67,6 +68,11 @@ interface Response {
     status: string;
     followUpAvailable: boolean;
     currentPeriodEnd: string | null;
+  };
+  vault: {
+    consented: boolean;
+    consentedAt: string | null;
+    items: VaultTimelineItem[];
   };
   timezone: string;
 }
@@ -181,6 +187,41 @@ export default function DoctorPatientDetail() {
         <Card>
           {timeline.slice(0, 8).map((item, index) => (
             <TimelineRow key={item.id} item={item} last={index === Math.min(timeline.length, 8) - 1} />
+          ))}
+        </Card>
+      )}
+
+      <SectionHeader title="Patient's Vault" />
+      {!data.vault.consented ? (
+        <EmptyState
+          icon="folder-heart-outline"
+          title="No standing access yet"
+          message="This patient hasn't granted standing vault access yet."
+        />
+      ) : data.vault.items.length === 0 ? (
+        <EmptyState icon="folder-heart-outline" title="No vault records yet" message="Nothing shared for consultation yet." />
+      ) : (
+        <Card>
+          {data.vault.items.slice(0, 8).map((item, index) => (
+            <View
+              key={item.id}
+              style={[styles.vaultRow, index > 0 && styles.vaultRowDivider]}
+            >
+              <View style={styles.vaultIcon}>
+                <MaterialCommunityIcons
+                  name={item.type === "prescription" ? "pill" : "notebook-outline"}
+                  size={16}
+                  color={colors.doctor}
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Body strong>{item.summary}</Body>
+                <Muted>
+                  {item.doctorName} · {formatDate(item.date)}
+                  {item.source === "added" ? " · Added by patient" : ""}
+                </Muted>
+              </View>
+            </View>
           ))}
         </Card>
       )}
@@ -505,6 +546,16 @@ function profileScore(profile: PatientProfile | null) {
 }
 
 const styles = StyleSheet.create({
+  vaultRow: { flexDirection: "row", alignItems: "center", gap: 11, paddingVertical: 8 },
+  vaultRowDivider: { borderTopWidth: 1, borderTopColor: colors.border },
+  vaultIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: radius.md,
+    backgroundColor: colors.doctorBg,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   careBadge: {
     flexDirection: "row",
     alignItems: "center",

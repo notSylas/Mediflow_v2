@@ -37,7 +37,7 @@ export function PatientHero({
   children?: React.ReactNode;
 }) {
   return (
-    <section className="relative overflow-hidden rounded-[2rem] border border-teal-200/70 bg-[radial-gradient(circle_at_top_left,rgba(20,184,166,0.22),transparent_32%),linear-gradient(135deg,rgba(15,118,110,0.96),rgba(13,148,136,0.88)_48%,rgba(8,47,73,0.94))] p-6 text-white shadow-2xl shadow-teal-950/10 sm:p-8">
+    <section className="relative overflow-hidden rounded-[2rem] border border-primary/25 bg-[radial-gradient(circle_at_top_left,color-mix(in_oklch,var(--primary)_28%,transparent),transparent_32%),linear-gradient(135deg,color-mix(in_oklch,var(--primary)_96%,black_4%),var(--primary)_48%,color-mix(in_oklch,var(--primary)_88%,black_35%))] p-6 text-primary-foreground shadow-2xl shadow-primary/20 sm:p-8">
       <div className="pointer-events-none absolute -right-20 -top-24 h-72 w-72 rounded-full bg-white/15 blur-3xl" />
       <div className="pointer-events-none absolute bottom-0 right-10 h-32 w-32 rounded-full border border-white/20" />
       <div className="relative z-10 grid gap-8 lg:grid-cols-[minmax(0,1fr)_420px] lg:items-center">
@@ -49,7 +49,7 @@ export function PatientHero({
               </span>
             )}
             {eyebrow && (
-              <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-medium uppercase tracking-[0.22em] text-teal-50">
+              <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-medium uppercase tracking-[0.22em] text-primary-foreground/90">
                 {eyebrow}
               </span>
             )}
@@ -57,7 +57,7 @@ export function PatientHero({
           <h1 className="max-w-3xl text-3xl font-semibold tracking-tight sm:text-4xl lg:text-5xl">
             {title}
           </h1>
-          <p className="mt-3 max-w-2xl text-base leading-7 text-teal-50/85 sm:text-lg">
+          <p className="mt-3 max-w-2xl text-base leading-7 text-primary-foreground/85 sm:text-lg">
             {description}
           </p>
           {actions && <div className="mt-6 flex flex-wrap gap-3">{actions}</div>}
@@ -88,7 +88,7 @@ export function PatientStatCard({
   return (
     <Card className={cn("glass hover-lift rounded-2xl", className)}>
       <CardContent className="flex items-start gap-4 p-5">
-        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-teal-100 text-teal-700">
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
           <Icon className="h-5 w-5" />
         </span>
         <div>
@@ -142,7 +142,7 @@ export function PatientEmptyState({
   return (
     <Card className="glass border-dashed rounded-2xl">
       <CardContent className="flex flex-col items-center gap-4 py-12 text-center">
-        <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-teal-100 text-teal-700">
+        <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
           <Icon className="h-7 w-7" />
         </span>
         <div>

@@ -19,6 +19,20 @@ from .schema import (
 logger = logging.getLogger(__name__)
 
 
+def _flatten_string_fields(data: dict) -> dict:
+    """Coerce dict/list values on what should be plain string fields into a
+    string, instead of letting pydantic reject the whole context pass. Local
+    vision models don't reliably respect "return a string, not an object" —
+    seen concretely with qwen2.5vl grouping contact info as
+    {"phone": "..."} instead of a plain string. Lists (e.g. a
+    "qualifications" list, which is meant to stay a list) are left alone."""
+    out = dict(data)
+    for key, value in out.items():
+        if isinstance(value, dict):
+            out[key] = ", ".join(str(v) for v in value.values() if v)
+    return out
+
+
 class PrescriptionAnalyzer:
     def __init__(self):
         self.llm = VisionLLM()
@@ -36,8 +50,8 @@ class PrescriptionAnalyzer:
             logger.warning("Context pass failed: %s", e)
             ctx = {}
 
-        doctor = DoctorContext(**(ctx.get("doctor") or {}))
-        patient = PatientInfo(**(ctx.get("patient") or {}))
+        doctor = DoctorContext(**_flatten_string_fields(ctx.get("doctor") or {}))
+        patient = PatientInfo(**_flatten_string_fields(ctx.get("patient") or {}))
         logger.info("Doctor: %s | specialty: %s", doctor.name, doctor.specialty)
 
         # --- Pass 2: interpret the body using ALL the context from pass 1 ---
@@ -61,7 +75,7 @@ class PrescriptionAnalyzer:
         )
         user = ANALYZE_USER.format(doctor_context=context_str)
         try:
-            body = self.llm.complete_json(ANALYZE_SYSTEM, user, images, max_tokens=16000)
+            body = self.llm.complete_json(ANALYZE_SYSTEM, user, images, max_tokens=24000)
         except Exception as e:
             logger.error("Analysis pass failed: %s", e)
             return AnalyzedPrescription(

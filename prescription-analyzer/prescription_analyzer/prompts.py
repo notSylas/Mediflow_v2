@@ -20,7 +20,7 @@ Return JSON exactly:
     "registration_no": <string or null>,
     "clinic_or_hospital": <string or null>,
     "address": <string or null>,
-    "contact": <phone/email or null>,
+    "contact": <a single string with phone/email if present (e.g. "+91 98765 43210" or "phone/email"), or null — never an object>,
     "confidence": <0.0-1.0>
   },
   "patient": {
