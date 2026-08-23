@@ -1,7 +1,18 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AlertTriangle, FileText, Loader2, Minus, TrendingUp, Upload } from "lucide-react";
+import {
+  AlertTriangle,
+  FileText,
+  Loader2,
+  Minus,
+  Moon,
+  Sun,
+  Sunrise,
+  Sunset,
+  TrendingUp,
+  Upload,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -278,10 +289,10 @@ function ProgressPanel({
 
 /** Time slots a dose can fall in, in the order a day runs. */
 const SLOTS = [
-  { key: "morning", label: "Morning", short: "M" },
-  { key: "afternoon", label: "Afternoon", short: "A" },
-  { key: "evening", label: "Evening", short: "E" },
-  { key: "night", label: "Night", short: "N" },
+  { key: "morning", label: "Morning", short: "M", icon: Sunrise },
+  { key: "afternoon", label: "Afternoon", short: "A", icon: Sun },
+  { key: "evening", label: "Evening", short: "E", icon: Sunset },
+  { key: "night", label: "Night", short: "N", icon: Moon },
 ] as const;
 
 /**
@@ -313,6 +324,46 @@ function slotsFor(m: AnalyzedMedication): Record<string, boolean> | null {
   if (/\bqid\b|four times/.test(text))
     return { morning: true, afternoon: true, evening: true, night: true };
   return null;
+}
+
+/**
+ * When to take this medicine, as four time-of-day cells rather than a sentence.
+ *
+ * The four slots are always shown — a dimmed cell means "not at this time",
+ * which is information too. Reading "1-0-1" off a card is a parsing task;
+ * seeing which of four cells are lit is not.
+ *
+ * Never colour-alone: each cell carries an icon, a word, and screen-reader text
+ * saying take/skip.
+ */
+function DoseSlots({ slots }: { slots: Record<string, boolean> }) {
+  return (
+    <ul className="flex gap-1.5" aria-label="When to take this medicine">
+      {SLOTS.map((s) => {
+        const take = slots[s.key];
+        const Icon = s.icon;
+        return (
+          <li
+            key={s.key}
+            className={cn(
+              "flex min-w-[4.25rem] flex-1 flex-col items-center gap-0.5 rounded-lg border px-2 py-1.5 transition-colors",
+              take
+                ? "border-primary/30 bg-primary/10 text-primary"
+                : "border-transparent bg-foreground/[0.04] text-foreground/35"
+            )}
+          >
+            <Icon className="h-4 w-4" aria-hidden />
+            <span className={cn("text-[11px]", take ? "font-semibold" : "font-medium")}>
+              {s.label}
+            </span>
+            <span className="sr-only">
+              {take ? `Take in the ${s.label.toLowerCase()}` : `Not in the ${s.label.toLowerCase()}`}
+            </span>
+          </li>
+        );
+      })}
+    </ul>
+  );
 }
 
 /**
@@ -447,67 +498,60 @@ function AnalysisResult({
         </ul>
       )}
 
-      {/* Dosing schedule. A grid in one hue: the reader's job is "what do I take
-          when", which is a position question, not a magnitude one. */}
+      {/* Per-time view. The cards below already answer "when do I take THIS
+          medicine"; this answers the inverse — "it is morning, what do I take"
+          — which is the question a patient actually has, standing at the shelf.
+          Same data, different index, so it earns its place rather than
+          repeating the cards. */}
       {scheduled.length > 0 && (
         <section className="space-y-2">
-          <h3 className="text-sm font-semibold text-foreground">Daily schedule</h3>
-          <div className="overflow-x-auto rounded-xl border bg-card">
-            <table className="w-full min-w-[26rem] border-collapse text-sm">
-              <thead>
-                <tr className="border-b bg-muted/40">
-                  <th scope="col" className="px-3 py-2 text-left font-medium text-foreground/70">
-                    Medicine
-                  </th>
-                  {SLOTS.map((s) => (
-                    <th
-                      key={s.key}
-                      scope="col"
-                      className="w-16 px-2 py-2 text-center font-medium text-foreground/70"
-                    >
-                      {s.label}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {scheduled.map(({ med, slots }, i) => (
-                  <tr key={`${med.name ?? "m"}-${i}`} className="border-b last:border-0">
-                    <th scope="row" className="px-3 py-2 text-left font-medium text-foreground">
-                      {med.name ?? med.raw_text ?? "Unreadable"}
-                      {med.strength && (
-                        <span className="ml-1.5 font-mono text-xs font-normal tabular-nums text-muted-foreground">
-                          {med.strength}
-                        </span>
-                      )}
-                    </th>
-                    {SLOTS.map((s) => (
-                      <td key={s.key} className="px-2 py-2 text-center">
-                        {slots[s.key] ? (
-                          <span
-                            title={`${med.name ?? "This medicine"} — ${s.label}`}
-                            className="mx-auto flex h-7 w-7 items-center justify-center rounded-md bg-primary text-xs font-semibold text-primary-foreground"
-                          >
-                            <span className="sr-only">{`Take in the ${s.label.toLowerCase()}`}</span>
-                            <span aria-hidden>{s.short}</span>
-                          </span>
-                        ) : (
-                          <span className="mx-auto block h-7 w-7 rounded-md bg-foreground/[0.05]">
-                            <span className="sr-only">{`Not in the ${s.label.toLowerCase()}`}</span>
-                          </span>
-                        )}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <h3 className="text-sm font-semibold text-foreground">Your day</h3>
+          <div className="grid gap-2 sm:grid-cols-4">
+            {SLOTS.map((slot) => {
+              const meds = scheduled.filter(({ slots }) => slots[slot.key]);
+              const Icon = slot.icon;
+              return (
+                <div
+                  key={slot.key}
+                  className={cn(
+                    "rounded-xl border p-3",
+                    meds.length ? "bg-card" : "bg-muted/30"
+                  )}
+                >
+                  <div
+                    className={cn(
+                      "flex items-center gap-1.5",
+                      meds.length ? "text-primary" : "text-foreground/40"
+                    )}
+                  >
+                    <Icon className="h-4 w-4" aria-hidden />
+                    <span className="text-xs font-semibold">{slot.label}</span>
+                  </div>
+                  {meds.length > 0 ? (
+                    <ul className="mt-2 space-y-1">
+                      {meds.map(({ med }, i) => (
+                        <li key={i} className="text-sm font-medium text-foreground">
+                          {med.name ?? med.raw_text ?? "Unreadable"}
+                          {med.strength && (
+                            <span className="ml-1 font-mono text-xs font-normal tabular-nums text-muted-foreground">
+                              {med.strength}
+                            </span>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="mt-2 text-sm text-foreground/40">Nothing</p>
+                  )}
+                </div>
+              );
+            })}
           </div>
           {scheduled.length < result.medications.length && (
             <p className="text-xs text-muted-foreground">
               {result.medications.length - scheduled.length} medicine
               {result.medications.length - scheduled.length === 1 ? "" : "s"} had no
-              schedule we could read — see the full list below.
+              schedule we could read — see the list below.
             </p>
           )}
         </section>
@@ -557,11 +601,27 @@ function AnalysisResult({
                 {m.generic_name && (
                   <p className="mt-0.5 text-sm text-foreground/70">{m.generic_name}</p>
                 )}
-                <p className="mt-1.5 text-sm text-foreground/80">
-                  {[m.dose, m.frequency, m.route, m.duration, m.instructions]
-                    .filter(Boolean)
-                    .join(" · ") || "No dosing details read"}
-                </p>
+
+                {(() => {
+                  const slots = slotsFor(m);
+                  // No readable schedule: show what was written rather than an
+                  // empty row of cells, which would imply "take none of these".
+                  return slots ? (
+                    <div className="mt-2.5">
+                      <DoseSlots slots={slots} />
+                    </div>
+                  ) : (
+                    <p className="mt-2 text-sm text-foreground/80">
+                      {m.frequency ?? m.frequency_raw ?? "No dosing schedule read"}
+                    </p>
+                  );
+                })()}
+
+                {[m.dose, m.route, m.duration, m.instructions].filter(Boolean).length > 0 && (
+                  <p className="mt-2 text-sm text-foreground/75">
+                    {[m.dose, m.route, m.duration, m.instructions].filter(Boolean).join(" · ")}
+                  </p>
+                )}
                 {m.raw_text && (
                   <p className="mt-1.5 font-mono text-xs text-muted-foreground">
                     as written: {m.raw_text}
