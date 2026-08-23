@@ -30,7 +30,7 @@ import { useToast } from "@/components/toast";
 import { apiFetch } from "@/lib/api";
 import { formatDateTime } from "@/lib/format";
 import { colors, fonts, radius, shadowSoft, space } from "@/lib/theme";
-import type { FormularyEntry } from "@/lib/formulary";
+import { simplifyMedicineName, type FormularyEntry } from "@/lib/formulary";
 import type {
   Appointment,
   ConsultNote,
@@ -210,13 +210,15 @@ export default function PrescribePage() {
   const update = (key: number, patch: Partial<MedicineDraft>) =>
     setMedicines((cur) => cur.map((m) => (m.key === key ? { ...m, ...patch } : m)));
 
-  const onSelectMedicine = (key: number, entry: FormularyEntry) =>
+  const onSelectMedicine = (key: number, entry: FormularyEntry) => {
+    const simplified = simplifyMedicineName(entry.name, entry.composition);
     update(key, {
-      name: entry.name,
-      strength: entry.strengths[0] ?? "",
+      name: simplified.name,
+      strength: entry.strengths[0] ?? simplified.strength,
       strengths: entry.strengths,
       route: entry.route,
     });
+  };
 
   const applyTemplate = (t: (typeof TEMPLATES)[number]) => {
     const go = () => {
