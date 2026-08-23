@@ -54,6 +54,14 @@ N per prescription (cascade). `name` (required), `strength`, `route`, timing fla
 ### medical_reports
 Patient uploads (pdf/jpg/png, size-capped in `backend/consult/reports.ts`). `patientId` FK (cascade), optional `appointmentId` (set-null), `filename`, `mimeType`, **`data` bytea** — stored inline; a single-doctor app doesn't need object storage. Revisit if files grow.
 
+### vault_records (Vault Tier 2 — added post-v1, `backend/vault/`)
+A record from *any* doctor/hospital, not just MediFlow's own — `patientId` FK (cascade), `recordType` enum (`prescription`/`lab`/`scan`/`discharge_summary`/`vaccination`/`other`), `recordDate`, free-text `sourceFacility`/`sourceDoctorName` (deliberately not a FK — generic by design), `diagnosis`/`diagnosisCode`/`advice`/`medicines` (jsonb), plus original file (`data` bytea) and extraction status. `patientConfirmed` gates whether it counts toward the vault timeline or a share bundle — nothing here is trusted from extraction alone.
+
+Generic, FHIR/ABDM-aligned fields (all nullable, type-specific by convention — see `docs/designs/vault-share-trd.md`'s field-mapping table): `vitals` (jsonb — BP/pulse/temp/SpO2/weight/height; prescription, discharge_summary), `labResults` (jsonb array — testName/value/unit/referenceRange/flag; lab), `findings` (text; lab/scan/discharge_summary/other), `admissionDate` (date; discharge_summary — `recordDate` is that type's discharge date), `vaccineDetails` (jsonb — vaccineName/doseNumber/batchNumber/route/site/nextDueDate; vaccination).
+
+### vault_record_edits
+Append-only audit trail (cascade from `vault_records`) — one row per save that actually changes a field, `changedFields` (jsonb string array) + `previousValues` (jsonb) so any field's pre-edit value is provable later. The transparency/liability record behind the "edited by patient" flag shown in a share.
+
 ## Conventions
 
 - PKs: `uuid` default random (domain), text (auth tables).

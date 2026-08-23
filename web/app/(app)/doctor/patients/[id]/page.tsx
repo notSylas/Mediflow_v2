@@ -8,6 +8,7 @@ import {
   ArrowRight,
   CalendarClock,
   FileText,
+  FolderHeart,
   HandHeart,
   HeartPulse,
   Mail,
@@ -31,6 +32,8 @@ import { describeMedicineSchedule } from "~backend/consult/medicines";
 import { getOrCreateDoctorProfile } from "~backend/people/doctor";
 import { ageFromDob, genderLabel, getPatientProfile } from "~backend/people/patient";
 import { getDoctorPatientCareStatus } from "~backend/care/care-subscription";
+import { getVaultDoctorConsent } from "~backend/vault/vault-doctor-consent";
+import { getVaultTimeline } from "~backend/vault/vault-share";
 import { cn } from "@/lib/utils";
 import { TONES } from "@/lib/tones";
 import { startAsyncConsultAction as startWebAsyncConsultAction } from "@/app/(app)/doctor/actions";
@@ -94,6 +97,7 @@ export default async function DoctorPatientDetailPage({
     reports,
     conversation,
     care,
+    vaultConsent,
   ] = await Promise.all([
     getPatientHistory(patient.id, profile.id),
     getMedicineHistory(patient.id, profile.id),
@@ -140,7 +144,10 @@ export default async function DoctorPatientDetailPage({
       .where(and(eq(conversations.patientId, patient.id), eq(conversations.doctorId, profile.id)))
       .then((rows) => rows[0] ?? null),
     getDoctorPatientCareStatus(patient.id, profile.id),
+    getVaultDoctorConsent(patient.id),
   ]);
+
+  const vaultItems = vaultConsent ? await getVaultTimeline(patient.id) : [];
 
   const timezone = profile.timezone;
   const displayName = patient.name || patient.email;
@@ -348,6 +355,49 @@ export default async function DoctorPatientDetailPage({
                     </span>
                     <ArrowRight className="mt-1 h-4 w-4 shrink-0 text-muted-foreground" />
                   </Link>
+                ))}
+              </CardContent>
+            )}
+          </Card>
+
+          <Card className="glass">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FolderHeart className="h-4 w-4 text-primary" />
+                Patient&apos;s Vault
+              </CardTitle>
+              <CardDescription>
+                {!vaultConsent
+                  ? "This patient hasn't granted standing vault access yet."
+                  : vaultItems.length === 0
+                    ? "No vault records yet."
+                    : "Prescriptions and records the patient has shared for consultation, newest first."}
+              </CardDescription>
+            </CardHeader>
+            {vaultConsent && vaultItems.length > 0 && (
+              <CardContent className="space-y-3">
+                {vaultItems.slice(0, 8).map((item) => (
+                  <div
+                    key={item.id}
+                    className="flex items-center gap-3 rounded-lg border bg-background/60 p-3"
+                  >
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-violet-100 text-violet-700">
+                      {item.type === "prescription" ? (
+                        <Pill className="h-4 w-4" />
+                      ) : (
+                        <FileText className="h-4 w-4" />
+                      )}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="truncate font-medium">{item.summary}</p>
+                        {item.source === "added" && <Badge variant="secondary">Added by patient</Badge>}
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        {item.doctorName} · {formatInTimeZone(new Date(item.date), timezone, "MMM d, yyyy")}
+                      </p>
+                    </div>
+                  </div>
                 ))}
               </CardContent>
             )}

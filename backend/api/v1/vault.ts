@@ -3,13 +3,18 @@ import { z } from "zod";
 import { requireSession } from "~backend/auth/api-auth";
 import { ALLOWED_REPORT_TYPES, MAX_REPORT_SIZE_BYTES } from "~backend/consult/reports";
 import { vaultEncryptionAvailable } from "~backend/vault/vault-crypto";
-import { ALLOWED_DURATION_MINUTES } from "~backend/vault/vault-share-policy";
 import {
-  confirmShare,
-  createPendingShare,
+  getVaultDoctorConsent,
+  isEligibleForDoctorConsent,
+  recordVaultDoctorConsent,
+} from "~backend/vault/vault-doctor-consent";
+import { isValidScope } from "~backend/vault/vault-share-policy";
+import {
+  createShare as createShareGrant,
   exportVault,
   getVaultTimeline,
   listShares,
+  previewShareCounts,
   redeemShareCode,
   revokeShare,
 } from "~backend/vault/vault-share";
@@ -19,7 +24,7 @@ import {
   getVaultRecord,
   updateVaultRecord,
 } from "~backend/vault/vault-records";
-import type { ApiHandler } from "../http";
+import { resolveOrigin, type ApiHandler } from "../http";
 
 const medicineSchema = z.object({
   name: z.string().min(1),
@@ -32,6 +37,33 @@ const medicineSchema = z.object({
   foodRelation: z.string().nullable(),
   durationDays: z.number().int().nullable(),
   instructions: z.string().nullable(),
+});
+
+const vitalsSchema = z.object({
+  bpSystolic: z.number().nullable(),
+  bpDiastolic: z.number().nullable(),
+  pulseRate: z.number().nullable(),
+  temperatureCelsius: z.number().nullable(),
+  spo2: z.number().nullable(),
+  weightKg: z.number().nullable(),
+  heightCm: z.number().nullable(),
+});
+
+const labResultSchema = z.object({
+  testName: z.string().min(1),
+  value: z.string(),
+  unit: z.string().nullable(),
+  referenceRange: z.string().nullable(),
+  flag: z.enum(["normal", "high", "low", "critical"]).nullable(),
+});
+
+const vaccineDetailsSchema = z.object({
+  vaccineName: z.string().nullable(),
+  doseNumber: z.string().nullable(),
+  batchNumber: z.string().nullable(),
+  route: z.string().nullable(),
+  site: z.string().nullable(),
+  nextDueDate: z.string().nullable(),
 });
 
 const patchRecordSchema = z.object({
@@ -47,39 +79,25 @@ const patchRecordSchema = z.object({
   sourceFacility: z.string().nullable(),
   sourceDoctorName: z.string().nullable(),
   diagnosis: z.string().nullable(),
+  diagnosisCode: z.string().nullable(),
   advice: z.string().nullable(),
   medicines: z.array(medicineSchema),
+  vitals: vitalsSchema.nullable(),
+  labResults: z.array(labResultSchema),
+  findings: z.string().nullable(),
+  admissionDate: z.string().nullable(),
+  vaccineDetails: vaccineDetailsSchema.nullable(),
 });
 
 const createShareSchema = z.object({
   scope: z.enum(["everything", "last_6_months"]),
-  durationMinutes: z.union([
-    z.literal(ALLOWED_DURATION_MINUTES[0]),
-    z.literal(ALLOWED_DURATION_MINUTES[1]),
-    z.literal(ALLOWED_DURATION_MINUTES[2]),
-  ]),
-});
-
-const confirmShareSchema = z.object({
-  grantId: z.string().uuid(),
-  otp: z.string().min(1),
 });
 
 const redeemSchema = z.object({ code: z.string().min(1) });
 
-const REASON_STATUS: Record<string, number> = {
-  not_found: 404,
-  wrong_code: 400,
-  expired: 410,
-  locked: 423,
-};
-
-const REASON_MESSAGE: Record<string, string> = {
-  not_found: "This share request wasn't found.",
-  wrong_code: "That code doesn't match. Please check your email and try again.",
-  expired: "This code has expired. Start the share again.",
-  locked: "Too many wrong attempts — start the share again.",
-};
+const doctorConsentSchema = z.object({
+  source: z.enum(["web", "ios", "android"]),
+});
 
 /**
  * GET /api/v1/patient/vault — the patient's own vault timeline. Read-time
@@ -89,8 +107,37 @@ export const getVault: ApiHandler = async (request) => {
   const access = await requireSession(request.headers);
   if (access instanceof Response) return access;
 
-  const items = await getVaultTimeline(access.id);
-  return Response.json({ items });
+  const [items, eligible, consent] = await Promise.all([
+    getVaultTimeline(access.id),
+    isEligibleForDoctorConsent(access.id),
+    getVaultDoctorConsent(access.id),
+  ]);
+  return Response.json({
+    items,
+    doctorConsent: {
+      eligible,
+      consented: Boolean(consent),
+      consentedAt: consent?.consentedAt ?? null,
+    },
+  });
+};
+
+/**
+ * POST /api/v1/patient/vault/doctor-consent — one-time acknowledgement that
+ * the app's doctor gets standing, code-free vault access for consultation.
+ * Separate from and additive to Flow A's code share for any other doctor.
+ */
+export const recordDoctorConsent: ApiHandler = async (request) => {
+  const access = await requireSession(request.headers);
+  if (access instanceof Response) return access;
+
+  const parsed = doctorConsentSchema.safeParse(await request.json());
+  if (!parsed.success) {
+    return Response.json({ error: parsed.error.issues }, { status: 400 });
+  }
+
+  await recordVaultDoctorConsent(access.id, parsed.data.source);
+  return Response.json({ status: "recorded" });
 };
 
 /**
@@ -154,11 +201,14 @@ export const updateRecord: ApiHandler = async (request, { params }) => {
     return Response.json({ error: parsed.error.issues }, { status: 400 });
   }
 
-  const record = await updateVaultRecord(params.id, access.id, parsed.data);
-  if (!record) {
+  const result = await updateVaultRecord(params.id, access.id, parsed.data);
+  if (result.errors) {
+    return Response.json({ errors: result.errors }, { status: 400 });
+  }
+  if (!result.record) {
     return Response.json({ error: "Record not found" }, { status: 404 });
   }
-  return Response.json({ record });
+  return Response.json({ record: result.record });
 };
 
 /**
@@ -195,8 +245,28 @@ export const exportVaultHandler: ApiHandler = async (request) => {
 };
 
 /**
- * POST /api/v1/patient/vault/share — step 1 of Flow A: starts a share and
- * sends the self-confirm OTP.
+ * GET /api/v1/patient/vault/share/preview?scope=... — "here's what this
+ * would actually include" on the create screen, before the patient commits
+ * to a share. Read-only, no grant created.
+ */
+export const previewShareHandler: ApiHandler = async (request) => {
+  const access = await requireSession(request.headers);
+  if (access instanceof Response) return access;
+
+  const scope = new URL(request.url).searchParams.get("scope");
+  if (!isValidScope(scope)) {
+    return Response.json({ error: "Invalid scope" }, { status: 400 });
+  }
+
+  const counts = await previewShareCounts(access.id, scope);
+  return Response.json(counts);
+};
+
+/**
+ * POST /api/v1/patient/vault/share — Flow A, single step: creates the
+ * encrypted bundle and returns the share code immediately. No OTP-confirm
+ * round trip (removed 2026-08-23 — see vault-share-policy.ts's comment on
+ * the longer code that replaces it as the sole guessing defense).
  */
 export const createShare: ApiHandler = async (request) => {
   const access = await requireSession(request.headers);
@@ -214,12 +284,11 @@ export const createShare: ApiHandler = async (request) => {
     return Response.json({ error: parsed.error.issues }, { status: 400 });
   }
 
-  const { grantId, otpSentTo } = await createPendingShare(
-    access.id,
-    parsed.data.scope,
-    parsed.data.durationMinutes
-  );
-  return Response.json({ grantId, otpSentTo }, { status: 201 });
+  const result = await createShareGrant(access.id, parsed.data.scope);
+
+  const origin = resolveOrigin(request);
+  const qrPayload = `${origin}/vault/view?code=${result.shareCode}`;
+  return Response.json({ shareCode: result.shareCode, qrPayload }, { status: 201 });
 };
 
 /**
@@ -232,36 +301,6 @@ export const listSharesHandler: ApiHandler = async (request) => {
 
   const grants = await listShares(access.id);
   return Response.json({ grants });
-};
-
-/**
- * POST /api/v1/patient/vault/share/confirm — step 2 of Flow A: verifies the
- * OTP and mints the encrypted bundle + share code.
- */
-export const confirmShareHandler: ApiHandler = async (request) => {
-  const access = await requireSession(request.headers);
-  if (access instanceof Response) return access;
-
-  const parsed = confirmShareSchema.safeParse(await request.json());
-  if (!parsed.success) {
-    return Response.json({ error: parsed.error.issues }, { status: 400 });
-  }
-
-  const result = await confirmShare(parsed.data.grantId, access.id, parsed.data.otp);
-  if (!result.ok) {
-    return Response.json(
-      { error: REASON_MESSAGE[result.reason] },
-      { status: REASON_STATUS[result.reason] }
-    );
-  }
-
-  const origin = new URL(request.url).origin;
-  const qrPayload = `${origin}/vault/view?code=${result.shareCode}`;
-  return Response.json({
-    shareCode: result.shareCode,
-    qrPayload,
-    expiresAt: result.expiresAt,
-  });
 };
 
 /**

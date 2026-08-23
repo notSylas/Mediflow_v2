@@ -38,8 +38,15 @@ async function jobConfig() {
   return { project, region, job };
 }
 
-/** True when this process can reach a project to run the job in. */
+/**
+ * True when this process can get an analysis run somehow — either a real
+ * Cloud Run project, or the local dev worker (ANALYZER_MODE=local-worker,
+ * see docker-compose.yml's `analyzer` service + prescription-analyzer/
+ * dev_worker.py). Callers (vault upload, the standalone analyzer page) use
+ * this to decide whether to bother creating an analysis row at all.
+ */
 export async function analyzerAvailable(): Promise<boolean> {
+  if (process.env.ANALYZER_MODE === "local-worker") return true;
   const { project, job } = await jobConfig();
   return Boolean(project && job);
 }
@@ -56,6 +63,17 @@ async function accessToken(): Promise<string> {
  * the UI shows a real error instead of an endless spinner.
  */
 export async function runAnalysisJob(analysisId: string): Promise<void> {
+  if (process.env.ANALYZER_MODE === "local-worker") {
+    // Checked first, ahead of ADC: local dev must never accidentally trigger
+    // a real Cloud Run execution just because this machine happens to have
+    // gcloud credentials lying around from deploying the app.
+    logger.info(
+      { analysisId },
+      "ANALYZER_MODE=local-worker — leaving this queued for the local worker to pick up"
+    );
+    return;
+  }
+
   const { project, region, job } = await jobConfig();
 
   if (!project || !job) {

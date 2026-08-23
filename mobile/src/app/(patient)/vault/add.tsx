@@ -5,6 +5,7 @@ import { router } from "expo-router";
 import { useMutation } from "@tanstack/react-query";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { AuroraScreen } from "@/components/aurora-screen";
+import { VaultDoctorConsentModal } from "@/components/vault-doctor-consent-modal";
 import { Body, Button, Card, Muted } from "@/components/ui";
 import { useToast } from "@/components/toast";
 import { apiUpload } from "@/lib/api";
@@ -43,12 +44,14 @@ export default function VaultAddRecord() {
   });
 
   return (
-    <AuroraScreen
-      variant="patient"
-      compactHeader
-      title="Add an old record"
-      subtitle="From any doctor, any hospital — not just MediFlow"
-    >
+    <>
+      <VaultDoctorConsentModal />
+      <AuroraScreen
+        variant="patient"
+        compactHeader
+        title="Add an old record"
+        subtitle="From any doctor, any hospital — not just MediFlow"
+      >
       <Card>
         <View style={{ alignItems: "center", gap: 6 }}>
           <MaterialCommunityIcons
@@ -73,6 +76,7 @@ export default function VaultAddRecord() {
           onPress={() => upload.mutate()}
         />
       </Card>
-    </AuroraScreen>
+      </AuroraScreen>
+    </>
   );
 }

@@ -44,6 +44,8 @@ import {
   getDoctorPatientCareStatus,
   listPendingCareFollowUps,
 } from "~backend/care/care-subscription";
+import { getVaultDoctorConsent } from "~backend/vault/vault-doctor-consent";
+import { getVaultTimeline } from "~backend/vault/vault-share";
 import type { ApiHandler } from "../http";
 
 /** GET /api/v1/doctor/appointments */
@@ -259,6 +261,7 @@ export const getPatient: ApiHandler = async (request, { params }) => {
     reports,
     conversation,
     care,
+    doctorConsent,
   ] = await Promise.all([
     getPatientHistory(params.id, profile.id),
     getMedicineHistory(params.id, profile.id),
@@ -307,7 +310,10 @@ export const getPatient: ApiHandler = async (request, { params }) => {
       )
       .then((rows) => rows[0] ?? null),
     getDoctorPatientCareStatus(params.id, profile.id),
+    getVaultDoctorConsent(params.id),
   ]);
+
+  const vaultItems = doctorConsent ? await getVaultTimeline(params.id) : [];
 
   return Response.json({
     patient,
@@ -317,6 +323,11 @@ export const getPatient: ApiHandler = async (request, { params }) => {
     followUps: followUpHistory,
     refillRequests: refillHistory,
     reports,
+    vault: {
+      consented: Boolean(doctorConsent),
+      consentedAt: doctorConsent?.consentedAt ?? null,
+      items: vaultItems,
+    },
     conversation,
     care,
     timezone: profile.timezone,

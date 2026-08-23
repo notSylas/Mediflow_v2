@@ -91,7 +91,7 @@ export function analyzedPrescriptionToRecordFields(
     // The analyzer only ever reads prescriptions; other vault record types
     // stay unclassified rather than being guessed at.
     recordType: result.medications?.length ? "prescription" : null,
-    recordDate: result.patient?.date ?? null,
+    recordDate: parseRecordDate(result.patient?.date),
     sourceFacility: result.doctor?.clinic_or_hospital ?? null,
     sourceDoctorName: result.doctor?.name ?? null,
     diagnosis: result.diagnosis?.length ? result.diagnosis.join("; ") : null,
@@ -163,6 +163,32 @@ function slotsFromFrequency(raw?: string | null, normalized?: string | null) {
     return { morning: true, afternoon: true, evening: true, night: true };
 
   return off;
+}
+
+/**
+ * Best-effort parse of whatever date format the model read off the document
+ * into YYYY-MM-DD for Postgres's `date` column — the prompt never dictates a
+ * format, so this comes back as ISO, DD-MM-YYYY, DD/MM/YYYY (the common
+ * Indian prescription format), etc. An unparseable or ambiguous date is
+ * dropped (null) rather than risk silently swapping day and month.
+ */
+function parseRecordDate(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const text = raw.trim();
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(text)) return text;
+
+  const dmy = text.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
+  if (dmy) {
+    const [, d, m, y] = dmy;
+    const day = Number(d);
+    const month = Number(m);
+    if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+      return `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
+    }
+  }
+
+  return null;
 }
 
 /** "5 days" -> 5, "2 weeks" -> 14. Null when it isn't a plain duration. */

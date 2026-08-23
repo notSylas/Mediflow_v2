@@ -22,9 +22,12 @@ COPY prescription-analyzer/requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Only the pipeline itself — not the venv, the local FastAPI server, or the
-# sample PDF (see .dockerignore).
+# sample PDF (see .dockerignore). dev_worker.py rides along too (it's the
+# local/docker-compose stand-in for this same Cloud Run Job, see
+# docker-compose.yml's `analyzer` service) — a few harmless KB in this image.
 COPY prescription-analyzer/config.py ./
 COPY prescription-analyzer/job.py ./
+COPY prescription-analyzer/dev_worker.py ./
 COPY prescription-analyzer/prescription_analyzer ./prescription_analyzer
 
 # Cloud Run Jobs run as root by default; drop to an unprivileged user since

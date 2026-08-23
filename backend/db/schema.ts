@@ -646,17 +646,25 @@ export const doctorVerificationDocuments = pgTable("doctor_verification_document
 });
 
 // ---------------------------------------------------------------------------
-// Vault Share — a patient shares a scoped, time-limited, read-only slice of
-// their MediFlow record (prescriptions + consult notes) with any doctor,
-// anywhere, via a short code. No receiving-side account. See
-// docs/designs/vault-share-trd.md. Flow A only (Flow B / doctor-requested
-// grants are deferred — see TRD §4.2 — so there is no `origin` column here).
+// Vault Share — a patient shares a scoped, read-only slice of their MediFlow
+// record (prescriptions + consult notes) with any doctor, anywhere, via a
+// short code. No receiving-side account. See docs/designs/vault-share-trd.md.
+// Flow A only (Flow B / doctor-requested grants are deferred — see TRD §4.2 —
+// so there is no `origin` column here).
+//
+// No time-based expiry (removed 2026-08-23, along with the "expired" status
+// below and the expires_at column) — a share stays valid indefinitely until
+// the patient either revokes it or creates a new one, which auto-revokes any
+// currently-active grant (see createShare() in vault-share.ts: "at most one
+// active share per patient, replaced on regenerate").
 // ---------------------------------------------------------------------------
 
+// No "pending_otp_confirmation" state — a grant is created already-active,
+// see createShare() in vault-share.ts. Historical: this app briefly had an
+// OTP-confirm step between "create" and "active", removed 2026-08-23 in
+// favor of a longer, higher-entropy share code (see vault-share-policy.ts).
 export const vaultShareGrantStatus = pgEnum("vault_share_grant_status", [
-  "pending_otp_confirmation",
   "active",
-  "expired",
   "revoked",
 ]);
 
@@ -673,30 +681,19 @@ export const vaultShareGrants = pgTable(
     patientId: text("patient_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
-    status: vaultShareGrantStatus("status").notNull().default("pending_otp_confirmation"),
+    status: vaultShareGrantStatus("status").notNull().default("active"),
     // Bundle scope, resolved to concrete timestamps at creation time (not
     // re-interpreted later) — null scopeFrom means "everything up to scopeTo".
     scopeFrom: timestamp("scope_from", { withTimezone: true }),
     scopeTo: timestamp("scope_to", { withTimezone: true }).notNull(),
-    // Set at creation alongside scopeTo (not deferred to confirm) — the
-    // minute or two spent entering the OTP is negligible against the
-    // shortest duration option (2 hours), and this avoids a second column
-    // just to remember the chosen duration between the two requests.
-    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
-    // Self-confirmation step (proves the account holder, not just a logged-in
-    // device, authorized this disclosure) — a lightweight mechanism separate
-    // from Better Auth's login-OTP, cleared once confirmed.
-    otpHash: text("otp_hash"),
-    otpExpiresAt: timestamp("otp_expires_at", { withTimezone: true }),
-    otpAttempts: integer("otp_attempts").notNull().default(0),
-    // The human-facing share code — only its hash is ever stored. No
-    // attempt-counter needed here (unlike otpAttempts): at 8 Crockford-Base32
-    // characters the code space is ~1.1 trillion, looked up by exact hash
-    // match — brute-forcing it online is infeasible regardless of a per-grant
-    // cap, so entropy alone is the defense, not rate-limiting.
+    // The human-facing share code — only its hash is ever stored. At 13
+    // Crockford-Base32 characters (~65 bits) the code space is astronomically
+    // large, looked up by exact hash match — this is now the *sole* defense
+    // against guessing (no OTP-confirm step anymore), not one layer of one.
     shareCodeHash: text("share_code_hash"),
     // Envelope encryption (TRD §5): wrappedDek is the KMS-wrapped data key,
-    // bundleCiphertext is the AES-256-GCM output. Both null until confirmed.
+    // bundleCiphertext is the AES-256-GCM output — both set at creation now,
+    // never null (nothing defers this to a later confirm step anymore).
     wrappedDek: bytea("wrapped_dek"),
     bundleCiphertext: bytea("bundle_ciphertext"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -716,6 +713,19 @@ export const vaultShareAccessLog = pgTable("vault_share_access_log", {
   outcome: vaultShareAccessOutcome("outcome").notNull(),
   viewerIpHash: text("viewer_ip_hash"),
   viewerUserAgentCoarse: text("viewer_user_agent_coarse"),
+});
+
+// One row per patient, recorded once: standing, code-free read access for
+// *this* MediFlow doctor (not Flow A's any-doctor code share, which is
+// untouched). Shown only once the patient has a real relationship with the
+// doctor (see listDoctorPatients) — permanent once given, no opt-out UI yet.
+export const vaultDoctorConsents = pgTable("vault_doctor_consents", {
+  patientId: text("patient_id")
+    .primaryKey()
+    .references(() => user.id, { onDelete: "cascade" }),
+  consentVersion: text("consent_version").notNull(),
+  consentedAt: timestamp("consented_at", { withTimezone: true }).notNull().defaultNow(),
+  consentSource: text("consent_source").notNull(), // web | ios | android
 });
 
 // ---------------------------------------------------------------------------
@@ -746,6 +756,19 @@ export const vaultRecordConfidence = pgEnum("vault_record_confidence", [
   "low",
 ]);
 
+// Tracks whether a real Prescription Analyzer pass is upgrading this record's
+// fields in the background: "stub" (the permanent low-confidence extractor,
+// or the analyzer isn't configured), "processing" (a linked
+// prescription_analyses job is running), "synced" (that job's result has been
+// written into the fields below), "failed" (the job errored — falls back to
+// the same manual-entry path as "stub").
+export const vaultRecordExtractionStatus = pgEnum("vault_record_extraction_status", [
+  "stub",
+  "processing",
+  "synced",
+  "failed",
+]);
+
 export const vaultRecords = pgTable("vault_records", {
   id: uuid("id").primaryKey().defaultRandom(),
   patientId: text("patient_id")
@@ -760,6 +783,10 @@ export const vaultRecords = pgTable("vault_records", {
   sourceFacility: text("source_facility"),
   sourceDoctorName: text("source_doctor_name"),
   diagnosis: text("diagnosis"),
+  // Optional coded diagnosis (e.g. ICD-10) — free text, not validated against
+  // a terminology server. Mirrors FHIR Condition.code.coding; diagnosis above
+  // is Condition.code.text. Used by prescription/discharge_summary.
+  diagnosisCode: text("diagnosis_code"),
   advice: text("advice"),
   // Array of {name, strength, route, morning/afternoon/evening/night,
   // foodRelation, durationDays, instructions} — same shape as
@@ -768,7 +795,28 @@ export const vaultRecords = pgTable("vault_records", {
   // an individual Tier-2 medicine (no refill/formulary linkage, unlike real
   // prescriptions).
   medicines: jsonb("medicines"),
+  // The generic, FHIR/ABDM-aligned fields below are all nullable and
+  // type-specific by convention (enforced at the UI/validation layer, not
+  // the DB) — see docs/designs/vault-share-trd.md's field-mapping table.
+  //
+  // Observation (vital-signs category) — prescription, discharge_summary.
+  // { bpSystolic, bpDiastolic, pulseRate, temperatureCelsius, spo2, weightKg, heightCm }
+  vitals: jsonb("vitals"),
+  // Observation[] (laboratory category) — lab only.
+  // Array<{ testName, value, unit, referenceRange, flag: "normal"|"high"|"low"|"critical"|null }>
+  labResults: jsonb("lab_results"),
+  // DiagnosticReport.conclusion / discharge "course in hospital" — narrative,
+  // used by lab, scan, discharge_summary, other.
+  findings: text("findings"),
+  // Encounter.period.start — discharge_summary only. recordDate keeps its
+  // existing meaning (discharge date) for that type; this is the companion
+  // field, not a rename, so no existing query/row needs to change.
+  admissionDate: date("admission_date"),
+  // Immunization — vaccination only.
+  // { vaccineName, doseNumber, batchNumber, route, site, nextDueDate }
+  vaccineDetails: jsonb("vaccine_details"),
   extractionConfidence: vaultRecordConfidence("extraction_confidence"),
+  extractionStatus: vaultRecordExtractionStatus("extraction_status").notNull().default("stub"),
   originalFilename: text("original_filename").notNull(),
   mimeType: text("mime_type").notNull(),
   data: bytea("data").notNull(),
@@ -778,6 +826,26 @@ export const vaultRecords = pgTable("vault_records", {
   patientConfirmed: boolean("patient_confirmed").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// Append-only edit history for vault_records — every save that actually
+// changes a field (including the very first confirm, going from the
+// extraction/stub to the patient's confirmed values) gets one row here. This
+// is the transparency/liability record: it proves whether a given field is
+// as-extracted or patient-corrected, and what it said before, independent of
+// what the row shows today. Mirrors vault_share_access_log's append-only
+// shape — same reasoning, different event.
+export const vaultRecordEdits = pgTable("vault_record_edits", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  vaultRecordId: uuid("vault_record_id")
+    .notNull()
+    .references(() => vaultRecords.id, { onDelete: "cascade" }),
+  editedAt: timestamp("edited_at", { withTimezone: true }).notNull().defaultNow(),
+  // Names of the top-level fields that changed in this save, e.g.
+  // ["recordDate", "medicines"] — not a deep diff, just which fields.
+  changedFields: jsonb("changed_fields").notNull(),
+  // What those fields held immediately before this save.
+  previousValues: jsonb("previous_values").notNull(),
 });
 
 // ---------------------------------------------------------------------------

@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, inArray, lte, sql as dsql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, lte } from "drizzle-orm";
 import { db } from "~backend/db";
 import {
   appointments,
@@ -11,22 +11,21 @@ import {
   vaultShareAccessLog,
   vaultShareGrants,
 } from "~backend/db/schema";
-import { emailLayout, sendEmail } from "~backend/notifications/email";
 import { decryptBundle, encryptBundle, generateDataKey, unwrapDataKey } from "./vault-crypto";
 import type { ExtractedMedicine } from "./vault-extraction";
-import { listConfirmedVaultRecords } from "./vault-records";
 import {
-  OTP_TTL_MINUTES,
-  generateOtp,
+  listConfirmedVaultRecords,
+  vaultRecordIdsWithEdits,
+  type LabResultEntry,
+  type VaccineDetailsData,
+  type VitalsData,
+} from "./vault-records";
+import {
   generateShareCode,
-  grantExpired,
   hashSecret,
-  otpAttemptsExceeded,
-  otpExpired,
   resolveScope,
   scopeSummary,
   type ScopeSummary,
-  type VaultShareDurationMinutes,
   type VaultShareScope,
 } from "./vault-share-policy";
 
@@ -67,8 +66,18 @@ export interface BundleAddedRecord {
   sourceFacility: string | null;
   sourceDoctorName: string | null;
   diagnosis: string | null;
+  diagnosisCode: string | null;
   advice: string | null;
   medicines: ExtractedMedicine[];
+  vitals: VitalsData | null;
+  labResults: LabResultEntry[];
+  findings: string | null;
+  admissionDate: string | null;
+  vaccineDetails: VaccineDetailsData | null;
+  // True if the patient corrected any field after the initial extraction —
+  // surfaced so a receiving doctor knows whether this is as-read or
+  // human-corrected (see vault_record_edits).
+  wasEdited: boolean;
 }
 
 export interface VaultBundle {
@@ -165,6 +174,8 @@ async function assembleBundle(
     .where(addedWhere)
     .orderBy(desc(vaultRecords.recordDate));
 
+  const editedIds = await vaultRecordIdsWithEdits(addedRows.map((r) => r.id));
+
   return {
     addedRecords: addedRows.map((r) => ({
       recordType: r.recordType,
@@ -172,8 +183,15 @@ async function assembleBundle(
       sourceFacility: r.sourceFacility,
       sourceDoctorName: r.sourceDoctorName,
       diagnosis: r.diagnosis,
+      diagnosisCode: r.diagnosisCode,
       advice: r.advice,
       medicines: (r.medicines as ExtractedMedicine[] | null) ?? [],
+      vitals: (r.vitals as VitalsData | null) ?? null,
+      labResults: (r.labResults as LabResultEntry[] | null) ?? [],
+      findings: r.findings,
+      admissionDate: r.admissionDate,
+      vaccineDetails: (r.vaccineDetails as VaccineDetailsData | null) ?? null,
+      wasEdited: editedIds.has(r.id),
     })),
     prescriptions: rxRows.map((r) => ({
       id: r.id,
@@ -219,6 +237,13 @@ export interface VaultTimelineItem {
   // patient uploaded it themselves (Tier 2) — surfaced in the UI so
   // provenance is never ambiguous to the patient or a receiving doctor.
   source: "mediflow" | "added";
+  // Set for "prescription"/"consult_note" (both are facets of one visit, so
+  // both link to that appointment's detail page); null for "added_record",
+  // which links to its own vault record page instead.
+  appointmentId: string | null;
+  // Tier 2 sub-type (lab/scan/discharge_summary/vaccination/prescription/other)
+  // — only set for "added_record" items, for icon differentiation in the UI.
+  recordType: string | null;
 }
 
 /** Read-time aggregation for the vault home screen — never materialized (Rules.md #2). */
@@ -226,6 +251,7 @@ export async function getVaultTimeline(patientId: string): Promise<VaultTimeline
   const rxRows = await db
     .select({
       id: prescriptions.id,
+      appointmentId: prescriptions.appointmentId,
       diagnosis: prescriptions.diagnosis,
       issuedAt: prescriptions.issuedAt,
       doctorName: user.name,
@@ -250,6 +276,7 @@ export async function getVaultTimeline(patientId: string): Promise<VaultTimeline
   const noteRows = await db
     .select({
       id: consultNotes.id,
+      appointmentId: consultNotes.appointmentId,
       subjective: consultNotes.subjective,
       objective: consultNotes.objective,
       assessment: consultNotes.assessment,
@@ -275,6 +302,8 @@ export async function getVaultTimeline(patientId: string): Promise<VaultTimeline
       doctorName: r.doctorName,
       summary: r.diagnosis || `${count} medicine${count === 1 ? "" : "s"}`,
       source: "mediflow",
+      appointmentId: r.appointmentId,
+      recordType: null,
     });
   }
   for (const n of noteRows) {
@@ -286,6 +315,8 @@ export async function getVaultTimeline(patientId: string): Promise<VaultTimeline
       doctorName: n.doctorName,
       summary: n.assessment || n.plan || "Consultation note",
       source: "mediflow",
+      appointmentId: n.appointmentId,
+      recordType: null,
     });
   }
   for (const r of addedRows) {
@@ -296,11 +327,38 @@ export async function getVaultTimeline(patientId: string): Promise<VaultTimeline
       doctorName: r.sourceDoctorName || r.sourceFacility || "Added by you",
       summary: r.diagnosis || `${(r.medicines as unknown[] | null)?.length ?? 0} medicine(s)`,
       source: "added",
+      appointmentId: null,
+      recordType: r.recordType,
     });
   }
 
   items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   return items;
+}
+
+export interface SharePreviewCounts {
+  prescriptions: number;
+  consultNotes: number;
+  addedRecords: number;
+}
+
+/**
+ * What a share would actually include, for the scope picker on the create
+ * screen — so the patient sees this before sending, not blind. Reuses
+ * assembleBundle (the exact same query createShare runs) rather than a
+ * separate count query, so the preview can never drift from reality.
+ */
+export async function previewShareCounts(
+  patientId: string,
+  scope: VaultShareScope
+): Promise<SharePreviewCounts> {
+  const { scopeFrom, scopeTo } = resolveScope(scope, new Date());
+  const bundle = await assembleBundle(patientId, scopeFrom, scopeTo);
+  return {
+    prescriptions: bundle.prescriptions.length,
+    consultNotes: bundle.consultNotes.length,
+    addedRecords: bundle.addedRecords.length,
+  };
 }
 
 export async function exportVault(patientId: string) {
@@ -312,100 +370,33 @@ export async function exportVault(patientId: string) {
   return { patient: profile ?? null, ...bundle, exportedAt: new Date().toISOString() };
 }
 
-function maskEmail(email: string): string {
-  const [local, domain] = email.split("@");
-  if (!domain) return email;
-  const visible = local.slice(0, Math.min(2, local.length));
-  return `${visible}${"*".repeat(Math.max(local.length - visible.length, 1))}@${domain}`;
-}
-
 /**
- * Step 1 of Flow A: patient picks scope + duration, gets an OTP emailed to
- * their own verified address — proves the account holder, not just a
- * logged-in device, is authorizing this disclosure right now. A lightweight
- * mechanism separate from Better Auth's login-OTP (different purpose:
- * confirming an action from an already-authenticated session, not
- * authenticating the session itself), reusing only the email delivery layer.
+ * Flow A, single step: patient picks a scope and gets a share code back
+ * immediately — no OTP-confirm round trip. The code's own entropy (13
+ * Crockford Base32 chars, ~65 bits — see generateShareCode) is what stands
+ * in for the account-holder proof the OTP used to provide; there's no
+ * "prove it's really you clicking this" gate anymore, only "you're already
+ * logged in." That tradeoff is deliberate, not an oversight — see
+ * docs/designs/vault-share-trd.md §4's addendum.
+ *
+ * No time-based expiry either (removed 2026-08-23): a share stays valid
+ * until revoked or replaced. At most one active share per patient — creating
+ * a new one revokes any currently-active grant first, in the same call, so
+ * "replaced on regenerate" can never leave two codes live at once.
  */
-export async function createPendingShare(
+export async function createShare(
   patientId: string,
-  scope: VaultShareScope,
-  durationMinutes: VaultShareDurationMinutes
-): Promise<{ grantId: string; otpSentTo: string }> {
+  scope: VaultShareScope
+): Promise<{ shareCode: string }> {
   const now = new Date();
   const { scopeFrom, scopeTo } = resolveScope(scope, now);
-  const expiresAt = new Date(now.getTime() + durationMinutes * 60_000);
-  const otp = generateOtp();
-  const otpExpiresAt = new Date(now.getTime() + OTP_TTL_MINUTES * 60_000);
 
-  const [patientRow] = await db.select({ email: user.email }).from(user).where(eq(user.id, patientId));
+  await db
+    .update(vaultShareGrants)
+    .set({ status: "revoked", revokedAt: now })
+    .where(and(eq(vaultShareGrants.patientId, patientId), eq(vaultShareGrants.status, "active")));
 
-  const [row] = await db
-    .insert(vaultShareGrants)
-    .values({
-      patientId,
-      status: "pending_otp_confirmation",
-      scopeFrom,
-      scopeTo,
-      expiresAt,
-      otpHash: hashSecret(otp),
-      otpExpiresAt,
-    })
-    .returning({ id: vaultShareGrants.id });
-
-  if (patientRow?.email) {
-    await sendEmail({
-      to: patientRow.email,
-      subject: `${otp} confirms sharing your MediFlow vault`,
-      html: emailLayout(
-        `<p>Use this code to confirm you want to share your MediFlow health record:</p>
-         <p style="font-size:28px;font-weight:700;letter-spacing:6px;color:#0f766e">${otp}</p>
-         <p>It expires in ${OTP_TTL_MINUTES} minutes. If you didn't request this, you can ignore this email — nothing is shared until this code is entered.</p>`
-      ),
-    });
-  }
-
-  return { grantId: row.id, otpSentTo: patientRow?.email ? maskEmail(patientRow.email) : "" };
-}
-
-export type ConfirmShareResult =
-  | { ok: true; shareCode: string; expiresAt: string }
-  | { ok: false; reason: "not_found" | "wrong_code" | "expired" | "locked" };
-
-/** Step 2: verifies the OTP, assembles + encrypts the bundle, mints the share code. */
-export async function confirmShare(
-  grantId: string,
-  patientId: string,
-  otp: string
-): Promise<ConfirmShareResult> {
-  const now = new Date();
-  const [grant] = await db
-    .select()
-    .from(vaultShareGrants)
-    .where(and(eq(vaultShareGrants.id, grantId), eq(vaultShareGrants.patientId, patientId)));
-
-  if (!grant || grant.status !== "pending_otp_confirmation") {
-    return { ok: false, reason: "not_found" };
-  }
-  if (otpAttemptsExceeded(grant.otpAttempts)) {
-    await db
-      .update(vaultShareGrants)
-      .set({ status: "revoked", revokedAt: now })
-      .where(eq(vaultShareGrants.id, grantId));
-    return { ok: false, reason: "locked" };
-  }
-  if (otpExpired(grant.otpExpiresAt, now)) {
-    return { ok: false, reason: "expired" };
-  }
-  if (grant.otpHash !== hashSecret(otp)) {
-    await db
-      .update(vaultShareGrants)
-      .set({ otpAttempts: dsql`${vaultShareGrants.otpAttempts} + 1` })
-      .where(eq(vaultShareGrants.id, grantId));
-    return { ok: false, reason: "wrong_code" };
-  }
-
-  const bundle = await assembleBundle(patientId, grant.scopeFrom, grant.scopeTo);
+  const bundle = await assembleBundle(patientId, scopeFrom, scopeTo);
   // plaintextKey is used once, right here, and never stored or returned —
   // best-effort discard (garbage collected once out of scope); Node has no
   // guaranteed secure-wipe for Buffers short of a dedicated library, which
@@ -414,19 +405,17 @@ export async function confirmShare(
   const bundleCiphertext = encryptBundle(JSON.stringify(bundle), plaintextKey);
   const shareCode = generateShareCode();
 
-  await db
-    .update(vaultShareGrants)
-    .set({
-      status: "active",
-      shareCodeHash: hashSecret(shareCode),
-      wrappedDek: wrappedKey,
-      bundleCiphertext,
-      otpHash: null,
-      otpExpiresAt: null,
-    })
-    .where(eq(vaultShareGrants.id, grantId));
+  await db.insert(vaultShareGrants).values({
+    patientId,
+    status: "active",
+    scopeFrom,
+    scopeTo,
+    shareCodeHash: hashSecret(shareCode),
+    wrappedDek: wrappedKey,
+    bundleCiphertext,
+  });
 
-  return { ok: true, shareCode, expiresAt: grant.expiresAt.toISOString() };
+  return { shareCode };
 }
 
 export async function revokeShare(grantId: string, patientId: string): Promise<boolean> {
@@ -449,22 +438,18 @@ export interface VaultShareSummary {
   status: string;
   scope: ScopeSummary;
   createdAt: string;
-  expiresAt: string;
   revokedAt: string | null;
   lastViewedAt: string | null;
   viewCount: number;
 }
 
 export async function listShares(patientId: string): Promise<VaultShareSummary[]> {
+  // Every grant is created already-active (no pending/unconfirmed state to
+  // filter out anymore — see createShare above), so this is a plain list.
   const grants = await db
     .select()
     .from(vaultShareGrants)
-    .where(
-      and(
-        eq(vaultShareGrants.patientId, patientId),
-        dsql`${vaultShareGrants.status} <> 'pending_otp_confirmation'`
-      )
-    )
+    .where(eq(vaultShareGrants.patientId, patientId))
     .orderBy(desc(vaultShareGrants.createdAt));
 
   if (grants.length === 0) return [];
@@ -487,7 +472,6 @@ export async function listShares(patientId: string): Promise<VaultShareSummary[]
       status: g.status,
       scope: scopeSummary(g.scopeFrom, g.scopeTo),
       createdAt: g.createdAt.toISOString(),
-      expiresAt: g.expiresAt.toISOString(),
       revokedAt: g.revokedAt ? g.revokedAt.toISOString() : null,
       lastViewedAt: lastViewedAt ? lastViewedAt.toISOString() : null,
       viewCount: views.length,
@@ -509,7 +493,7 @@ async function logAccess(
 }
 
 export type RedeemResult =
-  | ({ ok: true; patientName: string; scope: ScopeSummary; expiresAt: string } & VaultBundle)
+  | ({ ok: true; patientName: string; scope: ScopeSummary } & VaultBundle)
   | { ok: false; reason: "not_found" | "expired" };
 
 /**
@@ -522,7 +506,6 @@ export async function redeemShareCode(
   code: string,
   meta: { ipHash: string | null; userAgentCoarse: string | null }
 ): Promise<RedeemResult> {
-  const now = new Date();
   const hash = hashSecret(code);
   const [grant] = await db.select().from(vaultShareGrants).where(eq(vaultShareGrants.shareCodeHash, hash));
 
@@ -535,15 +518,7 @@ export async function redeemShareCode(
     return { ok: false, reason: "expired" };
   }
 
-  if (grant.status === "expired" || grantExpired(grant.expiresAt, now)) {
-    if (grant.status !== "expired") {
-      await db.update(vaultShareGrants).set({ status: "expired" }).where(eq(vaultShareGrants.id, grant.id));
-    }
-    await logAccess(grant.id, "expired_attempt", meta);
-    return { ok: false, reason: "expired" };
-  }
-
-  if (grant.status !== "active" || !grant.wrappedDek || !grant.bundleCiphertext) {
+  if (!grant.wrappedDek || !grant.bundleCiphertext) {
     return { ok: false, reason: "not_found" };
   }
 
@@ -557,7 +532,6 @@ export async function redeemShareCode(
     ok: true,
     patientName: patient?.name ?? "Patient",
     scope: scopeSummary(grant.scopeFrom, grant.scopeTo),
-    expiresAt: grant.expiresAt.toISOString(),
     prescriptions: bundle.prescriptions,
     consultNotes: bundle.consultNotes,
     addedRecords: bundle.addedRecords,

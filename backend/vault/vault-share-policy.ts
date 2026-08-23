@@ -1,17 +1,9 @@
 // Pure Vault Share decisions, kept free of DB access so they can be
 // unit-tested directly — mirrors the chat.ts / chat-policy.ts split.
 
-import { createHash, randomBytes, randomInt } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 
 export type VaultShareScope = "everything" | "last_6_months";
-
-// An explicit allowlist, not arbitrary client input — 2 hours / 24 hours / 7 days.
-export const ALLOWED_DURATION_MINUTES = [120, 1440, 10080] as const;
-export type VaultShareDurationMinutes = (typeof ALLOWED_DURATION_MINUTES)[number];
-
-export function isValidDurationMinutes(value: unknown): value is VaultShareDurationMinutes {
-  return ALLOWED_DURATION_MINUTES.includes(value as VaultShareDurationMinutes);
-}
 
 export function isValidScope(value: unknown): value is VaultShareScope {
   return value === "everything" || value === "last_6_months";
@@ -28,24 +20,19 @@ export function resolveScope(
   return { scopeFrom: sixMonthsAgo, scopeTo: now };
 }
 
-export const OTP_TTL_MINUTES = 5;
-export const OTP_MAX_ATTEMPTS = 5;
-
-/** 6-digit numeric, matching the login-OTP UX patients already know. */
-export function generateOtp(): string {
-  return String(randomInt(0, 1_000_000)).padStart(6, "0");
-}
-
 // Crockford Base32 — excludes visually ambiguous I/L/O/U so a patient can
 // read it aloud and a doctor can type it back correctly.
 const SHARE_CODE_ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
-const SHARE_CODE_LENGTH = 8;
+const SHARE_CODE_LENGTH = 13;
 
 /**
- * ~40 bits of entropy — deliberately not password-grade. The security model
- * is short expiry + rate-limited attempts (see SHARE_CODE_MAX_ATTEMPTS), the
- * same reasoning that makes a 6-digit login OTP acceptable despite its own
- * low raw entropy.
+ * ~65 bits of entropy (13 Crockford Base32 chars). There is no OTP-confirm
+ * step anymore — a share goes live the moment it's created — and no
+ * time-based expiry either (removed 2026-08-23: a share is valid until the
+ * patient revokes it or creates a replacement, see createShare() in
+ * vault-share.ts). That makes this code's entropy the *entire* defense
+ * against guessing, indefinitely, not one layer bounded by a short window —
+ * 13 chars is sized to still be infeasible to brute-force on its own.
  */
 export function generateShareCode(): string {
   const bytes = randomBytes(SHARE_CODE_LENGTH);
@@ -56,21 +43,9 @@ export function generateShareCode(): string {
   return code;
 }
 
-/** Fast hash is correct here — protection comes from expiry + attempt caps, not offline hash resistance. */
+/** Fast hash is correct here — protection comes from code entropy alone, not offline hash resistance. */
 export function hashSecret(value: string): string {
   return createHash("sha256").update(value.trim().toUpperCase()).digest("hex");
-}
-
-export function otpExpired(otpExpiresAt: Date | null, now: Date): boolean {
-  return !otpExpiresAt || otpExpiresAt.getTime() < now.getTime();
-}
-
-export function otpAttemptsExceeded(otpAttempts: number): boolean {
-  return otpAttempts >= OTP_MAX_ATTEMPTS;
-}
-
-export function grantExpired(expiresAt: Date | null, now: Date): boolean {
-  return !expiresAt || expiresAt.getTime() < now.getTime();
 }
 
 export interface ScopeSummary {
@@ -81,3 +56,7 @@ export interface ScopeSummary {
 export function scopeSummary(scopeFrom: Date | null, scopeTo: Date): ScopeSummary {
   return { from: scopeFrom ? scopeFrom.toISOString() : null, to: scopeTo.toISOString() };
 }
+
+// Bump when the standing-doctor-access notice's copy materially changes, so a
+// re-consent could be required in future — mirrors booking.ts's CONSENT_VERSION.
+export const VAULT_DOCTOR_CONSENT_VERSION = "2026-08-23";

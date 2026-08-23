@@ -142,6 +142,51 @@ export async function getAnalysisForUploader(id: string, uploaderId: string) {
   return row ?? null;
 }
 
+/**
+ * Server-only read that includes the file bytes — used solely by the
+ * "push this already-analyzed result into the vault" path, which needs to
+ * copy the bytes into a new vault_records row rather than re-upload them.
+ * Never exposed over the polling GET (see getAnalysisForUploader above).
+ */
+export async function getAnalysisWithDataForUploader(id: string, uploaderId: string) {
+  const [row] = await db
+    .select()
+    .from(prescriptionAnalyses)
+    .where(
+      and(
+        eq(prescriptionAnalyses.id, id),
+        eq(prescriptionAnalyses.uploaderId, uploaderId)
+      )
+    );
+  return row ?? null;
+}
+
+/** Links a vault record to the analysis it was created from, for traceability. */
+export async function linkAnalysisToVaultRecord(analysisId: string, vaultRecordId: string) {
+  await db
+    .update(prescriptionAnalyses)
+    .set({ vaultRecordId })
+    .where(eq(prescriptionAnalyses.id, analysisId));
+}
+
+/**
+ * The latest analysis linked to a vault record, if any — used by the vault
+ * upload path to poll whether its background extraction has landed yet.
+ */
+export async function getAnalysisByVaultRecordId(vaultRecordId: string) {
+  const [row] = await db
+    .select({
+      id: prescriptionAnalyses.id,
+      status: prescriptionAnalyses.status,
+      result: prescriptionAnalyses.result,
+    })
+    .from(prescriptionAnalyses)
+    .where(eq(prescriptionAnalyses.vaultRecordId, vaultRecordId))
+    .orderBy(desc(prescriptionAnalyses.createdAt))
+    .limit(1);
+  return row ?? null;
+}
+
 /** The uploader's own analyses, newest first, without file bytes or results. */
 export async function listAnalyses(uploaderId: string, limit = 20) {
   return db

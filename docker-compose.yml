@@ -104,6 +104,26 @@ services:
       postgres:
         condition: service_healthy
 
+  # Dev-only local stand-in for the prescription-analyzer Cloud Run Job (no
+  # GCP project needed). Polls prescription_analyses for queued rows — see
+  # prescription-analyzer/dev_worker.py. Paired with ANALYZER_MODE=local-worker
+  # in .env, which tells backend/prescriptions/job-runner.ts to leave rows
+  # queued instead of calling Cloud Run Jobs. LLM_PROVIDER/OLLAMA_* also come
+  # from .env, so this uses whatever provider is configured there (e.g.
+  # LLM_PROVIDER=ollama for testing without an OpenAI key).
+  analyzer:
+    build:
+      context: .
+      dockerfile: Dockerfile.analyzer
+    entrypoint: ["python", "dev_worker.py"]
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://mediflow:mediflow_dev@postgres:5432/mediflow
+    depends_on:
+      postgres:
+        condition: service_healthy
+
 volumes:
   pgdata:
   caddy_data:

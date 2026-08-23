@@ -131,7 +131,59 @@ no fixed wall — PRD §10 #1) means there's no preference to store. Retention
 is uniform default behavior, not per-patient config; export and delete are
 actions (§7), not stored state.
 
+> **2026-08-23 update — Tier 2 built, and given a generic, FHIR/ABDM-aligned
+> template.** The paragraph above is now historical: `vault_records` shipped
+> (manual entry + a real Prescription Analyzer extraction pass, not the OCR
+> pipeline originally sketched here), and this update extends it with fields
+> shaped and named after **FHIR R4** (`Observation`, `DiagnosticReport`,
+> `Immunization`, `Condition`) and **ABDM/NDHM** (India's FHIR-profiled
+> health-data-exchange spec: `OPConsultRecord`, `DiagnosticReportRecord`,
+> `ImmunizationRecord`, `DischargeSummaryRecord`) — semantics and structure
+> only, not a full FHIR Bundle/Resource envelope or terminology-coded fields
+> (no LOINC/SNOMED/ICD server; codes stay optional free text).
+>
+> | `vault_records` column | FHIR / ABDM element | Used by |
+> |---|---|---|
+> | `diagnosis` | `Condition.code.text` | prescription, discharge_summary |
+> | `diagnosisCode` | `Condition.code.coding` (free text, unvalidated) | prescription, discharge_summary — optional |
+> | `vitals` (jsonb) | `Observation` (vital-signs category) | prescription, discharge_summary |
+> | `labResults` (jsonb array) | `Observation[]` (laboratory category) — value/unit/referenceRange/interpretation | lab |
+> | `findings` | `DiagnosticReport.conclusion` / discharge "course in hospital" | lab, scan, discharge_summary, other |
+> | `admissionDate` | `Encounter.period.start` (`recordDate` is `Encounter.period.end`) | discharge_summary |
+> | `vaccineDetails` (jsonb) | `Immunization` (vaccineCode, doseNumber, lotNumber, route, site, next-due) | vaccination |
+>
+> All new columns are nullable and additive — no migration touched existing
+> rows. AI extraction (Prescription Analyzer) was deliberately left untouched
+> this pass: the new fields are patient-fillable on the review screen only.
+> The share bundle (`assembleBundle` in `vault-share.ts`) carries all of them
+> through, so a receiving doctor on `/vault/view` sees the same structured
+> data as the patient's own record page — see `backend/vault/vault-records.ts`
+> and `backend/api/v1/vault.ts` for the exact shapes.
+
 ## 4. OTP + consent mechanics
+
+> **2026-08-23 update — OTP step removed.** The two-step
+> create-then-OTP-confirm flow described below (§4.1 steps 1–2) no longer
+> matches the code. `POST /api/v1/patient/vault/share` now does everything
+> in one call — assembles, encrypts, and returns the share code immediately,
+> no email round trip. `vault_share_grants.status` dropped
+> `pending_otp_confirmation`; the `otpHash`/`otpExpiresAt`/`otpAttempts`
+> columns are gone. To compensate for losing the OTP's "prove it's really
+> the account holder, not just a logged-in device" guarantee, the share
+> code itself grew from 8 to 13 Crockford Base32 characters (~40 bits →
+> ~65 bits) — see `backend/vault/vault-share-policy.ts`. This section is
+> kept as-is below for historical context (why OTP existed, what it was
+> for); it does not describe current behavior.
+
+> **2026-08-23 update — time-based expiry removed.** `expiresAt`/duration
+> (2h/24h/7d) is gone too. A share now stays valid indefinitely until the
+> patient revokes it or creates a replacement — `createShare()` revokes any
+> existing `active` grant for the patient in the same call before inserting
+> the new one, so at most one share is ever active at a time. The
+> `vault_share_grants.status` enum dropped `expired`; only `active | revoked`
+> remain, and both a manual revoke and an automatic replace-on-regenerate
+> land in `revoked` (not distinguished from each other — the share history
+> list doesn't need to tell them apart). `expires_at` column dropped.
 
 ### 4.1 Flow A — Anywhere Share (this build)
 
