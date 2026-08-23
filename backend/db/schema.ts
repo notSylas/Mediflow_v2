@@ -839,3 +839,33 @@ export const prescriptionAnalyses = pgTable("prescription_analyses", {
   startedAt: timestamp("started_at", { withTimezone: true }),
   completedAt: timestamp("completed_at", { withTimezone: true }),
 });
+
+/**
+ * Hand-drawn diagrams found on an analysed prescription.
+ *
+ * A doctor's sketch — a spine, a tooth chart, an injection site — is often the
+ * clearest instruction on the page, and a text pass reduces it to nothing. A
+ * single-class YOLO detector (prescription-analyzer/models/best.pt) crops them
+ * during the job and stores the crop here, beside the transcription.
+ *
+ * Bytes live in Postgres like every other uploaded file in this schema
+ * (medical_reports, chat_attachments) rather than object storage.
+ */
+export const prescriptionDiagrams = pgTable("prescription_diagrams", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  analysisId: uuid("analysis_id")
+    .notNull()
+    .references(() => prescriptionAnalyses.id, { onDelete: "cascade" }),
+  // Zero-based page of the rendered document the crop came from.
+  pageIndex: integer("page_index").notNull(),
+  // Detector score, 0-1, stored ×100 so it sorts without float comparison.
+  confidence: integer("confidence").notNull(),
+  // Pixel box on the rendered page, kept so a reviewer can find the original.
+  x1: integer("x1").notNull(),
+  y1: integer("y1").notNull(),
+  x2: integer("x2").notNull(),
+  y2: integer("y2").notNull(),
+  mimeType: text("mime_type").notNull().default("image/png"),
+  data: bytea("data").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});

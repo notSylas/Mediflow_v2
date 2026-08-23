@@ -27,6 +27,9 @@ import psycopg
 from psycopg.types.json import Json
 
 from prescription_analyzer.analyzer import PrescriptionAnalyzer
+from prescription_analyzer.diagrams import detect_diagrams
+from prescription_analyzer.pdf_utils import pdf_to_page_images
+from config import Config
 
 logging.basicConfig(
     level=os.environ.get("LOG_LEVEL", "INFO").upper(),
@@ -90,6 +93,32 @@ def _succeed(conn: psycopg.Connection, analysis_id: str, result: dict) -> None:
         )
 
 
+def _store_diagrams(conn: psycopg.Connection, analysis_id: str, diagrams) -> None:
+    """Replace this analysis's diagrams. Delete-then-insert keeps a retried
+    execution from stacking duplicate crops onto the same row."""
+    with conn.cursor() as cur:
+        cur.execute("DELETE FROM prescription_diagrams WHERE analysis_id = %s", (analysis_id,))
+        for d in diagrams:
+            cur.execute(
+                """
+                INSERT INTO prescription_diagrams
+                    (analysis_id, page_index, confidence, x1, y1, x2, y2, mime_type, data)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, 'image/png', %s)
+                """,
+                (
+                    analysis_id,
+                    d.page_index,
+                    int(round(d.confidence * 100)),
+                    d.x1,
+                    d.y1,
+                    d.x2,
+                    d.y2,
+                    d.png_bytes,
+                ),
+            )
+    logger.info("stored %d diagram crop(s) for %s", len(diagrams), analysis_id)
+
+
 def _fail(conn: psycopg.Connection, analysis_id: str, message: str) -> None:
     with conn.cursor() as cur:
         cur.execute(
@@ -128,6 +157,25 @@ def main() -> int:
                 tmp_path = tmp.name
 
             result = PrescriptionAnalyzer().analyze(tmp_path).model_dump()
+
+            # Hand-drawn diagrams: cropped and stored beside the transcription.
+            # Detection is best-effort — a prescription with no drawing is the
+            # common case, and a detector problem must never cost the user
+            # their analysis, so failures only add a warning.
+            try:
+                pages = pdf_to_page_images(tmp_path, dpi=Config.RENDER_DPI)
+                diagrams = detect_diagrams(pages)
+                if diagrams:
+                    _store_diagrams(conn, analysis_id, diagrams)
+                    result.setdefault("warnings", []).append(
+                        f"{len(diagrams)} hand-drawn diagram(s) detected and attached."
+                    )
+            except Exception:
+                logger.exception("diagram detection failed for %s", analysis_id)
+                result.setdefault("warnings", []).append(
+                    "Diagram detection could not run on this file."
+                )
+
             _succeed(conn, analysis_id, result)
             logger.info(
                 "analysis %s succeeded: %d medication(s), confidence %.2f",

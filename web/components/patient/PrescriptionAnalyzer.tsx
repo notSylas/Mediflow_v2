@@ -2,26 +2,42 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  Activity,
   AlertTriangle,
+  FlaskConical,
+  ClipboardList,
   FileText,
   Loader2,
   Minus,
   Moon,
+  PenLine,
+  Pill,
+  Stethoscope,
   Sun,
   Sunrise,
   Sunset,
   TrendingUp,
   Upload,
+  User,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { TONES, type ToneName } from "@/lib/tones";
 import type {
   AnalyzedMedication,
   AnalyzedPrescription,
 } from "~backend/prescriptions/analysis";
 
 type Status = "queued" | "processing" | "succeeded" | "failed";
+
+interface Diagram {
+  id: string;
+  pageIndex: number;
+  confidence: number;
+  width: number;
+  height: number;
+}
 
 interface Analysis {
   id: string;
@@ -30,6 +46,7 @@ interface Analysis {
   overallConfidence: number | null;
   result: AnalyzedPrescription | null;
   error: string | null;
+  diagrams?: Diagram[];
 }
 
 // Mirrors MAX_ANALYSIS_BYTES — Cloud Run's request-body ceiling.
@@ -226,6 +243,7 @@ export function PrescriptionAnalyzer() {
         <AnalysisResult
           result={analysis.result}
           filename={analysis.filename}
+          diagrams={analysis.diagrams ?? []}
           onReset={() => setAnalysis(null)}
         />
       )}
@@ -289,11 +307,17 @@ function ProgressPanel({
 
 /** Time slots a dose can fall in, in the order a day runs. */
 const SLOTS = [
-  { key: "morning", label: "Morning", short: "M", icon: Sunrise },
-  { key: "afternoon", label: "Afternoon", short: "A", icon: Sun },
-  { key: "evening", label: "Evening", short: "E", icon: Sunset },
-  { key: "night", label: "Night", short: "N", icon: Moon },
-] as const;
+  { key: "morning", label: "Morning", short: "M", icon: Sunrise, tone: "amber" },
+  { key: "afternoon", label: "Afternoon", short: "A", icon: Sun, tone: "teal" },
+  { key: "evening", label: "Evening", short: "E", icon: Sunset, tone: "rose" },
+  { key: "night", label: "Night", short: "N", icon: Moon, tone: "violet" },
+] as const satisfies readonly {
+  key: string;
+  label: string;
+  short: string;
+  icon: React.ComponentType<{ className?: string }>;
+  tone: ToneName;
+}[];
 
 /**
  * Reads dosing shorthand into the four slots for the schedule grid.
@@ -346,10 +370,10 @@ function DoseSlots({ slots }: { slots: Record<string, boolean> }) {
           <li
             key={s.key}
             className={cn(
-              "flex min-w-[4.25rem] flex-1 flex-col items-center gap-0.5 rounded-lg border px-2 py-1.5 transition-colors",
+              "flex min-w-[4.25rem] flex-1 flex-col items-center gap-1 rounded-lg px-2 py-2 transition-colors",
               take
-                ? "border-primary/30 bg-primary/10 text-primary"
-                : "border-transparent bg-foreground/[0.04] text-foreground/35"
+                ? TONES[s.tone].chip
+                : "bg-foreground/[0.04] text-foreground/30"
             )}
           >
             <Icon className="h-4 w-4" aria-hidden />
@@ -396,13 +420,31 @@ function ConfidenceMeter({ value, label }: { value: number; label: string }) {
 }
 
 /** One headline number. Per the form heuristic: a stat tile, not a one-bar chart. */
-function Stat({ value, label }: { value: number | string; label: string }) {
+function Stat({
+  value,
+  label,
+  tone,
+  icon: Icon,
+}: {
+  value: number | string;
+  label: string;
+  tone: ToneName;
+  icon: React.ComponentType<{ className?: string }>;
+}) {
   return (
-    <div className="rounded-lg border bg-card px-3 py-2.5">
-      <p className="font-mono text-xl font-semibold tabular-nums leading-none text-foreground">
+    <div className={cn("rounded-xl p-2.5", TONES[tone].tile)}>
+      <span
+        className={cn(
+          "flex h-6 w-6 items-center justify-center rounded-md",
+          TONES[tone].chip
+        )}
+      >
+        <Icon className="h-3.5 w-3.5" />
+      </span>
+      <p className="mt-1.5 font-mono text-lg font-semibold tabular-nums leading-none text-foreground">
         {value}
       </p>
-      <p className="mt-1.5 text-xs font-medium text-muted-foreground">{label}</p>
+      <p className="mt-1 text-[11px] font-medium text-foreground/60">{label}</p>
     </div>
   );
 }
@@ -436,10 +478,12 @@ function LabStatus({ status }: { status: string | null }) {
 function AnalysisResult({
   result,
   filename,
+  diagrams,
   onReset,
 }: {
   result: AnalyzedPrescription;
   filename: string;
+  diagrams: Diagram[];
   onReset: () => void;
 }) {
   const [showRaw, setShowRaw] = useState(false);
@@ -452,7 +496,7 @@ function AnalysisResult({
       {/* Hero. docs/Design.md allows depth on "the prescription panel" — this is
           that surface, so it carries the identity gradient the rest of the page
           deliberately does not. */}
-      <div className="overflow-hidden rounded-2xl border bg-gradient-to-br from-primary/[0.09] via-primary/[0.04] to-transparent p-5 shadow-sm">
+      <div className="overflow-hidden rounded-2xl border bg-gradient-to-br from-teal-50 via-blue-50/60 to-violet-50/50 p-5 shadow-sm">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
@@ -471,11 +515,11 @@ function AnalysisResult({
 
         <div className="mt-4 grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
           <ConfidenceMeter value={result.overall_confidence} label="Overall read confidence" />
-          <div className="grid grid-cols-4 gap-2 sm:w-[22rem]">
-            <Stat value={result.medications.length} label="Medicines" />
-            <Stat value={result.lab_findings.length} label="Labs" />
-            <Stat value={result.vitals.length} label="Vitals" />
-            <Stat value={result.pages_analyzed} label="Pages" />
+          <div className="grid grid-cols-4 gap-2 sm:w-[24rem]">
+            <Stat value={result.medications.length} label="Medicines" tone="teal" icon={Pill} />
+            <Stat value={result.lab_findings.length} label="Labs" tone="emerald" icon={FlaskConical} />
+            <Stat value={result.vitals.length} label="Vitals" tone="amber" icon={Activity} />
+            <Stat value={result.pages_analyzed} label="Pages" tone="blue" icon={FileText} />
           </div>
         </div>
       </div>
@@ -498,6 +542,42 @@ function AnalysisResult({
         </ul>
       )}
 
+      {diagrams.length > 0 && (
+        <section className="space-y-2">
+          <div className="flex items-center gap-2">
+            <span className={cn("flex h-8 w-8 items-center justify-center rounded-lg", TONES.violet.chip)}>
+              <PenLine className="h-4 w-4" />
+            </span>
+            <h3 className="text-sm font-semibold text-foreground">
+              Doctor&apos;s drawing{diagrams.length > 1 ? "s" : ""}
+            </h3>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {diagrams.map((d) => (
+              <figure key={d.id} className={cn("overflow-hidden rounded-xl p-3", TONES.violet.tile)}>
+                {/* Plain <img>: the crop is an authenticated, one-off byte
+                    stream, not a static asset next/image can optimise. */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={`/api/v1/prescription-diagrams/${d.id}`}
+                  alt={`Hand-drawn diagram from page ${d.pageIndex + 1} of the prescription`}
+                  className="w-full rounded-lg bg-white object-contain"
+                  loading="lazy"
+                />
+                <figcaption className="mt-2 flex items-center justify-between text-xs text-foreground/60">
+                  <span>Page {d.pageIndex + 1}</span>
+                  <span className="font-mono tabular-nums">{d.confidence}% match</span>
+                </figcaption>
+              </figure>
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Detected automatically and cropped from the original — check it against
+            the source before relying on it.
+          </p>
+        </section>
+      )}
+
       {/* Per-time view. The cards below already answer "when do I take THIS
           medicine"; this answers the inverse — "it is morning, what do I take"
           — which is the question a patient actually has, standing at the shelf.
@@ -514,18 +594,27 @@ function AnalysisResult({
                 <div
                   key={slot.key}
                   className={cn(
-                    "rounded-xl border p-3",
-                    meds.length ? "bg-card" : "bg-muted/30"
+                    "rounded-xl p-3.5",
+                    meds.length ? TONES[slot.tone].tile : "border bg-muted/30"
                   )}
                 >
-                  <div
-                    className={cn(
-                      "flex items-center gap-1.5",
-                      meds.length ? "text-primary" : "text-foreground/40"
-                    )}
-                  >
-                    <Icon className="h-4 w-4" aria-hidden />
-                    <span className="text-xs font-semibold">{slot.label}</span>
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={cn(
+                        "flex h-7 w-7 items-center justify-center rounded-lg",
+                        meds.length ? TONES[slot.tone].chip : "bg-foreground/[0.06] text-foreground/40"
+                      )}
+                    >
+                      <Icon className="h-3.5 w-3.5" aria-hidden />
+                    </span>
+                    <span
+                      className={cn(
+                        "text-xs font-semibold",
+                        meds.length ? "text-foreground" : "text-foreground/40"
+                      )}
+                    >
+                      {slot.label}
+                    </span>
                   </div>
                   {meds.length > 0 ? (
                     <ul className="mt-2 space-y-1">
@@ -558,14 +647,14 @@ function AnalysisResult({
       )}
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <Section title="Doctor">
+        <Section title="Doctor" tone="blue" icon={Stethoscope}>
           <Field label="Name" value={result.doctor.name} />
           <Field label="Specialty" value={result.doctor.specialty} />
           <Field label="Qualifications" value={result.doctor.qualifications.join(", ") || null} />
           <Field label="Reg. no" value={result.doctor.registration_no} />
           <Field label="Clinic" value={result.doctor.clinic_or_hospital} />
         </Section>
-        <Section title="Patient">
+        <Section title="Patient" tone="violet" icon={User}>
           <Field label="Name" value={result.patient.name} />
           <Field label="Age" value={result.patient.age} />
           <Field label="Sex" value={result.patient.sex} />
@@ -576,10 +665,15 @@ function AnalysisResult({
 
       {result.medications.length > 0 && (
         <section className="space-y-2">
-          <h3 className="text-sm font-semibold text-foreground">Medications</h3>
-          <ul className="space-y-2">
+          <div className="flex items-center gap-2">
+            <span className={cn("flex h-8 w-8 items-center justify-center rounded-lg", TONES.teal.chip)}>
+              <Pill className="h-4 w-4" />
+            </span>
+            <h3 className="text-sm font-semibold text-foreground">Medications</h3>
+          </div>
+          <ul className="space-y-2.5">
             {result.medications.map((m, i) => (
-              <li key={`${m.name ?? "med"}-${i}`} className="rounded-xl border bg-card p-3.5">
+              <li key={`${m.name ?? "med"}-${i}`} className={cn("rounded-xl p-4", TONES.teal.tile)}>
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="text-sm font-semibold text-foreground">
                     {m.name ?? "Unreadable"}
@@ -635,15 +729,14 @@ function AnalysisResult({
 
       <div className="grid gap-4 sm:grid-cols-2">
         {result.vitals.length > 0 && (
-          <Section title="Vitals">
+          <Section title="Vitals" tone="amber" icon={Activity}>
             {result.vitals.map((v, i) => (
               <Field key={i} label={v.name ?? "—"} value={v.value} />
             ))}
           </Section>
         )}
         {result.lab_findings.length > 0 && (
-          <div className="rounded-xl border bg-card p-3.5">
-            <h3 className="mb-2 text-sm font-semibold text-foreground">Lab findings</h3>
+          <Section title="Lab findings" tone="emerald" icon={FlaskConical}>
             <ul className="space-y-1.5">
               {result.lab_findings.map((l, i) => (
                 <li key={i} className="flex items-center justify-between gap-3 text-sm">
@@ -659,12 +752,12 @@ function AnalysisResult({
                 </li>
               ))}
             </ul>
-          </div>
+          </Section>
         )}
       </div>
 
       {result.diagnosis.length > 0 && (
-        <Section title="Diagnosis">
+        <Section title="Diagnosis" tone="rose" icon={ClipboardList}>
           <ul className="space-y-1 text-sm text-foreground/85">
             {result.diagnosis.map((d) => (
               <li key={d}>• {d}</li>
@@ -676,7 +769,7 @@ function AnalysisResult({
       {(result.investigations.length > 0 || result.advice.length > 0 || result.follow_up) && (
         <div className="grid gap-4 sm:grid-cols-2">
           {result.investigations.length > 0 && (
-            <Section title="Tests ordered">
+            <Section title="Tests ordered" tone="teal" icon={FlaskConical}>
               <ul className="space-y-1 text-sm text-foreground/85">
                 {result.investigations.map((t) => (
                   <li key={t}>• {t}</li>
@@ -685,7 +778,7 @@ function AnalysisResult({
             </Section>
           )}
           {(result.advice.length > 0 || result.follow_up) && (
-            <Section title="Advice">
+            <Section title="Advice" tone="emerald" icon={ClipboardList}>
               <ul className="space-y-1 text-sm text-foreground/85">
                 {result.advice.map((a) => (
                   <li key={a}>• {a}</li>
@@ -713,10 +806,35 @@ function AnalysisResult({
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+/**
+ * A tone-coded block. `web/lib/tones.ts` exists so each data category carries
+ * its own identity rather than the page reading monochrome — the doctor and
+ * patient dashboards already use it, so this matches the rest of the app.
+ */
+function Section({
+  title,
+  tone,
+  icon: Icon,
+  children,
+}: {
+  title: string;
+  tone: ToneName;
+  icon: React.ComponentType<{ className?: string }>;
+  children: React.ReactNode;
+}) {
   return (
-    <div className="rounded-xl border bg-card p-3.5">
-      <h3 className="mb-2 text-sm font-semibold text-foreground">{title}</h3>
+    <div className={cn("rounded-xl p-4", TONES[tone].tile)}>
+      <div className="mb-3 flex items-center gap-2">
+        <span
+          className={cn(
+            "flex h-8 w-8 items-center justify-center rounded-lg",
+            TONES[tone].chip
+          )}
+        >
+          <Icon className="h-4 w-4" />
+        </span>
+        <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+      </div>
       <div className="space-y-1.5">{children}</div>
     </div>
   );

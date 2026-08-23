@@ -88,6 +88,7 @@ import {
 import { razorpayWebhook } from "./webhooks";
 import {
   getAnalysis,
+  getDiagram,
   listAnalysesHandler,
   uploadAnalysis,
 } from "./v1/prescription-analyzer";
@@ -177,6 +178,7 @@ const HANDLERS: Record<string, ApiHandler> = {
   "GET /api/v1/prescription-analyses": listAnalysesHandler,
   "POST /api/v1/prescription-analyses": uploadAnalysis,
   "GET /api/v1/prescription-analyses/:id": getAnalysis,
+  "GET /api/v1/prescription-diagrams/:id": getDiagram,
   "GET /api/v1/patient/vault": getVault,
   "POST /api/v1/patient/vault/records": createRecord,
   "GET /api/v1/patient/vault/records/:id": getRecord,
