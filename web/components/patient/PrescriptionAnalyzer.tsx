@@ -1,11 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AlertTriangle, FileText, Loader2, Upload } from "lucide-react";
+import { AlertTriangle, FileText, Loader2, Minus, TrendingUp, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import type { AnalyzedPrescription } from "~backend/prescriptions/analysis";
+import type {
+  AnalyzedMedication,
+  AnalyzedPrescription,
+} from "~backend/prescriptions/analysis";
 
 type Status = "queued" | "processing" | "succeeded" | "failed";
 
@@ -18,7 +21,8 @@ interface Analysis {
   error: string | null;
 }
 
-const MAX_BYTES = 5 * 1024 * 1024;
+// Mirrors MAX_ANALYSIS_BYTES — Cloud Run's request-body ceiling.
+const MAX_BYTES = 32 * 1024 * 1024;
 const POLL_MS = 2000;
 /** Two 300-DPI vision passes; used only to pace the progress bar. */
 const TYPICAL_SECONDS = 45;
@@ -69,7 +73,7 @@ export function PrescriptionAnalyzer() {
   const upload = useCallback(async (file: File) => {
     setError(null);
     if (file.size > MAX_BYTES) {
-      setError("That file is larger than 5 MB. Try a smaller scan or photo.");
+      setError("That file is larger than 32 MB. Try compressing the scan.");
       return;
     }
 
@@ -151,7 +155,7 @@ export function PrescriptionAnalyzer() {
             Drop a prescription here, or choose a file
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
-            PDF or photo, up to 5 MB. Reading it takes about a minute.
+            PDF or photo. Reading it takes about a minute.
           </p>
           <input
             ref={inputRef}
@@ -272,23 +276,110 @@ function ProgressPanel({
   );
 }
 
-function confidenceTone(confidence: number) {
-  if (confidence >= 0.8) return "bg-success/15 text-success-foreground";
-  if (confidence >= 0.5) return "bg-amber-100 text-amber-800";
-  return "bg-destructive/10 text-destructive";
+/** Time slots a dose can fall in, in the order a day runs. */
+const SLOTS = [
+  { key: "morning", label: "Morning", short: "M" },
+  { key: "afternoon", label: "Afternoon", short: "A" },
+  { key: "evening", label: "Evening", short: "E" },
+  { key: "night", label: "Night", short: "N" },
+] as const;
+
+/**
+ * Reads dosing shorthand into the four slots for the schedule grid.
+ * Mirrors the mapping in backend/vault/vault-extraction.ts — kept in the UI so
+ * the grid works off whatever the analyzer read, without a second round trip.
+ * Anything unrecognised returns null, which renders as "not read" rather than
+ * an invented schedule.
+ */
+function slotsFor(m: AnalyzedMedication): Record<string, boolean> | null {
+  const text = (m.frequency_raw ?? m.frequency ?? "").trim().toLowerCase();
+  if (!text) return null;
+
+  const positional = text.match(/^(\d)\s*-\s*(\d)\s*-\s*(\d)(?:\s*-\s*(\d))?$/);
+  if (positional) {
+    const [, a, b, c, d] = positional;
+    return d !== undefined
+      ? { morning: a !== "0", afternoon: b !== "0", evening: c !== "0", night: d !== "0" }
+      : { morning: a !== "0", afternoon: b !== "0", evening: false, night: c !== "0" };
+  }
+  if (/\bhs\b|bedtime|at night/.test(text))
+    return { morning: false, afternoon: false, evening: false, night: true };
+  if (/\bod\b|once daily/.test(text))
+    return { morning: true, afternoon: false, evening: false, night: false };
+  if (/\bbd\b|\bbid\b|twice/.test(text))
+    return { morning: true, afternoon: false, evening: false, night: true };
+  if (/\btds\b|\btid\b|three times/.test(text))
+    return { morning: true, afternoon: true, evening: false, night: true };
+  if (/\bqid\b|four times/.test(text))
+    return { morning: true, afternoon: true, evening: true, night: true };
+  return null;
 }
 
-function ConfidencePill({ value }: { value: number }) {
+/**
+ * Confidence as a meter, not a chart: it is one ratio against a limit, so a
+ * track + fill in a single hue is the honest form. Colour is never the only
+ * signal — the number is always shown beside it.
+ */
+function ConfidenceMeter({ value, label }: { value: number; label: string }) {
+  const pct = Math.round(value * 100);
   return (
-    <span
-      className={cn(
-        "rounded-full px-1.5 py-0.5 font-mono text-[10px] tabular-nums",
-        confidenceTone(value)
-      )}
-    >
-      {Math.round(value * 100)}%
-    </span>
+    <div className="space-y-1.5">
+      <div className="flex items-baseline justify-between gap-3">
+        <span className="text-xs font-medium text-foreground/70">{label}</span>
+        <span className="font-mono text-sm font-semibold tabular-nums text-foreground">
+          {pct}%
+        </span>
+      </div>
+      <div
+        className="h-1.5 overflow-hidden rounded-full bg-foreground/10"
+        role="img"
+        aria-label={`${label}: ${pct} percent`}
+      >
+        <div
+          className="h-full rounded-full bg-primary transition-[width] duration-700 ease-out"
+          style={{ width: `${Math.max(pct, 2)}%` }}
+        />
+      </div>
+    </div>
   );
+}
+
+/** One headline number. Per the form heuristic: a stat tile, not a one-bar chart. */
+function Stat({ value, label }: { value: number | string; label: string }) {
+  return (
+    <div className="rounded-lg border bg-card px-3 py-2.5">
+      <p className="font-mono text-xl font-semibold tabular-nums leading-none text-foreground">
+        {value}
+      </p>
+      <p className="mt-1.5 text-xs font-medium text-muted-foreground">{label}</p>
+    </div>
+  );
+}
+
+/**
+ * Lab status. Colour alone never carries the meaning — every cell has a word,
+ * and "normal" stays neutral rather than green: in this design system green is
+ * reserved for paid/confirmed (docs/Design.md).
+ */
+function LabStatus({ status }: { status: string | null }) {
+  const s = (status ?? "").toLowerCase();
+  if (s === "high" || s === "low") {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-900">
+        <TrendingUp className={cn("h-3 w-3", s === "low" && "rotate-180")} aria-hidden />
+        {s === "high" ? "High" : "Low"}
+      </span>
+    );
+  }
+  if (s === "normal") {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-foreground/[0.07] px-2 py-0.5 text-xs font-medium text-foreground/70">
+        <Minus className="h-3 w-3" aria-hidden />
+        Normal
+      </span>
+    );
+  }
+  return null;
 }
 
 function AnalysisResult({
@@ -301,34 +392,125 @@ function AnalysisResult({
   onReset: () => void;
 }) {
   const [showRaw, setShowRaw] = useState(false);
+  const scheduled = result.medications
+    .map((m) => ({ med: m, slots: slotsFor(m) }))
+    .filter((r) => r.slots !== null) as { med: AnalyzedMedication; slots: Record<string, boolean> }[];
 
   return (
-    <div className="space-y-5">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <FileText className="h-4 w-4 text-muted-foreground" aria-hidden />
-          <span className="text-sm font-medium">{filename}</span>
-          <ConfidencePill value={result.overall_confidence} />
+    <div className="space-y-6">
+      {/* Hero. docs/Design.md allows depth on "the prescription panel" — this is
+          that surface, so it carries the identity gradient the rest of the page
+          deliberately does not. */}
+      <div className="overflow-hidden rounded-2xl border bg-gradient-to-br from-primary/[0.09] via-primary/[0.04] to-transparent p-5 shadow-sm">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <FileText className="h-4 w-4 shrink-0 text-primary" aria-hidden />
+              <span className="truncate text-sm font-semibold text-foreground">{filename}</span>
+            </div>
+            <p className="mt-1 text-sm text-foreground/70">
+              {result.doctor.name ?? "Doctor not read"}
+              {result.doctor.specialty ? ` · ${result.doctor.specialty}` : ""}
+            </p>
+          </div>
+          <Button type="button" variant="outline" size="sm" onClick={onReset}>
+            Analyse another
+          </Button>
         </div>
-        <Button type="button" variant="outline" size="sm" onClick={onReset}>
-          Analyse another
-        </Button>
+
+        <div className="mt-4 grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+          <ConfidenceMeter value={result.overall_confidence} label="Overall read confidence" />
+          <div className="grid grid-cols-4 gap-2 sm:w-[22rem]">
+            <Stat value={result.medications.length} label="Medicines" />
+            <Stat value={result.lab_findings.length} label="Labs" />
+            <Stat value={result.vitals.length} label="Vitals" />
+            <Stat value={result.pages_analyzed} label="Pages" />
+          </div>
+        </div>
       </div>
 
-      {/* Never let an extraction pass read as fact — a low-confidence drug
-          name is a safety issue, not a UI nicety. */}
-      <p className="flex items-start gap-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-900">
-        <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
-        Read by AI from the image — always check it against the original before
-        acting on it. Anything marked <strong>VERIFY</strong> was uncertain.
+      {/* Never let an extraction pass read as fact — a low-confidence drug name
+          is a safety issue, not a UI nicety. */}
+      <p className="flex items-start gap-2 rounded-lg border border-amber-300/70 bg-amber-50 px-3 py-2.5 text-sm text-amber-950">
+        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+        <span>
+          Read by AI from the image — always check it against the original before
+          acting on it. Anything marked <strong>VERIFY</strong> was uncertain.
+        </span>
       </p>
 
       {result.warnings.length > 0 && (
-        <ul className="space-y-1 rounded-lg border border-amber-200 bg-amber-50/60 p-3 text-xs text-amber-900">
+        <ul className="space-y-1 rounded-lg border border-amber-300/70 bg-amber-50/70 p-3 text-sm text-amber-950">
           {result.warnings.map((w) => (
             <li key={w}>• {w}</li>
           ))}
         </ul>
+      )}
+
+      {/* Dosing schedule. A grid in one hue: the reader's job is "what do I take
+          when", which is a position question, not a magnitude one. */}
+      {scheduled.length > 0 && (
+        <section className="space-y-2">
+          <h3 className="text-sm font-semibold text-foreground">Daily schedule</h3>
+          <div className="overflow-x-auto rounded-xl border bg-card">
+            <table className="w-full min-w-[26rem] border-collapse text-sm">
+              <thead>
+                <tr className="border-b bg-muted/40">
+                  <th scope="col" className="px-3 py-2 text-left font-medium text-foreground/70">
+                    Medicine
+                  </th>
+                  {SLOTS.map((s) => (
+                    <th
+                      key={s.key}
+                      scope="col"
+                      className="w-16 px-2 py-2 text-center font-medium text-foreground/70"
+                    >
+                      {s.label}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {scheduled.map(({ med, slots }, i) => (
+                  <tr key={`${med.name ?? "m"}-${i}`} className="border-b last:border-0">
+                    <th scope="row" className="px-3 py-2 text-left font-medium text-foreground">
+                      {med.name ?? med.raw_text ?? "Unreadable"}
+                      {med.strength && (
+                        <span className="ml-1.5 font-mono text-xs font-normal tabular-nums text-muted-foreground">
+                          {med.strength}
+                        </span>
+                      )}
+                    </th>
+                    {SLOTS.map((s) => (
+                      <td key={s.key} className="px-2 py-2 text-center">
+                        {slots[s.key] ? (
+                          <span
+                            title={`${med.name ?? "This medicine"} — ${s.label}`}
+                            className="mx-auto flex h-7 w-7 items-center justify-center rounded-md bg-primary text-xs font-semibold text-primary-foreground"
+                          >
+                            <span className="sr-only">{`Take in the ${s.label.toLowerCase()}`}</span>
+                            <span aria-hidden>{s.short}</span>
+                          </span>
+                        ) : (
+                          <span className="mx-auto block h-7 w-7 rounded-md bg-foreground/[0.05]">
+                            <span className="sr-only">{`Not in the ${s.label.toLowerCase()}`}</span>
+                          </span>
+                        )}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {scheduled.length < result.medications.length && (
+            <p className="text-xs text-muted-foreground">
+              {result.medications.length - scheduled.length} medicine
+              {result.medications.length - scheduled.length === 1 ? "" : "s"} had no
+              schedule we could read — see the full list below.
+            </p>
+          )}
+        </section>
       )}
 
       <div className="grid gap-4 sm:grid-cols-2">
@@ -349,40 +531,46 @@ function AnalysisResult({
       </div>
 
       {result.medications.length > 0 && (
-        <div className="space-y-2">
-          <h3 className="text-sm font-semibold">Medications</h3>
+        <section className="space-y-2">
+          <h3 className="text-sm font-semibold text-foreground">Medications</h3>
           <ul className="space-y-2">
             {result.medications.map((m, i) => (
-              <li key={`${m.name ?? "med"}-${i}`} className="rounded-lg border p-3">
+              <li key={`${m.name ?? "med"}-${i}`} className="rounded-xl border bg-card p-3.5">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-sm font-medium">{m.name ?? "Unreadable"}</span>
+                  <span className="text-sm font-semibold text-foreground">
+                    {m.name ?? "Unreadable"}
+                  </span>
                   {m.strength && (
-                    <span className="text-sm text-muted-foreground">{m.strength}</span>
+                    <span className="font-mono text-sm tabular-nums text-foreground/80">
+                      {m.strength}
+                    </span>
                   )}
-                  <ConfidencePill value={m.confidence} />
                   {m.needs_verification && (
-                    <Badge variant="destructive" className="text-[10px]">
+                    <Badge variant="destructive" className="text-[11px]">
                       VERIFY
                     </Badge>
                   )}
+                  <span className="ml-auto font-mono text-xs tabular-nums text-muted-foreground">
+                    {Math.round(m.confidence * 100)}% sure
+                  </span>
                 </div>
                 {m.generic_name && (
-                  <p className="mt-0.5 text-xs text-muted-foreground">{m.generic_name}</p>
+                  <p className="mt-0.5 text-sm text-foreground/70">{m.generic_name}</p>
                 )}
-                <p className="mt-1 text-xs text-muted-foreground">
+                <p className="mt-1.5 text-sm text-foreground/80">
                   {[m.dose, m.frequency, m.route, m.duration, m.instructions]
                     .filter(Boolean)
                     .join(" · ") || "No dosing details read"}
                 </p>
                 {m.raw_text && (
-                  <p className="mt-1 font-mono text-[11px] text-muted-foreground/70">
+                  <p className="mt-1.5 font-mono text-xs text-muted-foreground">
                     as written: {m.raw_text}
                   </p>
                 )}
               </li>
             ))}
           </ul>
-        </div>
+        </section>
       )}
 
       <div className="grid gap-4 sm:grid-cols-2">
@@ -394,21 +582,30 @@ function AnalysisResult({
           </Section>
         )}
         {result.lab_findings.length > 0 && (
-          <Section title="Lab findings">
-            {result.lab_findings.map((l, i) => (
-              <Field
-                key={i}
-                label={l.name ?? "—"}
-                value={[l.value, l.status].filter(Boolean).join(" · ") || null}
-              />
-            ))}
-          </Section>
+          <div className="rounded-xl border bg-card p-3.5">
+            <h3 className="mb-2 text-sm font-semibold text-foreground">Lab findings</h3>
+            <ul className="space-y-1.5">
+              {result.lab_findings.map((l, i) => (
+                <li key={i} className="flex items-center justify-between gap-3 text-sm">
+                  <span className="text-foreground/80">{l.name ?? "—"}</span>
+                  <span className="flex items-center gap-2">
+                    {l.value && (
+                      <span className="font-mono tabular-nums font-medium text-foreground">
+                        {l.value}
+                      </span>
+                    )}
+                    <LabStatus status={l.status} />
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
       </div>
 
       {result.diagnosis.length > 0 && (
         <Section title="Diagnosis">
-          <ul className="text-sm">
+          <ul className="space-y-1 text-sm text-foreground/85">
             {result.diagnosis.map((d) => (
               <li key={d}>• {d}</li>
             ))}
@@ -420,7 +617,7 @@ function AnalysisResult({
         <div className="grid gap-4 sm:grid-cols-2">
           {result.investigations.length > 0 && (
             <Section title="Tests ordered">
-              <ul className="text-sm">
+              <ul className="space-y-1 text-sm text-foreground/85">
                 {result.investigations.map((t) => (
                   <li key={t}>• {t}</li>
                 ))}
@@ -429,7 +626,7 @@ function AnalysisResult({
           )}
           {(result.advice.length > 0 || result.follow_up) && (
             <Section title="Advice">
-              <ul className="text-sm">
+              <ul className="space-y-1 text-sm text-foreground/85">
                 {result.advice.map((a) => (
                   <li key={a}>• {a}</li>
                 ))}
@@ -442,16 +639,11 @@ function AnalysisResult({
 
       {result.raw_transcription && (
         <div>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowRaw((s) => !s)}
-          >
+          <Button type="button" variant="ghost" size="sm" onClick={() => setShowRaw((v) => !v)}>
             {showRaw ? "Hide" : "Show"} raw transcription
           </Button>
           {showRaw && (
-            <pre className="mt-2 max-h-72 overflow-auto whitespace-pre-wrap rounded-lg bg-muted p-3 text-xs">
+            <pre className="mt-2 max-h-72 overflow-auto whitespace-pre-wrap rounded-lg border bg-muted/50 p-3 text-xs text-foreground/85">
               {result.raw_transcription}
             </pre>
           )}
@@ -463,9 +655,9 @@ function AnalysisResult({
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-lg border p-3">
-      <h3 className="mb-2 text-sm font-semibold">{title}</h3>
-      <div className="space-y-1">{children}</div>
+    <div className="rounded-xl border bg-card p-3.5">
+      <h3 className="mb-2 text-sm font-semibold text-foreground">{title}</h3>
+      <div className="space-y-1.5">{children}</div>
     </div>
   );
 }
@@ -474,8 +666,8 @@ function Field({ label, value }: { label: string; value: string | null }) {
   if (!value) return null;
   return (
     <p className="flex justify-between gap-3 text-sm">
-      <span className="text-muted-foreground">{label}</span>
-      <span className="text-right font-medium">{value}</span>
+      <span className="text-foreground/60">{label}</span>
+      <span className="text-right font-medium text-foreground">{value}</span>
     </p>
   );
 }

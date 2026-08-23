@@ -24,7 +24,7 @@ class VisionLLM:
         system: str,
         user_text: str,
         image_data_uris: List[str],
-        max_tokens: int = 2500,
+        max_tokens: int = 8000,
     ) -> dict:
         """Send text + page images, return the parsed JSON object."""
         content = [{"type": "text", "text": user_text}]
@@ -45,7 +45,19 @@ class VisionLLM:
             kwargs["response_format"] = {"type": "json_object"}
 
         resp = self.client.chat.completions.create(**kwargs)
-        raw = (resp.choices[0].message.content or "").strip()
+        choice = resp.choices[0]
+
+        # A truncated response is still *valid* as far as the API is concerned:
+        # it just stops mid-object, and json.loads then reports a misleading
+        # "Expecting ',' delimiter" deep in the string. Catch it at the source
+        # so the failure names the real cause.
+        if choice.finish_reason == "length":
+            raise ValueError(
+                f"model output hit the {max_tokens}-token limit and was truncated "
+                "before the JSON closed — raise max_tokens for this pass"
+            )
+
+        raw = (choice.message.content or "").strip()
         return _parse_json(raw)
 
 

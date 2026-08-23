@@ -1,3 +1,4 @@
+import { GoogleAuth } from "google-auth-library";
 import { logger } from "~backend/core/logger";
 import { failAnalysis, recordJobExecution } from "./analysis";
 
@@ -14,38 +15,40 @@ import { failAnalysis, recordJobExecution } from "./analysis";
  * name for traceability, and fail the row here if the job could not even be
  * launched — otherwise it would sit `queued` forever with the UI spinning.
  *
- * Auth uses the runtime service account's metadata-server token, which is
- * present on Cloud Run without any key material. Locally there is no metadata
- * server, so `runAnalysisJob` is a no-op unless ANALYZER_JOB_NAME is set —
- * see `docs/Deployment.md` for the local path.
+ * Auth goes through Application Default Credentials, so one code path covers
+ * both environments: on Cloud Run it picks up the runtime service account from
+ * the metadata server, and locally it uses whatever
+ * `gcloud auth application-default login` wrote. No key material either way.
  */
 
-const METADATA_TOKEN_URL =
-  "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token";
+const auth = new GoogleAuth({
+  scopes: ["https://www.googleapis.com/auth/cloud-platform"],
+});
 
-function jobConfig() {
-  const project = process.env.GOOGLE_CLOUD_PROJECT ?? process.env.GCP_PROJECT;
+async function jobConfig() {
+  // GOOGLE_CLOUD_PROJECT is set automatically on Cloud Run; locally it falls
+  // back to whatever project ADC is pointed at, so `gcloud config set project`
+  // is enough and there is nothing extra to put in .env.
+  const project =
+    process.env.GOOGLE_CLOUD_PROJECT ??
+    process.env.GCP_PROJECT ??
+    (await auth.getProjectId().catch(() => null));
   const region = process.env.ANALYZER_JOB_REGION ?? "asia-south1";
-  const job = process.env.ANALYZER_JOB_NAME;
+  const job = process.env.ANALYZER_JOB_NAME ?? "prescription-analyzer";
   return { project, region, job };
 }
 
-/** True when the deployment is wired to run analyses. */
-export function analyzerAvailable(): boolean {
-  const { project, job } = jobConfig();
+/** True when this process can reach a project to run the job in. */
+export async function analyzerAvailable(): Promise<boolean> {
+  const { project, job } = await jobConfig();
   return Boolean(project && job);
 }
 
 async function accessToken(): Promise<string> {
-  const res = await fetch(METADATA_TOKEN_URL, {
-    headers: { "Metadata-Flavor": "Google" },
-  });
-  if (!res.ok) {
-    throw new Error(`metadata token request failed: ${res.status}`);
-  }
-  const body = (await res.json()) as { access_token?: string };
-  if (!body.access_token) throw new Error("metadata token response had no access_token");
-  return body.access_token;
+  const client = await auth.getClient();
+  const { token } = await client.getAccessToken();
+  if (!token) throw new Error("no access token from Application Default Credentials");
+  return token;
 }
 
 /**
@@ -53,12 +56,12 @@ async function accessToken(): Promise<string> {
  * the UI shows a real error instead of an endless spinner.
  */
 export async function runAnalysisJob(analysisId: string): Promise<void> {
-  const { project, region, job } = jobConfig();
+  const { project, region, job } = await jobConfig();
 
   if (!project || !job) {
     logger.warn(
       { analysisId },
-      "analyzer job not configured (ANALYZER_JOB_NAME/GOOGLE_CLOUD_PROJECT unset)"
+      "analyzer job not configured — no GCP project resolved from env or ADC"
     );
     await failAnalysis(
       analysisId,
