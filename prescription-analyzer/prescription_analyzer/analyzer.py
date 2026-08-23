@@ -10,7 +10,14 @@ import logging
 from config import Config
 from .pdf_utils import pdf_to_page_images
 from .llm import VisionLLM
-from .prompts import CONTEXT_SYSTEM, CONTEXT_USER, ANALYZE_SYSTEM, ANALYZE_USER
+from .prompts import (
+    CONTEXT_SYSTEM,
+    CONTEXT_USER,
+    ANALYZE_SYSTEM,
+    ANALYZE_USER,
+    SWEEP_SYSTEM,
+    SWEEP_USER,
+)
 from .schema import (
     AnalyzedPrescription, DoctorContext, PatientInfo, Medication,
     VitalSign, LabFinding,
@@ -89,6 +96,13 @@ class PrescriptionAnalyzer:
             pages_analyzed=len(images),
         )
 
+        # --- Pass 3: completeness sweep -------------------------------------
+        # Ask specifically what was MISSED. One extraction pass reads the easy
+        # layer well and quietly drops handwriting layered on printed text; a
+        # narrower "what is absent from this JSON?" question catches it without
+        # re-reading the whole page.
+        self._sweep(result, images)
+
         # Safety net: surface any low-confidence / flagged medication to the top-level warnings.
         for m in result.medications:
             if m.needs_verification or m.confidence < 0.5:
@@ -96,3 +110,76 @@ class PrescriptionAnalyzer:
                     f"Verify medication: '{m.raw_text or m.name}' (confidence {m.confidence:.2f})"
                 )
         return result
+
+    def _sweep(self, result: AnalyzedPrescription, images) -> None:
+        """Merge anything the audit pass found that the main pass missed.
+
+        Failures here are non-fatal on purpose: a completed extraction is worth
+        more than no result, so a sweep that errors just leaves a warning.
+        """
+        try:
+            extracted = result.model_dump_json(
+                indent=None,
+                exclude={"raw_transcription", "warnings", "overall_confidence", "pages_analyzed"},
+            )
+            found = self.llm.complete_json(
+                SWEEP_SYSTEM, SWEEP_USER.format(extracted=extracted), images, max_tokens=6000
+            )
+        except Exception as e:
+            logger.warning("Completeness sweep failed: %s", e)
+            result.warnings.append(
+                "Second-look pass could not run — some handwritten items may be missing."
+            )
+            return
+
+        added: list[str] = []
+
+        def _extend(field: str, model, seen_key):
+            existing = {seen_key(x) for x in getattr(result, field)}
+            for raw in found.get(field) or []:
+                if not isinstance(raw, dict):
+                    continue
+                try:
+                    item = model(**raw)
+                except Exception:
+                    continue
+                key = seen_key(item)
+                if not key or key in existing:
+                    continue
+                # Anything only the audit pass saw is by definition less certain.
+                if hasattr(item, "needs_verification"):
+                    item.needs_verification = True
+                existing.add(key)
+                getattr(result, field).append(item)
+                added.append(f"{field}: {key}")
+
+        _extend("medications", Medication, lambda m: (m.name or m.raw_text or "").strip().lower())
+        _extend("vitals", VitalSign, lambda v: (v.name or "").strip().lower())
+        _extend("lab_findings", LabFinding, lambda l: (l.name or "").strip().lower())
+
+        for field in ("investigations", "advice", "diagnosis"):
+            existing = {str(x).strip().lower() for x in getattr(result, field)}
+            for raw in found.get(field) or []:
+                text = str(raw).strip()
+                if text and text.lower() not in existing:
+                    existing.add(text.lower())
+                    getattr(result, field).append(text)
+                    added.append(f"{field}: {text}")
+
+        for note in found.get("notes") or []:
+            result.warnings.append(str(note))
+
+        missed_text = [str(t).strip() for t in (found.get("missed_text") or []) if str(t).strip()]
+        if missed_text:
+            result.raw_transcription = (
+                (result.raw_transcription or "")
+                + "\n\n--- second-look pass also read ---\n"
+                + "\n".join(missed_text)
+            )
+
+        if added:
+            logger.info("Sweep recovered %d item(s): %s", len(added), "; ".join(added[:8]))
+            result.warnings.append(
+                f"A second-look pass found {len(added)} item(s) the first pass missed — "
+                "these are marked for verification."
+            )

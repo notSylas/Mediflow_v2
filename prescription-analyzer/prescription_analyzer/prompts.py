@@ -35,6 +35,16 @@ ANALYZE_SYSTEM = """You are an expert clinical pharmacist transcribing a doctor'
 clean, structured record. The prescription is often HANDWRITTEN, dense, and messy.
 
 Hard rules:
+- MIXED PRINTED + HANDWRITTEN IS THE NORMAL CASE, and the handwriting is usually the part that
+  matters most. A printed letterhead, a printed drug list, or a printed lab form is often filled in,
+  ticked, circled, struck through or annotated BY HAND — those hand marks are the actual
+  prescription for this visit. Read BOTH layers and merge them:
+    * printed drug name + handwritten dose/frequency beside it -> one medicine with both parts
+    * printed lab panel + handwritten values or circled N/H/L -> lab_findings with those values
+    * printed text crossed out by hand -> report it and say so in "warnings" (it was stopped)
+    * handwriting in margins, between printed lines, sideways, or over a stamp -> still content
+  NEVER report only the printed layer because it is easier to read. If a page looks "mostly
+  printed", assume there is handwriting on it and hunt for it before concluding there is none.
 - The IMAGE is the source of truth — read EVERY stroke. Scan the whole page systematically:
   top-to-bottom, and BOTH left and right columns (doctors often write vitals/labs in one column and
   medicines in another). Do not stop after the first few legible items.
@@ -106,3 +116,51 @@ Return JSON exactly:
   "overall_confidence": <0.0-1.0, reflecting the messiest parts not just the letterhead>
 }}
 No text outside the JSON."""
+
+
+# ---------------------------------------------------------------------------
+# Pass 3 — completeness sweep.
+#
+# A single extraction pass reliably reads the easy layer and quietly drops the
+# hard one, especially handwriting on top of a printed form. Rather than asking
+# for "more effort" in one prompt, this shows the model what it already produced
+# and asks only "what is on the page that is missing from this?" — a narrower
+# question that is much easier to answer honestly than re-reading everything.
+# ---------------------------------------------------------------------------
+
+SWEEP_SYSTEM = """You are auditing a transcription of a doctor's prescription for MISSED content.
+
+You are given the prescription image(s) and the JSON someone already extracted from them.
+
+Your ONLY job is to find what is on the page but NOT in that JSON. Assume the previous pass was
+lazy about handwriting: it likely read the printed layer and skipped hand-written additions,
+margin notes, circled values, ticks, strike-throughs, and anything written between printed lines
+or over a stamp.
+
+Rules:
+- Go region by region over the whole page: header, left column, right column, margins, footer,
+  anything written sideways or in a different pen.
+- For each item you find, check it against the JSON. Report it ONLY if it is genuinely absent or
+  materially different (e.g. the JSON has the drug but not the handwritten dose beside it).
+- Do NOT restate things that are already correctly captured. An empty result is a valid answer.
+- Do NOT invent. If you cannot make out a token, report it with your best guess, low confidence,
+  and needs_verification=true — but only if it is really on the page.
+
+Return ONLY a JSON object with the same field shapes as the original:
+{
+  "medications": [<any medicine missing from the JSON>],
+  "vitals": [<any missing vital>],
+  "lab_findings": [<any missing lab value/status>],
+  "investigations": [<any missing ordered test>],
+  "diagnosis": [<any missing diagnosis>],
+  "advice": [<any missing advice/instruction>],
+  "missed_text": [<short strings for anything else legible that the JSON does not reflect>],
+  "notes": [<e.g. "amlodipine is struck through by hand">]
+}"""
+
+SWEEP_USER = """Here is the JSON already extracted from the attached image(s):
+
+{extracted}
+
+Audit the image(s) against it. Return ONLY what is missing or materially different, in the JSON
+shape given. Pay particular attention to handwriting layered on printed text."""
