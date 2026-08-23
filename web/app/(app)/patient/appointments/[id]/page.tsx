@@ -6,7 +6,7 @@ import { Download, FileText } from "lucide-react";
 import { auth } from "~backend/auth/auth";
 import { getAppointmentForPatient } from "~backend/booking/appointments";
 import { getPrescriptionWithMedicines } from "~backend/consult/consult";
-import { getDoctorCard, getDoctorProfile } from "~backend/people/doctor";
+import { getDoctorCard, getDoctorProfile, getDoctorSignatureUrl } from "~backend/people/doctor";
 import { getPatientProfile } from "~backend/people/patient";
 import { patientDocumentName } from "~backend/people/patient-identity";
 import { statusLabel } from "~backend/booking/appointment-status";
@@ -31,11 +31,13 @@ export default async function PatientAppointmentDetailPage({
   if (!row) notFound();
 
   const { appointment, payment, report } = row;
-  const [profile, doctor, patientProfile] = await Promise.all([
+  const [profile, doctorCard, patientProfile, signatureUrl] = await Promise.all([
     getDoctorProfile(),
     getDoctorCard(),
     getPatientProfile(session.user.id),
+    getDoctorSignatureUrl(),
   ]);
+  const doctor = doctorCard && { ...doctorCard, signatureUrl };
   const timezone = profile?.timezone ?? "Asia/Kolkata";
   const patient = {
     name: patientDocumentName(session.user),

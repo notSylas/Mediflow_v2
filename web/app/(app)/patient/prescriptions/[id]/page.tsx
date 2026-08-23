@@ -4,7 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { auth } from "~backend/auth/auth";
 import { getPatientPrescriptionById } from "~backend/consult/consult";
-import { getDoctorCard, getDoctorProfile } from "~backend/people/doctor";
+import { getDoctorCard, getDoctorProfile, getDoctorSignatureUrl } from "~backend/people/doctor";
 import { getPatientProfile } from "~backend/people/patient";
 import { patientDocumentName } from "~backend/people/patient-identity";
 import { Button } from "@/components/ui/button";
@@ -23,11 +23,13 @@ export default async function PatientPrescriptionTemplatePage({
   const row = await getPatientPrescriptionById(session.user.id, id);
   if (!row) notFound();
 
-  const [profile, doctor, patientProfile] = await Promise.all([
+  const [profile, doctorCard, patientProfile, signatureUrl] = await Promise.all([
     getDoctorProfile(),
     getDoctorCard(),
     getPatientProfile(session.user.id),
+    getDoctorSignatureUrl(),
   ]);
+  const doctor = doctorCard && { ...doctorCard, signatureUrl };
 
   const timezone = profile?.timezone ?? "Asia/Kolkata";
   const patient = {
