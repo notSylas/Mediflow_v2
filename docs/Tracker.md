@@ -167,7 +167,7 @@ updated `Rules.md` #1 and `AGENTS.md`.
 | Mobile chat (Expo, live, pagination, PDF open, read state) | ✅ | `components/chat-thread.tsx` |
 | Socket CORS allowlist (`REALTIME_ALLOWED_ORIGINS`) | ✅ | native apps unaffected (token auth) |
 | Tests (policy predicates + token) | ✅ | 10 unit tests |
-| Production realtime hosting | 🔜 | Not yet deployed. Cloud Run can hold a socket open (unlike Vercel), so it can go alongside the other two — see `Deployment.md` |
+| Production realtime hosting | ✅ | Deployed as `mediflow-realtime` on Cloud Run (scale-to-zero) via the `deploy-realtime` job — see `Deployment.md` |
 | Push notifications (new-message alerts) | 🔜 | no `expo-notifications` yet; chat only updates while open |
 | Realtime E2E (socket delivery) test | 🔜 | only unit coverage today |
 

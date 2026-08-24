@@ -1,0 +1,44 @@
+# Production image for the realtime chat server (realtime/server.ts).
+#
+# Installs from backend/package.json, same 13+1 dependency set as
+# Dockerfile.backend (no React/Next/Expo) — realtime/server.ts only imports
+# from backend/db and backend/messaging.
+#
+# Unlike Dockerfile.backend, this does NOT flatten backend/ onto /app.
+# realtime/server.ts uses relative imports ("../backend/db") that assume
+# backend/ and realtime/ are sibling directories, so both are kept as real
+# subdirectories here. Path aliases (~backend/*) inside backend/ itself are
+# resolved via the repo-root tsconfig.json's "~backend/*": ["./backend/*"]
+# mapping — copied in below instead of backend/tsconfig.json's own
+# self-referential one, which only makes sense in the flattened layout.
+#
+#   docker build -f Dockerfile.realtime -t mediflow-realtime .
+#   docker run --rm -p 4000:4000 --env-file .env mediflow-realtime
+
+# ---- deps ----------------------------------------------------------------
+FROM node:22-alpine AS deps
+WORKDIR /app
+COPY backend/package.json ./
+RUN npm install --omit=dev --no-audit --no-fund
+
+# ---- runtime -------------------------------------------------------------
+FROM node:22-alpine AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
+ENV POSTGRES_MAX_CONNECTIONS=3
+
+RUN npm install -g tsx@4.22.4 --no-audit --no-fund
+
+COPY --from=deps /app/node_modules ./node_modules
+COPY tsconfig.json ./
+COPY backend/ ./backend/
+COPY realtime/ ./realtime/
+
+USER node
+
+# realtime/server.ts reads REALTIME_PORT (default 4000), not Cloud Run's
+# injected PORT — so the deploy step must pass --port=4000 to match this
+# default exactly, rather than relying on PORT flowing through.
+EXPOSE 4000
+CMD ["tsx", "realtime/server.ts"]

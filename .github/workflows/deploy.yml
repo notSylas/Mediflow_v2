@@ -93,8 +93,77 @@ jobs:
           PUSH_URL=$(echo "$RAW_URL" | sed -E 's#^(postgresql://[^@]+)@/([^?]+)\?host=.*$#\1@127.0.0.1:5434/\2#')
           DATABASE_URL="$PUSH_URL" npm run db:push
 
+  # ---------------------------------------------------------------------
+  # Self-hosted socket.io process (realtime/server.ts) — LISTENs on Postgres
+  # for new chat messages and pushes them to connected browsers. Scale-to-zero
+  # like every other service here: chat is REST-first (messages persist via
+  # the backend regardless), so a cold instance only delays the live push,
+  # never drops a message. --timeout=3600 is the Cloud Run max — a WebSocket
+  # is one long HTTP/1.1-upgraded request under the hood, so the request
+  # timeout caps connection lifetime too; socket.io's client auto-reconnects
+  # past that.
+  # ---------------------------------------------------------------------
+  deploy-realtime:
+    needs: check
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # required to mint the OIDC token for Google auth
+    outputs:
+      url: ${{ steps.deploy.outputs.url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: projects/702335727862/locations/global/workloadIdentityPools/github/providers/github-provider
+          service_account: github-deployer@mediflow-v2-app.iam.gserviceaccount.com
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+
+      - name: Build and push realtime
+        run: |
+          docker build -f Dockerfile.realtime \
+            -t "$REGISTRY/realtime:${{ github.sha }}" \
+            -t "$REGISTRY/realtime:latest" .
+          docker push "$REGISTRY/realtime:${{ github.sha }}"
+          docker push "$REGISTRY/realtime:latest"
+
+      - id: deploy
+        name: Deploy realtime
+        run: |
+          # Web's own URL is stable across redeploys — look up whatever's
+          # already there (same bootstrapping pattern deploy-web uses for
+          # itself) so the socket server's CORS allowlist matches, without a
+          # circular dependency on this run's own deploy-web job.
+          WEB_URL=$(gcloud run services describe "$WEB_SERVICE" \
+            --project="$PROJECT_ID" --region="$REGION" --format='value(status.url)' 2>/dev/null || echo "")
+          gcloud run deploy mediflow-realtime \
+            --project="$PROJECT_ID" --region="$REGION" \
+            --image="$REGISTRY/realtime:${{ github.sha }}" \
+            --add-cloudsql-instances="$CLOUDSQL" \
+            --port=4000 --min-instances=0 --max-instances=3 \
+            --cpu=1 --memory=512Mi --timeout=3600 \
+            --allow-unauthenticated \
+            --set-env-vars=REALTIME_ALLOWED_ORIGINS=$WEB_URL \
+            --set-secrets=DATABASE_URL=mediflow-database-url:latest,BETTER_AUTH_SECRET=mediflow-auth-secret:latest \
+            --quiet
+          echo "url=$(gcloud run services describe mediflow-realtime \
+            --project="$PROJECT_ID" --region="$REGION" --format='value(status.url)')" >> "$GITHUB_OUTPUT"
+
+      - name: Smoke test realtime
+        run: |
+          URL="${{ steps.deploy.outputs.url }}"
+          curl -fsS "$URL/" | grep -q "realtime ok"
+          echo "realtime healthy at $URL"
+
   deploy-backend:
-    needs: [check, migrate-db]
+    needs: [check, migrate-db, deploy-realtime]
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     permissions:
@@ -134,7 +203,7 @@ jobs:
             --port=4100 --min-instances=0 --max-instances=4 \
             --cpu=1 --memory=512Mi --concurrency=40 --timeout=60 \
             --allow-unauthenticated \
-            --set-env-vars=NODE_ENV=production,POSTGRES_MAX_CONNECTIONS=3,LOG_LEVEL=info,GOOGLE_CLOUD_PROJECT=mediflow-v2-app,ANALYZER_JOB_NAME=prescription-analyzer,ANALYZER_JOB_REGION=asia-south1,GCP_KMS_KEY_NAME=projects/mediflow-v2-app/locations/asia-south1/keyRings/mediflow-vault/cryptoKeys/vault-share \
+            --set-env-vars=NODE_ENV=production,POSTGRES_MAX_CONNECTIONS=3,LOG_LEVEL=info,GOOGLE_CLOUD_PROJECT=mediflow-v2-app,ANALYZER_JOB_NAME=prescription-analyzer,ANALYZER_JOB_REGION=asia-south1,GCP_KMS_KEY_NAME=projects/mediflow-v2-app/locations/asia-south1/keyRings/mediflow-vault/cryptoKeys/vault-share,NEXT_PUBLIC_REALTIME_URL=${{ needs.deploy-realtime.outputs.url }} \
             --set-secrets=DATABASE_URL=mediflow-database-url:latest,BETTER_AUTH_SECRET=mediflow-auth-secret:latest,CRON_SECRET=mediflow-cron-secret:latest,DOCTOR_SIGNUP_CODE=mediflow-doctor-signup-code:latest,LIVEKIT_URL=mediflow-livekit-url:latest,LIVEKIT_API_KEY=mediflow-livekit-key:latest,LIVEKIT_API_SECRET=mediflow-livekit-secret:latest \
             --quiet
           echo "url=$(gcloud run services describe "$BACKEND_SERVICE" \
