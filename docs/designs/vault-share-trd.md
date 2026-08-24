@@ -273,11 +273,17 @@ ProductionReadinessBacklog.md` item B2 already flags this as an open,
 feature-independent gap. Not a prerequisite for this build.
 
 **Layer 2 — per-grant envelope encryption (this build).** One KEK, held in
-a managed KMS (AWS KMS — the concrete choice per PRD §0 #9, since the
-current stack, Vercel + Neon, has no native KMS and one had to be picked).
-Per grant: a fresh DEK from `GenerateDataKey` (§4.1 step 2), AES-256-GCM for
+a managed KMS. Originally AWS KMS (per PRD §0 #9, chosen when the target
+stack was Vercel + Neon, which has no native KMS); moved to **Google Cloud
+KMS** (2026-08-25) once the app settled on Cloud Run — reuses the same
+Workload Identity Federation / Application Default Credentials already in
+place for every other GCP resource, instead of managing a second cloud's
+credentials for this one feature. Per grant: a fresh DEK generated locally
+and wrapped with one Cloud KMS `encrypt` call (§4.1 step 2 — Cloud KMS has
+no single generate-and-wrap call like AWS's `GenerateDataKey`, so the DEK
+is generated client-side and only the wrap is a KMS call), AES-256-GCM for
 the bundle, discard the plaintext DEK immediately after use, every KMS
-`Decrypt` call independently logged by AWS CloudTrail — a second audit
+`decrypt` call independently logged by Cloud Audit Logs — a second audit
 trail outside MediFlow's own database.
 
 **Deletion is crypto-shredding.** Revoking or expiring a grant, or a
