@@ -87,10 +87,10 @@ jobs:
       - name: Push schema
         run: |
           RAW_URL=$(gcloud secrets versions access latest --secret=mediflow-database-url --project="$PROJECT_ID")
-          PUSH_URL=$(RAW_URL="$RAW_URL" node -e "
-            const u = new URL(process.env.RAW_URL);
-            process.stdout.write('postgresql://' + u.username + ':' + u.password + '@127.0.0.1:5434' + u.pathname);
-          ")
+          # Not a URL the WHATWG parser accepts (empty host before the
+          # `@`/`/` boundary), so this rewrites the text directly instead
+          # of round-tripping through `new URL()`.
+          PUSH_URL=$(echo "$RAW_URL" | sed -E 's#^(postgresql://[^@]+)@/([^?]+)\?host=.*$#\1@127.0.0.1:5434/\2#')
           DATABASE_URL="$PUSH_URL" npm run db:push
 
   deploy-backend:
