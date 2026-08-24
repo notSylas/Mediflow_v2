@@ -159,8 +159,9 @@ export async function getDoctorProfile() {
 
 /**
  * Returns the doctor_profiles row for this user, creating one with
- * defaults if it doesn't exist yet. This is the only "onboarding" step —
- * there's no separate doctor signup flow.
+ * defaults if it doesn't exist yet. This is the profile-onboarding step,
+ * called both on first `/doctor` visit and right after role promotion in
+ * `backend/api/doctor-signup.ts`'s `registerAsDoctor`.
  */
 export async function getOrCreateDoctorProfile(userId: string) {
   const [existing] = await db

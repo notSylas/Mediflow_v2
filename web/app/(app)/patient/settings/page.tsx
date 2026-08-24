@@ -1,6 +1,7 @@
+import Link from "next/link";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { KeyRound, LogOut, Settings, ShieldCheck, UserRound } from "lucide-react";
+import { KeyRound, LogOut, Settings, ShieldCheck, Stethoscope, UserRound } from "lucide-react";
 import { auth } from "~backend/auth/auth";
 import { getDoctorProfile } from "~backend/people/doctor";
 import { getPatientCareStatus, toCareStatusDTO } from "~backend/care/care-subscription";
@@ -115,6 +116,19 @@ export default async function PatientSettingsPage() {
 
           <PatientSideCard title="Legal and access">
             <LegalLinks />
+          </PatientSideCard>
+
+          <PatientSideCard title="Are you a doctor?" description="Set up clinic access">
+            <div className="flex items-center gap-3 rounded-2xl border bg-background/70 p-3 text-sm text-muted-foreground">
+              <Stethoscope className="h-4 w-4 shrink-0 text-primary" />
+              <span className="flex-1">
+                If you have a registration code,{" "}
+                <Link href="/doctor/register" className="font-medium text-primary hover:underline">
+                  register here
+                </Link>
+                .
+              </span>
+            </div>
           </PatientSideCard>
 
           <PatientSideCard title="Sign out" description="End this browser session">

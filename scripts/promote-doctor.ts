@@ -1,5 +1,7 @@
-// Promotes an existing user to the doctor role. Run after the doctor has
-// signed in once (which creates their user row):
+// Break-glass fallback: the normal path is /doctor/register (gated by
+// DOCTOR_SIGNUP_CODE). Use this only when the code isn't available or a
+// direct promotion is needed. Run after the doctor has signed in once
+// (which creates their user row):
 //   npx tsx scripts/promote-doctor.ts doctor@example.com
 import { eq } from "drizzle-orm";
 import { db } from "../backend/db";

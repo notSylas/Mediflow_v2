@@ -135,7 +135,7 @@ jobs:
             --cpu=1 --memory=512Mi --concurrency=40 --timeout=60 \
             --allow-unauthenticated \
             --set-env-vars=NODE_ENV=production,POSTGRES_MAX_CONNECTIONS=3,LOG_LEVEL=info,GOOGLE_CLOUD_PROJECT=mediflow-v2-app,ANALYZER_JOB_NAME=prescription-analyzer,ANALYZER_JOB_REGION=asia-south1 \
-            --set-secrets=DATABASE_URL=mediflow-database-url:latest,BETTER_AUTH_SECRET=mediflow-auth-secret:latest,CRON_SECRET=mediflow-cron-secret:latest,LIVEKIT_URL=mediflow-livekit-url:latest,LIVEKIT_API_KEY=mediflow-livekit-key:latest,LIVEKIT_API_SECRET=mediflow-livekit-secret:latest \
+            --set-secrets=DATABASE_URL=mediflow-database-url:latest,BETTER_AUTH_SECRET=mediflow-auth-secret:latest,CRON_SECRET=mediflow-cron-secret:latest,DOCTOR_SIGNUP_CODE=mediflow-doctor-signup-code:latest,LIVEKIT_URL=mediflow-livekit-url:latest,LIVEKIT_API_KEY=mediflow-livekit-key:latest,LIVEKIT_API_SECRET=mediflow-livekit-secret:latest \
             --quiet
           echo "url=$(gcloud run services describe "$BACKEND_SERVICE" \
             --project="$PROJECT_ID" --region="$REGION" --format='value(status.url)')" >> "$GITHUB_OUTPUT"

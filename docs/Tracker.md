@@ -146,7 +146,8 @@ in `mobile/.env` to the dev machine's LAN URL (phone can't reach localhost).
 | WhatsApp reminders | 🧊 |
 | Medical records vault (Vault Share) | ✅ built | `backend/vault/`, 11 endpoints under `/api/v1/patient/vault/*` + `/api/v1/vault/redeem`. Schema pushed locally; **still needs pushing to Cloud SQL**, and the KMS env vars are not in Secret Manager — see `docs/designs/vault-share-trd.md` |
 | Medication tracker | 🧊 undecided |
-| Dashboards, diet/timeline, doctor signup | ❌ cut |
+| Dashboards, diet/timeline | ❌ cut |
+| Doctor self-registration (`/doctor/register`) | ✅ built | Replaces `scripts/promote-doctor.ts` as the normal path; gated by `DOCTOR_SIGNUP_CODE`. Still single-doctor — see `AGENTS.md` |
 
 ## Chat / messaging (added 2026-06-14)
 
