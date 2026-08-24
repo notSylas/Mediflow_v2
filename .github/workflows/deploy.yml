@@ -40,8 +40,61 @@ jobs:
         env:
           DATABASE_URL: postgresql://build:build@localhost:5432/build
 
-  deploy-backend:
+  # ---------------------------------------------------------------------
+  # Push backend/db/schema.ts before either service deploys, so a new
+  # release never runs against a stale schema. Additive/nullable changes
+  # apply immediately; anything ambiguous or destructive makes drizzle-kit
+  # prompt for confirmation, which just fails this job (no TTY here) rather
+  # than silently applying — that stays a deliberate manual step.
+  # ---------------------------------------------------------------------
+  migrate-db:
     needs: check
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # required to mint the OIDC token for Google auth
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: projects/702335727862/locations/global/workloadIdentityPools/github/providers/github-provider
+          service_account: github-deployer@mediflow-v2-app.iam.gserviceaccount.com
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Start Cloud SQL Auth Proxy
+        run: |
+          curl -sSL -o cloud-sql-proxy \
+            "https://storage.googleapis.com/cloud-sql-connectors/cloud-sql-proxy/v2.25.3/cloud-sql-proxy.linux.amd64"
+          chmod +x cloud-sql-proxy
+          ./cloud-sql-proxy --port 5434 "$CLOUDSQL" &
+          for i in $(seq 1 30); do
+            pg_isready -h 127.0.0.1 -p 5434 -q && break
+            sleep 1
+          done
+
+      # Same secret Cloud Run reads at runtime, reformatted for a TCP proxy
+      # connection instead of the unix-socket form baked into the secret
+      # (`?host=/cloudsql/...`, which only resolves inside Cloud Run itself).
+      - name: Push schema
+        run: |
+          RAW_URL=$(gcloud secrets versions access latest --secret=mediflow-database-url --project="$PROJECT_ID")
+          PUSH_URL=$(RAW_URL="$RAW_URL" node -e "
+            const u = new URL(process.env.RAW_URL);
+            process.stdout.write('postgresql://' + u.username + ':' + u.password + '@127.0.0.1:5434' + u.pathname);
+          ")
+          DATABASE_URL="$PUSH_URL" npm run db:push
+
+  deploy-backend:
+    needs: [check, migrate-db]
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     permissions:
