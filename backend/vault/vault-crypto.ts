@@ -1,30 +1,31 @@
-import {
-  DecryptCommand,
-  GenerateDataKeyCommand,
-  KMSClient,
-} from "@aws-sdk/client-kms";
+import { KeyManagementServiceClient } from "@google-cloud/kms";
 import { createCipheriv, createDecipheriv, hkdfSync, randomBytes } from "node:crypto";
 import { logger } from "~backend/core/logger";
 
 // Envelope encryption for Vault Share bundles (docs/designs/vault-share-trd.md
-// §4.1/§5). Real AWS KMS wraps every data key when AWS_KMS_KEY_ID is set; a
-// deterministic local fallback (derived from BETTER_AUTH_SECRET) covers dev
-// so the feature is fully testable without an AWS account. The fallback is
-// refused outright once NODE_ENV=production — it can never silently become
-// the real security boundary.
+// §4.1/§5). Real Google Cloud KMS wraps every data key when GCP_KMS_KEY_NAME
+// is set; a deterministic local fallback (derived from BETTER_AUTH_SECRET)
+// covers dev so the feature is fully testable without any KMS configured.
+// The fallback is refused outright once NODE_ENV=production — it can never
+// silently become the real security boundary.
+//
+// Uses Application Default Credentials (same as backend/prescriptions/
+// job-runner.ts's GoogleAuth usage) — the Cloud Run service account, no key
+// file. Cloud KMS has no AWS-style "GenerateDataKey" call, so the envelope
+// pattern here generates the 32-byte data key locally and wraps just those
+// bytes with a single `encrypt` call — same shape, same caller contract.
 
-const KEY_ID = process.env.AWS_KMS_KEY_ID;
-const REGION = process.env.AWS_REGION ?? "ap-south-1";
+const KEY_NAME = process.env.GCP_KMS_KEY_NAME;
 const isProduction = process.env.NODE_ENV === "production";
 
-let client: KMSClient | null = null;
-function kmsClient(): KMSClient {
-  if (!client) client = new KMSClient({ region: REGION });
+let client: KeyManagementServiceClient | null = null;
+function kmsClient(): KeyManagementServiceClient {
+  if (!client) client = new KeyManagementServiceClient();
   return client;
 }
 
 export function isKmsConfigured(): boolean {
-  return Boolean(KEY_ID);
+  return Boolean(KEY_NAME);
 }
 
 /**
@@ -73,33 +74,29 @@ export interface DataKey {
 }
 
 /**
- * One KMS `GenerateDataKey` call returns both a usable plaintext key and that
- * same key already wrapped by the account's master key — the standard AWS
- * envelope-encryption pattern, not a locally-generated key followed by a
- * separate Encrypt call. Callers must discard `plaintextKey` immediately
- * after use; only `wrappedKey` is ever persisted.
+ * Cloud KMS has no single call that both generates and wraps a key (unlike
+ * AWS's GenerateDataKey), so this generates the plaintext key locally and
+ * wraps it with one `encrypt` call — the standard envelope-encryption
+ * pattern Google's own KMS docs recommend. Callers must discard
+ * `plaintextKey` immediately after use; only `wrappedKey` is ever persisted.
  */
 export async function generateDataKey(): Promise<DataKey> {
   if (isKmsConfigured()) {
-    const res = await kmsClient().send(
-      new GenerateDataKeyCommand({ KeyId: KEY_ID, KeySpec: "AES_256" })
-    );
-    if (!res.Plaintext || !res.CiphertextBlob) {
-      throw new Error("KMS GenerateDataKey returned an incomplete response");
+    const plaintextKey = randomBytes(32);
+    const [res] = await kmsClient().encrypt({ name: KEY_NAME, plaintext: plaintextKey });
+    if (!res.ciphertext) {
+      throw new Error("KMS encrypt returned an incomplete response");
     }
-    return {
-      plaintextKey: Buffer.from(res.Plaintext),
-      wrappedKey: Buffer.from(res.CiphertextBlob),
-    };
+    return { plaintextKey, wrappedKey: Buffer.from(res.ciphertext) };
   }
 
   if (isProduction) {
     throw new Error(
-      "AWS_KMS_KEY_ID is not configured — vault sharing is unavailable in production without it"
+      "GCP_KMS_KEY_NAME is not configured — vault sharing is unavailable in production without it"
     );
   }
 
-  logger.warn("vault-crypto: AWS_KMS_KEY_ID unset, using local dev-only key wrapping");
+  logger.warn("vault-crypto: GCP_KMS_KEY_NAME unset, using local dev-only key wrapping");
   const plaintextKey = randomBytes(32);
   const wrappedKey = aesGcmEncrypt(plaintextKey, localKek());
   return { plaintextKey, wrappedKey };
@@ -108,16 +105,14 @@ export async function generateDataKey(): Promise<DataKey> {
 /** Unwraps a stored data key — the counterpart to generateDataKey(). */
 export async function unwrapDataKey(wrappedKey: Buffer): Promise<Buffer> {
   if (isKmsConfigured()) {
-    const res = await kmsClient().send(
-      new DecryptCommand({ CiphertextBlob: wrappedKey, KeyId: KEY_ID })
-    );
-    if (!res.Plaintext) throw new Error("KMS Decrypt returned an empty response");
-    return Buffer.from(res.Plaintext);
+    const [res] = await kmsClient().decrypt({ name: KEY_NAME, ciphertext: wrappedKey });
+    if (!res.plaintext) throw new Error("KMS decrypt returned an empty response");
+    return Buffer.from(res.plaintext);
   }
 
   if (isProduction) {
     throw new Error(
-      "AWS_KMS_KEY_ID is not configured — cannot unwrap a vault share key in production"
+      "GCP_KMS_KEY_NAME is not configured — cannot unwrap a vault share key in production"
     );
   }
 
