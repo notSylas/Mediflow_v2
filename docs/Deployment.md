@@ -55,6 +55,19 @@ DATABASE_URL='postgresql://mediflow_app:<pw>@127.0.0.1:5434/mediflow' npm run db
 
 The proxy uses Application Default Credentials, which are separate from the `gcloud` CLI login: `gcloud auth application-default login`.
 
+## Medicine catalog
+
+Reference data (the ~250K-row Indian medicine catalog, `scripts/data/indian-medicine-dataset.csv.gz`), not app code — it does **not** run in `migrate-db` or on every deploy, the same way `promote-doctor.ts` doesn't run on every deploy either. It's a one-time (or occasional) manual step per database, through the same Cloud SQL Auth Proxy tunnel as `## Schema` above:
+
+```bash
+# proxy already running from the Schema step above
+DATABASE_URL='postgresql://mediflow_app:<pw>@127.0.0.1:5434/mediflow' npm run seed:medicines:real
+```
+
+This imports from the **vendored snapshot committed in the repo**, not a live GitHub fetch — so it still works even if the upstream dataset repo (`junioralive/Indian-Medicine-Dataset`, MIT-licensed) is ever renamed, moved, or deleted. `TRUNCATE`s and reinserts, so it's safe to re-run.
+
+To pull in upstream updates instead of just re-running the same snapshot, use `npm run seed:medicines:refresh` — it re-fetches the live CSV from GitHub, overwrites the committed snapshot file, and imports from the fresh copy. That's a deliberate, separate action: review the resulting `git diff` on the snapshot file before committing it, same as any other data change.
+
 ---
 
 ## Alternative: Vercel + Neon

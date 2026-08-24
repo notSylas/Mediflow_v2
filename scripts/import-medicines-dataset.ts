@@ -2,7 +2,19 @@
 // small hand-picked seed list with ~250K real Indian pharmaceutical
 // products. Source: junioralive/Indian-Medicine-Dataset (MIT-licensed,
 // github.com/junioralive/Indian-Medicine-Dataset), sourced from 1mg.
+//
+// By default this reads the snapshot vendored at
+// scripts/data/indian-medicine-dataset.csv.gz (fetched 2026-08-25) rather
+// than hitting GitHub — so the import still works even if that repo is
+// ever renamed, moved, or deleted. Pass --refresh to instead re-fetch the
+// live CSV from GitHub and overwrite the vendored snapshot with it before
+// importing; review the resulting git diff before committing.
 //   npm run seed:medicines:real
+//   npm run seed:medicines:refresh
+import { gunzipSync, gzipSync } from "node:zlib";
+import { readFileSync, writeFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
 import { parse } from "csv-parse/sync";
 import { sql } from "drizzle-orm";
 import { db } from "../backend/db";
@@ -10,6 +22,11 @@ import { medicines } from "../backend/db/schema";
 
 const DATASET_URL =
   "https://raw.githubusercontent.com/junioralive/Indian-Medicine-Dataset/main/DATA/updated_indian_medicine_data.csv";
+
+const SNAPSHOT_PATH = join(
+  dirname(fileURLToPath(import.meta.url)),
+  "data/indian-medicine-dataset.csv.gz"
+);
 
 // Only what a prescribing autofill needs — no price/pack-size/discount
 // (not clinically relevant, goes stale) and no description/side-effects/
@@ -24,13 +41,29 @@ interface DatasetRow {
 
 const BATCH_SIZE = 1000;
 
-async function main() {
+async function loadCsv(): Promise<string> {
+  const refresh = process.argv.includes("--refresh");
+
+  if (!refresh) {
+    console.log(`Reading vendored snapshot ${SNAPSHOT_PATH} ...`);
+    return gunzipSync(readFileSync(SNAPSHOT_PATH)).toString("utf-8");
+  }
+
   console.log(`Fetching ${DATASET_URL} ...`);
   const res = await fetch(DATASET_URL);
   if (!res.ok) {
     throw new Error(`Dataset fetch failed: ${res.status} ${res.statusText}`);
   }
   const csv = await res.text();
+
+  console.log(`Updating vendored snapshot ${SNAPSHOT_PATH} ...`);
+  writeFileSync(SNAPSHOT_PATH, gzipSync(csv, { level: 9 }));
+
+  return csv;
+}
+
+async function main() {
+  const csv = await loadCsv();
 
   const rows = parse(csv, {
     columns: true,
