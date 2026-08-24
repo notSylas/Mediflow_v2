@@ -17,6 +17,7 @@ import {
   savePrescription,
 } from "./consult";
 import { sendDueReminders } from "./cron";
+import { registerAsDoctor } from "./doctor-signup";
 import {
   createAvailabilityOverride,
   createAvailabilityRule,
@@ -137,6 +138,7 @@ const HANDLERS: Record<string, ApiHandler> = {
   "GET /api/doctor/next-consult": getNextConsult,
   "GET /api/doctor/profile": readDoctorProfile,
   "PATCH /api/doctor/profile": updateDoctorProfile,
+  "POST /api/doctor/register": registerAsDoctor,
   "POST /api/doctor/signature": uploadDoctorSignature,
   "GET /api/medicines": searchMedicines,
   "GET /api/patient/profile": readPatientProfile,

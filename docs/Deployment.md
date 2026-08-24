@@ -17,6 +17,8 @@ Both connect to Cloud SQL over the IAM-authenticated unix socket (`--add-cloudsq
 
 `.github/workflows/deploy.yml` deploys both services on push to `main`; pull requests run the checks only. Auth is Workload Identity Federation — **no service-account key is stored in GitHub**. Nothing to configure per-repo; the pool, OIDC provider (pinned to this repository), and `github-deployer` service account already exist.
 
+Secrets referenced by `--set-secrets` (`mediflow-cron-secret`, `mediflow-doctor-signup-code`, etc.) are one-time manual creations, e.g. `gcloud secrets create mediflow-doctor-signup-code --data-file=-`, with `github-deployer` granted `roles/secretmanager.secretAccessor` on the project (or the individual secret) so Cloud Run can resolve them at deploy time.
+
 Two things that will bite if changed:
 
 - **`BACKEND_ORIGIN` is a Docker build arg, not a runtime env var.** Next bakes rewrites into `routes-manifest.json` at build time. Set at runtime it silently does nothing and every `/api/*` call stays in-process.
@@ -102,13 +104,16 @@ The original target, kept because it still works and is cheaper (Neon has a real
    | `RESEND_API_KEY` | Resend production key |
    | `EMAIL_FROM` | verified sender, e.g. `MediFlow <noreply@yourdomain.com>` |
    | `CRON_SECRET` | long random secret for `/api/cron/reminders` |
+   | `DOCTOR_SIGNUP_CODE` | long random secret for `/doctor/register` — fails closed (503) if unset, unlike `CRON_SECRET` |
    | `NEXT_PUBLIC_REALTIME_URL` | public realtime host URL, e.g. `https://realtime.yourdomain.com` |
    | `SENTRY_DSN` / `NEXT_PUBLIC_SENTRY_DSN` | optional |
    | `LOG_LEVEL` | optional; use `info` in production |
 
-   Production launch rule: do not leave Razorpay, LiveKit, Resend, or `CRON_SECRET`
-   blank. Blank Razorpay keys fall back to mock payments, blank Resend prints
-   emails to logs, and blank `CRON_SECRET` leaves the reminder endpoint open.
+   Production launch rule: do not leave Razorpay, LiveKit, Resend, `CRON_SECRET`,
+   or `DOCTOR_SIGNUP_CODE` blank. Blank Razorpay keys fall back to mock payments,
+   blank Resend prints emails to logs, blank `CRON_SECRET` leaves the reminder
+   endpoint open, and blank `DOCTOR_SIGNUP_CODE` disables `/doctor/register`
+   entirely (503) rather than leaving it open.
 
    Before deploying, run the env audit locally after loading/copying production
    values:
@@ -126,8 +131,14 @@ The original target, kept because it still works and is cheaper (Neon has a real
 
 ## 5. Seed the doctor
 
-The first account to sign in becomes a patient by default. Promote the doctor once,
-either with the script (after they've signed in once):
+The first account to sign in becomes a patient by default. Normal path: sign
+in, then visit `/doctor/register` and enter the `DOCTOR_SIGNUP_CODE` value —
+this flips `role` to `'doctor'` and auto-provisions the `doctor_profiles` row
+in one step.
+
+Fallback, if the code isn't handy or a direct promotion is needed (e.g. an
+emergency, or promoting someone without going through the app): the script
+(after they've signed in once)
 
 ```bash
 DATABASE_URL='<url>' npm run promote-doctor doctor@example.com

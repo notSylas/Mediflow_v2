@@ -96,6 +96,16 @@ export default async function DoctorLoginPage() {
           </Link>
           .
         </p>
+        <p className="mt-2 text-xs text-muted-foreground">
+          New doctor?{" "}
+          <Link
+            href="/login?redirectTo=/doctor/register"
+            className="font-medium text-primary hover:underline"
+          >
+            Register
+          </Link>
+          .
+        </p>
       </div>
     </div>
   );

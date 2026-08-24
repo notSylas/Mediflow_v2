@@ -96,6 +96,7 @@ const checks: Record<string, Check[]> = {
     present("RESEND_API_KEY", "Resend email API key"),
     present("EMAIL_FROM", "Verified Resend sender"),
     present("CRON_SECRET", "Reminder cron bearer secret"),
+    present("DOCTOR_SIGNUP_CODE", "Shared secret gating /doctor/register role promotion"),
     present("NEXT_PUBLIC_REALTIME_URL", "Public realtime socket URL"),
   ],
   "Recommended": [
@@ -139,6 +140,12 @@ if (has("BETTER_AUTH_SECRET") && value("BETTER_AUTH_SECRET").length < 32) {
 if (has("CRON_SECRET") && value("CRON_SECRET").length < 24) {
   checks["Launch required"].push(
     warning("CRON_SECRET", "Use a long random value, ideally 24+ chars")
+  );
+}
+
+if (has("DOCTOR_SIGNUP_CODE") && value("DOCTOR_SIGNUP_CODE").length < 24) {
+  checks["Launch required"].push(
+    warning("DOCTOR_SIGNUP_CODE", "Use a long random value, ideally 24+ chars")
   );
 }
 
