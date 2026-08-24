@@ -12,7 +12,7 @@ const NAV_LINKS: Record<string, NavLink[]> = {
     { href: "/doctor/appointments", label: "Appointments" },
     { href: "/doctor/patients", label: "Patients" },
     { href: "/doctor/care", label: "Care" },
-    { href: "/doctor/settings", label: "Availability" },
+    { href: "/doctor/settings", label: "Settings" },
   ],
   patient: [
     { href: "/patient", label: "Home" },

@@ -27,6 +27,27 @@ export async function getDoctorCard() {
   return row ?? null;
 }
 
+/**
+ * The doctor's signature image as a data: URI, or null if none uploaded.
+ * Deliberately separate from getDoctorCard() — that helper is fetched on
+ * booking/home/messages pages too, and shipping signature bytes on every
+ * one of those would be wasted weight; this is only called where a
+ * prescription is actually being rendered.
+ */
+export async function getDoctorSignatureUrl(): Promise<string | null> {
+  const [row] = await db
+    .select({
+      signatureMimeType: doctorProfiles.signatureMimeType,
+      signatureData: doctorProfiles.signatureData,
+    })
+    .from(doctorProfiles)
+    .orderBy(asc(doctorProfiles.createdAt))
+    .limit(1);
+
+  if (!row?.signatureData || !row.signatureMimeType) return null;
+  return `data:${row.signatureMimeType};base64,${row.signatureData.toString("base64")}`;
+}
+
 /** Total collected (paid) consultation fees for a doctor, in paise. */
 export async function getDoctorRevenueInPaise(doctorProfileId: string): Promise<number> {
   const [row] = await db

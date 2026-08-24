@@ -48,6 +48,7 @@ type DoctorLike = {
   specialty: string | null;
   qualifications: string | null;
   registrationNo: string | null;
+  signatureUrl?: string | null;
 };
 
 type PatientLike = {
@@ -154,11 +155,11 @@ export function PrescriptionDocument({
       )}
     >
       <div className="grid grid-cols-[14px_1fr]">
-        <div className="bg-gradient-to-b from-teal-500 via-teal-700 to-slate-950 print:bg-teal-700" />
+        <div className="bg-gradient-to-b from-primary/70 via-primary to-slate-950 print:bg-primary" />
         <div className="px-8 py-8 sm:px-10 print:px-8 print:py-7">
           <header className="grid gap-6 border-b border-slate-200 pb-6 sm:grid-cols-[1fr_auto]">
             <div>
-              <div className="mb-5 inline-flex items-center gap-2 rounded-full bg-teal-50 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.16em] text-teal-800">
+              <div className="mb-5 inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.16em] text-primary">
                 <HeartPulse className="h-3.5 w-3.5" />
                 MediFlow Clinic
               </div>
@@ -174,7 +175,7 @@ export function PrescriptionDocument({
 
             <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4 text-left sm:min-w-64">
               <div className="flex items-center gap-3">
-                <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-teal-700 shadow-sm">
+                <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-primary shadow-sm">
                   <Stethoscope className="h-5 w-5" />
                 </span>
                 <div>
@@ -204,7 +205,6 @@ export function PrescriptionDocument({
             <Meta label="Age / Gender" value={ageGender} />
             <Meta label="Date of birth" value={dateOfBirth} />
             <Meta label="Blood group" value={blood} />
-            <Meta label="Contact email" value={patient.email} />
             <Meta label="Consultation" value={consultAt} />
           </section>
 
@@ -222,7 +222,7 @@ export function PrescriptionDocument({
           <section className="mt-8">
             <div className="mb-4 flex items-end justify-between gap-4">
               <div>
-                <p className="font-serif text-5xl font-bold italic leading-none text-teal-700">
+                <p className="font-serif text-5xl font-bold italic leading-none text-primary">
                   Rx
                 </p>
                 <p className="mt-1 text-sm font-medium text-slate-500">
@@ -253,7 +253,7 @@ export function PrescriptionDocument({
                     key={medicine.id}
                     className="grid grid-cols-[2.4rem_2fr_1.25fr_1.2fr_1fr] gap-4 border-b border-slate-100 px-4 py-5 text-sm last:border-b-0"
                   >
-                    <p className="font-extrabold text-teal-700">{index + 1}</p>
+                    <p className="font-extrabold text-primary">{index + 1}</p>
                     <div>
                       <p className="font-extrabold text-slate-950">
                         {medicine.name}
@@ -296,12 +296,12 @@ export function PrescriptionDocument({
           </section>
 
           <section className="mt-7 grid gap-4 sm:grid-cols-[1.25fr_0.75fr]">
-            <div className="rounded-3xl border border-teal-100 bg-teal-50/70 p-5">
+            <div className="rounded-3xl border border-primary/20 bg-primary/5 p-5">
               <div className="mb-3 flex items-center gap-2">
-                <ShieldCheck className="h-4 w-4 text-teal-700" />
-                <p className="font-extrabold text-teal-950">Doctor&apos;s advice</p>
+                <ShieldCheck className="h-4 w-4 text-primary" />
+                <p className="font-extrabold text-foreground">Doctor&apos;s advice</p>
               </div>
-              <ul className="list-disc space-y-1 pl-5 text-sm font-medium text-teal-950/80">
+              <ul className="list-disc space-y-1 pl-5 text-sm font-medium text-foreground/80">
                 {adviceLines(prescription.advice).map((line) => (
                   <li key={line}>{line}</li>
                 ))}
@@ -335,9 +335,25 @@ export function PrescriptionDocument({
               doctor before changing dose or duration.
             </p>
             <div className="self-end text-center">
-              <div className="mb-3 border-t border-slate-300" />
+              {doctor?.signatureUrl ? (
+                // A data: URI embedded at render time, not an optimizable
+                // remote image.
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={doctor.signatureUrl}
+                  alt={`${doctorName}'s signature`}
+                  className="mx-auto mb-2 h-14 object-contain"
+                />
+              ) : null}
+              <div className="mb-2 border-t border-slate-300" />
               <p className="font-extrabold">{doctorName}</p>
-              <p className="text-xs font-medium text-slate-500">Doctor signature</p>
+              <p className="mt-2 flex items-center justify-center gap-1 text-[11px] font-medium text-primary">
+                <ShieldCheck className="h-3 w-3" />
+                Digitally issued — locked, cannot be altered
+              </p>
+              <p className="text-[11px] text-slate-400">
+                {issuedAt} · Ref {prescriptionNo}
+              </p>
             </div>
           </footer>
 

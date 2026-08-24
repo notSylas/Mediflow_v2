@@ -9,6 +9,11 @@ export interface FormularyEntry {
   strengths: string[];
   route: string;
   klass: string;
+  // Only ever present on server-search results (the real ~250K-row
+  // catalog, see scripts/import-medicines-dataset.ts) — the bundled
+  // FORMULARY below doesn't set these.
+  manufacturer?: string | null;
+  composition?: string | null;
 }
 
 const O = "oral";
@@ -162,4 +167,47 @@ export function searchFormulary(query: string, limit = 8): FormularyEntry[] {
 
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+// Dosage-form / route filler words the real catalog appends to a brand name,
+// e.g. "Dolo 650 Tablet" or "Augmentin Duo Oral Suspension" — stripped off
+// (from the end, possibly more than one) so what's left reads like what a
+// doctor actually writes: the brand name and its number.
+const FILLER_WORDS = new Set([
+  "tablet", "tablets", "capsule", "capsules", "syrup", "injection", "cream",
+  "ointment", "gel", "lotion", "drops", "solution", "suspension", "spray",
+  "inhaler", "powder", "sachet", "patch", "suppository", "lozenge", "soap",
+  "shampoo", "mouthwash", "infusion", "implant", "granules", "chewable",
+  "effervescent", "oral",
+]);
+
+/**
+ * "Dolo 650 Tablet" + "Paracetamol (650mg)" -> { name: "Dolo", strength:
+ * "650mg" }. The name always gets its bare number pulled out (so the name
+ * stays short and doesn't repeat the strength), but the strength itself
+ * comes from `composition`'s parenthetical dose(s) whenever available —
+ * e.g. a combination product "Amoxycillin (500mg) + Clavulanic Acid
+ * (125mg)" produces `"500mg + 125mg"`, joining every dose found, not just
+ * the first. A wrong/missing unit on a prescribed strength is a real
+ * safety risk (mg vs mcg vs IU), so this never guesses a unit — the bare
+ * number pulled from the name is only used as a last-resort fallback when
+ * `composition` has nothing to offer.
+ */
+export function simplifyMedicineName(
+  rawName: string,
+  composition: string | null | undefined
+): { name: string; strength: string } {
+  const words = rawName.trim().split(/\s+/);
+  while (words.length > 1 && FILLER_WORDS.has(words[words.length - 1].toLowerCase())) {
+    words.pop();
+  }
+  const numIndex = words.findIndex((w) => /^[\d.]+$/.test(w));
+  const bareNumber = numIndex !== -1 ? words[numIndex] : "";
+  if (numIndex !== -1) words.splice(numIndex, 1);
+
+  const composedStrength = composition
+    ? [...composition.matchAll(/\(([^)]+)\)/g)].map((m) => m[1].trim()).join(" + ")
+    : "";
+
+  return { name: words.join(" ") || rawName, strength: composedStrength || bareNumber };
 }

@@ -286,3 +286,44 @@ export const updateDoctorProfile: ApiHandler = async (request) => {
 
   return Response.json(updated);
 };
+
+const ALLOWED_SIGNATURE_TYPES = ["image/png", "image/jpeg"] as const;
+const MAX_SIGNATURE_SIZE_BYTES = 1 * 1024 * 1024;
+
+/**
+ * POST /api/doctor/signature — uploads (or replaces) the image shown on
+ * every prescription this doctor issues (web/components/patient/
+ * PrescriptionDocument.tsx). Stored inline as bytea, same as every other
+ * small file in this app (backend/api/reports.ts is the reference
+ * pattern) — a single-doctor app doesn't need object storage.
+ */
+export const uploadDoctorSignature: ApiHandler = async (request) => {
+  const access = await requireDoctorSession(request.headers);
+  if (access instanceof Response) return access;
+
+  const formData = await request.formData();
+  const file = formData.get("file");
+
+  if (!(file instanceof File)) {
+    return Response.json({ error: "Missing file" }, { status: 400 });
+  }
+
+  if (!ALLOWED_SIGNATURE_TYPES.includes(file.type as (typeof ALLOWED_SIGNATURE_TYPES)[number])) {
+    return Response.json({ error: "Only PNG and JPG images are supported" }, { status: 400 });
+  }
+
+  if (file.size > MAX_SIGNATURE_SIZE_BYTES) {
+    return Response.json({ error: "File is too large (max 1 MB)" }, { status: 400 });
+  }
+
+  const buffer = Buffer.from(await file.arrayBuffer());
+
+  await getOrCreateDoctorProfile(access.id);
+
+  await db
+    .update(doctorProfiles)
+    .set({ signatureMimeType: file.type, signatureData: buffer })
+    .where(eq(doctorProfiles.userId, access.id));
+
+  return Response.json({ status: "uploaded" }, { status: 201 });
+};

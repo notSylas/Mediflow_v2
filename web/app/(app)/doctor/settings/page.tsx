@@ -25,6 +25,10 @@ export default async function DoctorSettingsPage() {
   }
 
   const profile = await getOrCreateDoctorProfile(session.user.id);
+  const signatureDataUrl =
+    profile.signatureData && profile.signatureMimeType
+      ? `data:${profile.signatureMimeType};base64,${profile.signatureData.toString("base64")}`
+      : null;
 
   const [rules, overrides] = await Promise.all([
     db
@@ -59,11 +63,16 @@ export default async function DoctorSettingsPage() {
         initialProfile={{
           specialty: profile.specialty,
           bio: profile.bio,
+          qualifications: profile.qualifications,
+          registrationNo: profile.registrationNo,
+          yearsExperience: profile.yearsExperience,
+          languages: profile.languages,
           feeInPaise: profile.feeInPaise,
           carePlanPriceInPaise: profile.carePlanPriceInPaise,
           slotMinutes: profile.slotMinutes,
           timezone: profile.timezone,
         }}
+        initialSignatureUrl={signatureDataUrl}
       />
 
       <AvailabilityRulesEditor initialRules={rules} />

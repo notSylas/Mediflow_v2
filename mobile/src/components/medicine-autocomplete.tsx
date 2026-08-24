@@ -82,8 +82,8 @@ export function MedicineNameField({
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.name}>{entry.name}</Text>
-                <Text style={styles.meta}>
-                  {entry.klass} · {entry.strengths.slice(0, 3).join(", ")}
+                <Text style={styles.meta} numberOfLines={1}>
+                  {entry.composition || `${entry.klass} · ${entry.strengths.slice(0, 3).join(", ")}`}
                 </Text>
               </View>
               <MaterialCommunityIcons name="arrow-top-left" size={16} color={colors.textFaint} />

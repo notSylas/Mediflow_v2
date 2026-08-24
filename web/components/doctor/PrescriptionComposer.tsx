@@ -22,6 +22,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { describeMedicineSchedule } from "~backend/consult/medicines";
+import { MedicineNameField, simplifyMedicineName, type MedicineSuggestion } from "./MedicineNameField";
 
 const TIMING_KEYS = ["morning", "afternoon", "evening", "night"] as const;
 const FOOD_RELATIONS = ["Before food", "After food", "With food"];
@@ -30,6 +31,7 @@ interface MedicineDraft {
   key: number;
   name: string;
   strength: string;
+  route: string;
   morning: boolean;
   afternoon: boolean;
   evening: boolean;
@@ -48,6 +50,7 @@ export interface PrescriptionInitial {
   medicines: Array<{
     name: string;
     strength: string | null;
+    route: string | null;
     morning: boolean;
     afternoon: boolean;
     evening: boolean;
@@ -74,6 +77,7 @@ function emptyMedicine(): MedicineDraft {
     key: nextKey++,
     name: "",
     strength: "",
+    route: "",
     morning: false,
     afternoon: false,
     evening: false,
@@ -99,6 +103,7 @@ export function PrescriptionComposer({
           key: nextKey++,
           name: m.name,
           strength: m.strength ?? "",
+          route: m.route ?? "",
           morning: m.morning,
           afternoon: m.afternoon,
           evening: m.evening,
@@ -126,6 +131,7 @@ export function PrescriptionComposer({
       .map((m) => ({
         name: m.name.trim(),
         strength: m.strength.trim() || null,
+        route: m.route.trim() || null,
         morning: m.morning,
         afternoon: m.afternoon,
         evening: m.evening,
@@ -261,11 +267,18 @@ export function PrescriptionComposer({
             <div key={med.key} className="space-y-3 rounded-md border p-3">
               <div className="flex items-start gap-2">
                 <div className="grid flex-1 gap-2 sm:grid-cols-2">
-                  <Input
+                  <MedicineNameField
                     aria-label={`Medicine ${index + 1} name`}
-                    placeholder="Medicine name"
                     value={med.name}
-                    onChange={(e) => updateMedicine(med.key, { name: e.target.value })}
+                    onChangeText={(v) => updateMedicine(med.key, { name: v })}
+                    onSelect={(entry: MedicineSuggestion) => {
+                      const simplified = simplifyMedicineName(entry.name, entry.composition);
+                      updateMedicine(med.key, {
+                        name: simplified.name,
+                        strength: entry.strengths[0] ?? simplified.strength,
+                        route: entry.route ?? med.route,
+                      });
+                    }}
                   />
                   <Input
                     aria-label={`Medicine ${index + 1} strength`}
