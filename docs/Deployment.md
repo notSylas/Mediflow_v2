@@ -24,6 +24,8 @@ Two things that will bite if changed:
 - **`BACKEND_ORIGIN` is a Docker build arg, not a runtime env var.** Next bakes rewrites into `routes-manifest.json` at build time. Set at runtime it silently does nothing and every `/api/*` call stays in-process.
 - **`/healthz` is intercepted by Google Frontend on `*.run.app`** and never reaches the container. Use **`/health`**.
 
+The realtime chat server (`realtime/server.ts`, §5c below) deploys as its own scale-to-zero Cloud Run service (`mediflow-realtime`) via the `deploy-realtime` job — no separate host needed on this path. §5c's manual-hosting instructions are for the Vercel+Neon alternative only.
+
 ## Manual deploy (reference)
 
 ```bash
