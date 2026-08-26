@@ -15,13 +15,15 @@ user ─1:1─ doctor_profiles ─1:N─ availability_rules
 
 ## Auth tables (Better Auth shape)
 
-- **user** — `id` (text PK), `name`, `email` (unique), `emailVerified`, `image`, **`role`** (`patient` default | `doctor`), `phone`, timestamps.
+- **user** — `id` (text PK), `name`, `email` (unique), `emailVerified`, `image`, **`role`** (`patient` default | `doctor` | `admin`), `phone`, timestamps. Plain text column, not a pg enum — see `backend/auth/roles.ts` for the shared TS type, and `scripts/promote-admin.ts` for how the (self-service-less) `admin` role gets granted.
 - **session / account / verification** — standard Better Auth; sessions cascade on user delete.
 
 ## Domain tables
 
 ### doctor_profiles
 One row per doctor (one row in practice; multi-doctor ready). `userId` (unique FK→user), `specialty`, `bio`, **`feeInPaise`** (integer — money is always paise), `slotMinutes` (default 20), `timezone` (default `Asia/Kolkata`).
+
+RMP verification fields, added 2026-07-06 as dormant "Phase 1 marketplace" scaffolding and activated 2026-08-26 by `backend/people/doctor-verification.ts`: `registrationNo`, `stateMedicalCouncil`, `yearOfRegistration`, `systemOfMedicine` enum (`allopathy`/`homeopathy`/`ayurveda`), `hprId` (ABDM Healthcare Professionals Registry ID, string only), `verificationStatus` enum (`unverified`/`pending`/`verified`/`rejected`/`suspended`), `verifiedAt`, `verifiedByUserId` (FK→user, set-null), `verificationNotes`, `isListed` (still unused — discovery/marketplace listing is future work). Verification is entirely manual: an admin cross-checks the submitted registration number against NMC's public Indian Medical Register themselves — no automated NMC/HPR API integration.
 
 ### availability_rules
 Weekly recurring template. `doctorId` FK, `weekday` (0=Sun…6=Sat), `startTime`/`endTime` (time). Slot duration comes from the profile.
@@ -53,6 +55,9 @@ N per prescription (cascade). `name` (required), `strength`, `route`, timing fla
 
 ### medical_reports
 Patient uploads (pdf/jpg/png, size-capped in `backend/consult/reports.ts`). `patientId` FK (cascade), optional `appointmentId` (set-null), `filename`, `mimeType`, **`data` bytea** — stored inline; a single-doctor app doesn't need object storage. Revisit if files grow.
+
+### doctor_verification_documents
+Documents a doctor submits for RMP verification — `doctorId` FK→doctor_profiles (cascade), `kind` enum (`identity`/`degree`/`registration`/`hpr`; `degree` reserved, unused by the current flow, which only requires `identity`+`registration`, `hpr` optional), `filename`, `mimeType`, **`data` bytea** — same inline-storage convention as `medical_reports`. At most one row per `(doctorId, kind)`: `backend/people/doctor-verification.ts`'s `upsertVerificationDocument` deletes-then-inserts, so a re-upload replaces rather than duplicates, no history kept.
 
 ### vault_records (Vault Tier 2 — added post-v1, `backend/vault/`)
 A record from *any* doctor/hospital, not just MediFlow's own — `patientId` FK (cascade), `recordType` enum (`prescription`/`lab`/`scan`/`discharge_summary`/`vaccination`/`other`), `recordDate`, free-text `sourceFacility`/`sourceDoctorName` (deliberately not a FK — generic by design), `diagnosis`/`diagnosisCode`/`advice`/`medicines` (jsonb), plus original file (`data` bytea) and extraction status. `patientConfirmed` gates whether it counts toward the vault timeline or a share bundle — nothing here is trusted from extraction alone.

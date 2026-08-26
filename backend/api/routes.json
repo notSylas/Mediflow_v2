@@ -1,6 +1,11 @@
 {
   "_comment": "Endpoints served by the standalone backend. Single source of truth: backend/api/routes.ts wraps this with types, backend/api/manifest.ts pairs each with a handler, backend/server/app.ts mounts them, and web/next.config.ts rewrites them to BACKEND_ORIGIN. JSON so next.config.ts can read it without a TS module resolver. Adding an entry here without a handler in manifest.ts (or vice versa) fails the backend at startup. /api/auth/* is deliberately absent \u2014 the Better Auth mount stays in the web app.",
   "routes": [
+    { "method": "GET",    "path": "/api/admin/doctor-verification" },
+    { "method": "GET",    "path": "/api/admin/doctor-verification/:doctorId" },
+    { "method": "POST",   "path": "/api/admin/doctor-verification/:doctorId/approve" },
+    { "method": "POST",   "path": "/api/admin/doctor-verification/:doctorId/reject" },
+    { "method": "GET",    "path": "/api/admin/verification-documents/:documentId" },
     { "method": "GET",    "path": "/api/appointments" },
     { "method": "POST",   "path": "/api/appointments" },
     { "method": "GET",    "path": "/api/appointments/:id" },
@@ -27,6 +32,8 @@
     { "method": "PATCH",  "path": "/api/doctor/profile" },
     { "method": "POST",   "path": "/api/doctor/register" },
     { "method": "POST",   "path": "/api/doctor/signature" },
+    { "method": "POST",   "path": "/api/doctor/verification/documents" },
+    { "method": "POST",   "path": "/api/doctor/verification/submit" },
     { "method": "GET",    "path": "/api/medicines" },
     { "method": "GET",    "path": "/api/patient/profile" },
     { "method": "PUT",    "path": "/api/patient/profile" },

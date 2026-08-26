@@ -131,6 +131,15 @@ export const doctorProfiles = pgTable("doctor_profiles", {
   photoUrl: text("photo_url"),
   qualifications: text("qualifications"), // e.g. "MBBS, MD (Internal Medicine)"
   registrationNo: text("registration_no"), // medical council registration
+  // RMP verification fields (see doctor_verification_documents below).
+  // Cross-checked manually by an admin against NMC's public Indian Medical
+  // Register — no automated lookup, see backend/people/doctor-verification.ts.
+  stateMedicalCouncil: text("state_medical_council"),
+  yearOfRegistration: integer("year_of_registration"),
+  // ABDM Healthcare Professionals Registry ID, if the doctor has one — a
+  // stronger complementary credential (Aadhaar-OTP-verified, covers all
+  // systems of medicine unlike NMC). String only, no API check.
+  hprId: text("hpr_id"),
   yearsExperience: integer("years_experience"),
   languages: text("languages"), // comma-separated, e.g. "English, Hindi"
   // Signature image shown on issued prescriptions (backend/patient/
@@ -169,6 +178,7 @@ export const doctorProfiles = pgTable("doctor_profiles", {
   slotMinutes: integer("slot_minutes").notNull().default(20),
   timezone: text("timezone").notNull().default("Asia/Kolkata"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 // Recurring weekly template. weekday: 0 = Sunday … 6 = Saturday.
@@ -636,12 +646,15 @@ export const doctorReviews = pgTable(
 );
 
 // Documents a doctor submits for RMP verification (identity, degree,
-// registration). Stored inline as bytea for now (same as medical_reports);
-// swap to object storage in Phase 2.
+// registration, hpr). Stored inline as bytea for now (same as
+// medical_reports); swap to object storage in Phase 2. "degree" is reserved
+// for a future degree-certificate upload — the current verification flow
+// only requires identity + registration, hpr is optional.
 export const verificationDocKind = pgEnum("verification_doc_kind", [
   "identity",
   "degree",
   "registration",
+  "hpr",
 ]);
 
 export const doctorVerificationDocuments = pgTable("doctor_verification_documents", {

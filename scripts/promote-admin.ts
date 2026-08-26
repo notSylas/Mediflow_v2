@@ -1,8 +1,8 @@
-// Break-glass fallback: the normal path is /doctor/register (gated by
-// DOCTOR_SIGNUP_CODE). Use this only when the code isn't available or a
-// direct promotion is needed. Run after the doctor has signed in once
-// (which creates their user row):
-//   npx tsx scripts/promote-doctor.ts doctor@example.com
+// Break-glass trust-root bootstrap: there is no self-service path to the
+// admin role, by design. Run once by the owner with real DATABASE_URL
+// access, after the target user has signed in once (which creates their
+// user row):
+//   npx tsx scripts/promote-admin.ts admin@example.com
 import { eq } from "drizzle-orm";
 import { user } from "../backend/db/schema";
 
@@ -10,7 +10,7 @@ process.loadEnvFile?.();
 
 const email = process.argv[2];
 if (!email) {
-  console.error("Usage: npx tsx scripts/promote-doctor.ts <email>");
+  console.error("Usage: npx tsx scripts/promote-admin.ts <email>");
   process.exit(1);
 }
 
@@ -28,13 +28,13 @@ void (async () => {
 
   const [updated] = await db
     .update(user)
-    .set({ role: "doctor" })
+    .set({ role: "admin" })
     .where(eq(user.email, email))
     .returning({ email: user.email, role: user.role });
 
   if (updated) {
-    console.log(`✓ ${updated.email} is now a ${updated.role}.`);
-    console.log("  Have them visit /doctor to set fee, slot length and availability.");
+    console.log(`✓ ${updated.email} is now an ${updated.role}.`);
+    console.log("  Have them visit /admin to review pending doctor verifications.");
   } else {
     console.error(`✗ No user found with email ${email}. Have them sign in first.`);
     process.exit(1);

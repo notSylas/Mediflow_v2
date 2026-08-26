@@ -148,6 +148,7 @@ in `mobile/.env` to the dev machine's LAN URL (phone can't reach localhost).
 | Medication tracker | 🧊 undecided |
 | Dashboards, diet/timeline | ❌ cut |
 | Doctor self-registration (`/doctor/register`) | ✅ built | Replaces `scripts/promote-doctor.ts` as the normal path; gated by `DOCTOR_SIGNUP_CODE`. Still single-doctor — see `AGENTS.md` |
+| Doctor RMP verification + admin review (`/doctor/verification`, `/admin`) | ✅ built | Activates the dormant Phase 1 `doctorProfiles` verification columns + `doctor_verification_documents` table (added 2026-07-06, unused until now). NMC/HPR checks are manual — an admin cross-checks the public NMC registry themselves, no API integration. First admin created via `scripts/promote-admin.ts` (break-glass, no self-service path). Schema pushed locally; **still needs pushing to Cloud SQL** before this works in prod, same as Vault Share above |
 
 ## Chat / messaging (added 2026-06-14)
 
