@@ -7,8 +7,10 @@ import {
   AlertTriangle,
   ArrowLeft,
   ChevronDown,
+  FileText,
   History,
   Loader2,
+  PenLine,
   Pencil,
   Plus,
   Trash2,
@@ -21,6 +23,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { PatientPageShell } from "@/components/patient/PatientPortal";
+import { cn } from "@/lib/utils";
+import { TONES } from "@/lib/tones";
 
 type RecordType = "prescription" | "lab" | "scan" | "discharge_summary" | "vaccination" | "other";
 type ExtractionStatus = "stub" | "processing" | "synced" | "failed";
@@ -164,6 +168,19 @@ interface EditSummary {
   previousValues: Record<string, unknown>;
 }
 
+interface VaultRecordPageSnapshot {
+  id: string;
+  pageIndex: number;
+}
+
+interface VaultRecordDiagram {
+  id: string;
+  pageIndex: number;
+  confidence: number;
+  width: number;
+  height: number;
+}
+
 interface VaultRecord {
   id: string;
   recordType: RecordType;
@@ -184,6 +201,8 @@ interface VaultRecord {
   patientConfirmed: boolean;
   originalFilename: string;
   edits: EditSummary[];
+  pageSnapshots: VaultRecordPageSnapshot[];
+  diagrams: VaultRecordDiagram[];
 }
 
 function blankMedicine(): Medicine {
@@ -295,6 +314,8 @@ export default function VaultRecordReviewPage() {
   const [pollElapsedMs, setPollElapsedMs] = useState(0);
   const [edits, setEdits] = useState<EditSummary[]>([]);
   const [showHistory, setShowHistory] = useState(false);
+  const [pageSnapshots, setPageSnapshots] = useState<VaultRecordPageSnapshot[]>([]);
+  const [diagrams, setDiagrams] = useState<VaultRecordDiagram[]>([]);
 
   // "view" once the record is already confirmed, "edit" while it still needs
   // a first confirm. Independent of `wasAlreadyConfirmed`, which remembers
@@ -329,6 +350,8 @@ export default function VaultRecordReviewPage() {
     setLowConfidence(!record.extractionConfidence || record.extractionConfidence === "low");
     setExtractionStatus(record.extractionStatus);
     setEdits(record.edits ?? []);
+    setPageSnapshots(record.pageSnapshots ?? []);
+    setDiagrams(record.diagrams ?? []);
     setFindings(record.findings ?? "");
     setAdmissionDate(record.admissionDate ?? "");
     setVitals(
@@ -783,6 +806,81 @@ export default function VaultRecordReviewPage() {
             !hasFindings ? (
               <p className="mt-6 text-sm text-muted-foreground">No additional details recorded.</p>
             ) : null}
+
+            {pageSnapshots.length > 0 && (
+              <section className="mt-6 space-y-2">
+                <div className="flex items-center gap-2">
+                  <span
+                    className={cn(
+                      "flex h-8 w-8 items-center justify-center rounded-lg",
+                      TONES.blue.chip
+                    )}
+                  >
+                    <FileText className="h-4 w-4" />
+                  </span>
+                  <h3 className="text-sm font-semibold text-foreground">
+                    Original page{pageSnapshots.length > 1 ? "s" : ""}
+                  </h3>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {pageSnapshots.map((p) => (
+                    <figure
+                      key={p.id}
+                      className={cn("overflow-hidden rounded-xl p-3", TONES.blue.tile)}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={`/api/v1/prescription-page-snapshots/${p.id}`}
+                        alt={`Page ${p.pageIndex + 1} of the uploaded document`}
+                        className="w-full rounded-lg bg-white object-contain"
+                        loading="lazy"
+                      />
+                      <figcaption className="mt-2 text-xs text-foreground/60">
+                        Page {p.pageIndex + 1}
+                      </figcaption>
+                    </figure>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {diagrams.length > 0 && (
+              <section className="mt-6 space-y-2">
+                <div className="flex items-center gap-2">
+                  <span
+                    className={cn(
+                      "flex h-8 w-8 items-center justify-center rounded-lg",
+                      TONES.violet.chip
+                    )}
+                  >
+                    <PenLine className="h-4 w-4" />
+                  </span>
+                  <h3 className="text-sm font-semibold text-foreground">
+                    Doctor&apos;s drawing{diagrams.length > 1 ? "s" : ""}
+                  </h3>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {diagrams.map((d) => (
+                    <figure
+                      key={d.id}
+                      className={cn("overflow-hidden rounded-xl p-3", TONES.violet.tile)}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={`/api/v1/prescription-diagrams/${d.id}`}
+                        alt={`Hand-drawn diagram from page ${d.pageIndex + 1}`}
+                        className="w-full rounded-lg bg-white object-contain"
+                        loading="lazy"
+                      />
+                      <figcaption className="mt-2 flex items-center justify-between text-xs text-foreground/60">
+                        <span>Page {d.pageIndex + 1}</span>
+                        <span className="font-mono tabular-nums">{d.confidence}% match</span>
+                      </figcaption>
+                    </figure>
+                  ))}
+                </div>
+              </section>
+            )}
 
             {/* Provenance stamp — quiet by design, this is metadata about the
                 record, not the record's own content. */}

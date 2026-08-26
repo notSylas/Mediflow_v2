@@ -1,6 +1,11 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { db } from "~backend/db";
-import { prescriptionAnalyses } from "~backend/db/schema";
+import {
+  prescriptionAnalyses,
+  prescriptionDiagrams,
+  prescriptionPageSnapshots,
+  vaultRecords,
+} from "~backend/db/schema";
 
 /**
  * Prescription Analyzer — data access for the queued vision-LLM pass.
@@ -227,4 +232,156 @@ export async function failAnalysis(id: string, message: string) {
 /** True once the row will not change again. */
 export function isTerminal(status: string): boolean {
   return status === "succeeded" || status === "failed";
+}
+
+/**
+ * Diagram crops for one analysis, newest-confidence first. Bytes are excluded:
+ * the list drives thumbnails, and each image is fetched by its own URL so the
+ * browser can cache it.
+ */
+export async function listDiagrams(analysisId: string, uploaderId: string) {
+  return db
+    .select({
+      id: prescriptionDiagrams.id,
+      pageIndex: prescriptionDiagrams.pageIndex,
+      confidence: prescriptionDiagrams.confidence,
+      width: sql<number>`${prescriptionDiagrams.x2} - ${prescriptionDiagrams.x1}`,
+      height: sql<number>`${prescriptionDiagrams.y2} - ${prescriptionDiagrams.y1}`,
+    })
+    .from(prescriptionDiagrams)
+    .innerJoin(
+      prescriptionAnalyses,
+      eq(prescriptionAnalyses.id, prescriptionDiagrams.analysisId)
+    )
+    .where(
+      and(
+        eq(prescriptionDiagrams.analysisId, analysisId),
+        // Ownership is enforced through the parent analysis, so a diagram id
+        // alone is never enough to read someone else's prescription.
+        eq(prescriptionAnalyses.uploaderId, uploaderId)
+      )
+    )
+    .orderBy(desc(prescriptionDiagrams.confidence));
+}
+
+/** One diagram's bytes, ownership-checked through its parent analysis. */
+export async function getDiagramImage(diagramId: string, uploaderId: string) {
+  const [row] = await db
+    .select({
+      data: prescriptionDiagrams.data,
+      mimeType: prescriptionDiagrams.mimeType,
+    })
+    .from(prescriptionDiagrams)
+    .innerJoin(
+      prescriptionAnalyses,
+      eq(prescriptionAnalyses.id, prescriptionDiagrams.analysisId)
+    )
+    .where(
+      and(
+        eq(prescriptionDiagrams.id, diagramId),
+        eq(prescriptionAnalyses.uploaderId, uploaderId)
+      )
+    );
+  return row ?? null;
+}
+
+/**
+ * Rendered pages for one analysis, in page order — the analyzer's own vision
+ * pass renders these already; this is just a saved copy so the source stays
+ * visible after the fact, instead of being thrown away once analysis ends.
+ */
+export async function listPageSnapshots(analysisId: string, uploaderId: string) {
+  return db
+    .select({
+      id: prescriptionPageSnapshots.id,
+      pageIndex: prescriptionPageSnapshots.pageIndex,
+    })
+    .from(prescriptionPageSnapshots)
+    .innerJoin(
+      prescriptionAnalyses,
+      eq(prescriptionAnalyses.id, prescriptionPageSnapshots.analysisId)
+    )
+    .where(
+      and(
+        eq(prescriptionPageSnapshots.analysisId, analysisId),
+        eq(prescriptionAnalyses.uploaderId, uploaderId)
+      )
+    )
+    .orderBy(prescriptionPageSnapshots.pageIndex);
+}
+
+/** One rendered page's bytes, ownership-checked through its parent analysis. */
+export async function getPageSnapshotImage(snapshotId: string, uploaderId: string) {
+  const [row] = await db
+    .select({
+      data: prescriptionPageSnapshots.data,
+      mimeType: prescriptionPageSnapshots.mimeType,
+    })
+    .from(prescriptionPageSnapshots)
+    .innerJoin(
+      prescriptionAnalyses,
+      eq(prescriptionAnalyses.id, prescriptionPageSnapshots.analysisId)
+    )
+    .where(
+      and(
+        eq(prescriptionPageSnapshots.id, snapshotId),
+        eq(prescriptionAnalyses.uploaderId, uploaderId)
+      )
+    );
+  return row ?? null;
+}
+
+/**
+ * Diagram crops reachable through a vault record — joins through the
+ * analysis that was triggered from that record's upload
+ * (backend/vault/vault-records.ts sets vaultRecordId when it fires the
+ * analyzer job). Ownership is checked on the vault record's patient, not the
+ * analysis uploader, since this is called from the vault side.
+ */
+export async function listDiagramsForVaultRecord(vaultRecordId: string, patientId: string) {
+  return db
+    .select({
+      id: prescriptionDiagrams.id,
+      pageIndex: prescriptionDiagrams.pageIndex,
+      confidence: prescriptionDiagrams.confidence,
+      width: sql<number>`${prescriptionDiagrams.x2} - ${prescriptionDiagrams.x1}`,
+      height: sql<number>`${prescriptionDiagrams.y2} - ${prescriptionDiagrams.y1}`,
+    })
+    .from(prescriptionDiagrams)
+    .innerJoin(
+      prescriptionAnalyses,
+      eq(prescriptionAnalyses.id, prescriptionDiagrams.analysisId)
+    )
+    .innerJoin(vaultRecords, eq(vaultRecords.id, prescriptionAnalyses.vaultRecordId))
+    .where(
+      and(
+        eq(prescriptionAnalyses.vaultRecordId, vaultRecordId),
+        eq(vaultRecords.patientId, patientId),
+        eq(prescriptionAnalyses.status, "succeeded")
+      )
+    )
+    .orderBy(desc(prescriptionDiagrams.confidence));
+}
+
+/** Rendered pages reachable through a vault record — same join as above. */
+export async function listPageSnapshotsForVaultRecord(vaultRecordId: string, patientId: string) {
+  return db
+    .select({
+      id: prescriptionPageSnapshots.id,
+      pageIndex: prescriptionPageSnapshots.pageIndex,
+    })
+    .from(prescriptionPageSnapshots)
+    .innerJoin(
+      prescriptionAnalyses,
+      eq(prescriptionAnalyses.id, prescriptionPageSnapshots.analysisId)
+    )
+    .innerJoin(vaultRecords, eq(vaultRecords.id, prescriptionAnalyses.vaultRecordId))
+    .where(
+      and(
+        eq(prescriptionAnalyses.vaultRecordId, vaultRecordId),
+        eq(vaultRecords.patientId, patientId),
+        eq(prescriptionAnalyses.status, "succeeded")
+      )
+    )
+    .orderBy(prescriptionPageSnapshots.pageIndex);
 }

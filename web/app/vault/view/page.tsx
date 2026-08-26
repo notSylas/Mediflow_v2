@@ -90,6 +90,19 @@ interface ConsultNote {
   plan: string | null;
 }
 
+interface PageSnapshot {
+  pageIndex: number;
+  mimeType: string;
+  dataBase64: string;
+}
+
+interface Diagram {
+  pageIndex: number;
+  confidence: number;
+  mimeType: string;
+  dataBase64: string;
+}
+
 interface AddedRecord {
   recordType: string;
   date: string | null;
@@ -105,6 +118,10 @@ interface AddedRecord {
   admissionDate: string | null;
   vaccineDetails: VaccineDetails | null;
   wasEdited: boolean;
+  // Absent on shares created before this field existed — the encrypted
+  // bundle simply doesn't have it, so this is optional, not just empty.
+  pageSnapshots?: PageSnapshot[];
+  diagrams?: Diagram[];
 }
 
 interface RedeemedVault {
@@ -156,6 +173,8 @@ function DocumentCard({
   findings,
   advice,
   editedBadge,
+  pageSnapshots,
+  diagrams,
 }: {
   badgeLabel: string;
   title: string;
@@ -170,6 +189,8 @@ function DocumentCard({
   findings?: string | null;
   advice: string | null;
   editedBadge?: boolean;
+  pageSnapshots?: PageSnapshot[];
+  diagrams?: Diagram[];
 }) {
   const chips = vitalsChips(vitals ?? null);
   const shownLabResults = (labResults ?? []).filter((r) => r.testName.trim());
@@ -333,6 +354,53 @@ function DocumentCard({
             <p className="text-sm">{advice}</p>
           </section>
         ) : null}
+
+        {pageSnapshots && pageSnapshots.length > 0 ? (
+          <section className="mt-4">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Original page{pageSnapshots.length > 1 ? "s" : ""}
+            </p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {pageSnapshots.map((p, i) => (
+                <figure key={i} className="overflow-hidden rounded-xl border bg-background/40 p-3">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={`data:${p.mimeType};base64,${p.dataBase64}`}
+                    alt={`Page ${p.pageIndex + 1} of the original document`}
+                    className="w-full rounded-lg bg-white object-contain"
+                  />
+                  <figcaption className="mt-2 text-xs text-muted-foreground">
+                    Page {p.pageIndex + 1}
+                  </figcaption>
+                </figure>
+              ))}
+            </div>
+          </section>
+        ) : null}
+
+        {diagrams && diagrams.length > 0 ? (
+          <section className="mt-4">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Doctor&apos;s drawing{diagrams.length > 1 ? "s" : ""}
+            </p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {diagrams.map((d, i) => (
+                <figure key={i} className="overflow-hidden rounded-xl border bg-background/40 p-3">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={`data:${d.mimeType};base64,${d.dataBase64}`}
+                    alt={`Hand-drawn diagram from page ${d.pageIndex + 1}`}
+                    className="w-full rounded-lg bg-white object-contain"
+                  />
+                  <figcaption className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
+                    <span>Page {d.pageIndex + 1}</span>
+                    <span className="font-mono tabular-nums">{d.confidence}% match</span>
+                  </figcaption>
+                </figure>
+              ))}
+            </div>
+          </section>
+        ) : null}
       </div>
     </article>
   );
@@ -428,6 +496,8 @@ function VaultViewInner() {
                   findings={rec.findings}
                   advice={rec.advice}
                   editedBadge={rec.wasEdited}
+                  pageSnapshots={rec.pageSnapshots}
+                  diagrams={rec.diagrams}
                 />
               ))}
 

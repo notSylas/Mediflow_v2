@@ -17,6 +17,7 @@ Run locally:
 
 from __future__ import annotations
 
+import base64
 import json
 import logging
 import os
@@ -26,7 +27,10 @@ import tempfile
 import psycopg
 from psycopg.types.json import Json
 
+from config import Config
 from prescription_analyzer.analyzer import PrescriptionAnalyzer
+from prescription_analyzer.diagrams import detect_diagrams
+from prescription_analyzer.pdf_utils import pdf_to_page_images
 
 logging.basicConfig(
     level=os.environ.get("LOG_LEVEL", "INFO").upper(),
@@ -90,6 +94,60 @@ def _succeed(conn: psycopg.Connection, analysis_id: str, result: dict) -> None:
         )
 
 
+def _store_diagrams(conn: psycopg.Connection, analysis_id: str, diagrams) -> None:
+    """Replace this analysis's diagrams. Delete-then-insert keeps a retried
+    execution from stacking duplicate crops onto the same row."""
+    with conn.cursor() as cur:
+        cur.execute("DELETE FROM prescription_diagrams WHERE analysis_id = %s", (analysis_id,))
+        for d in diagrams:
+            cur.execute(
+                """
+                INSERT INTO prescription_diagrams
+                    (analysis_id, page_index, confidence, x1, y1, x2, y2, mime_type, data)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, 'image/png', %s)
+                """,
+                (
+                    analysis_id,
+                    d.page_index,
+                    int(round(d.confidence * 100)),
+                    d.x1,
+                    d.y1,
+                    d.x2,
+                    d.y2,
+                    d.png_bytes,
+                ),
+            )
+    logger.info("stored %d diagram crop(s) for %s", len(diagrams), analysis_id)
+
+
+def _data_uri_to_bytes(data_uri: str) -> tuple[str, bytes]:
+    """Splits a "data:<mime>;base64,<...>" URI back into its mime type and
+    raw bytes — the inverse of pdf_utils._img_bytes_to_data_uri."""
+    header, _, b64 = data_uri.partition(",")
+    mime = header.removeprefix("data:").split(";")[0] or "image/png"
+    return mime, base64.b64decode(b64)
+
+
+def _store_page_snapshots(conn: psycopg.Connection, analysis_id: str, pages: list[str]) -> None:
+    """Replace this analysis's page snapshots. Same delete-then-insert
+    idempotency as _store_diagrams above."""
+    with conn.cursor() as cur:
+        cur.execute(
+            "DELETE FROM prescription_page_snapshots WHERE analysis_id = %s", (analysis_id,)
+        )
+        for page_index, uri in enumerate(pages):
+            mime, raw = _data_uri_to_bytes(uri)
+            cur.execute(
+                """
+                INSERT INTO prescription_page_snapshots
+                    (analysis_id, page_index, mime_type, data)
+                VALUES (%s, %s, %s, %s)
+                """,
+                (analysis_id, page_index, mime, raw),
+            )
+    logger.info("stored %d page snapshot(s) for %s", len(pages), analysis_id)
+
+
 def _fail(conn: psycopg.Connection, analysis_id: str, message: str) -> None:
     with conn.cursor() as cur:
         cur.execute(
@@ -125,6 +183,41 @@ def run_analysis(conn: psycopg.Connection, analysis_id: str) -> int:
                 tmp_path = tmp.name
 
             result = PrescriptionAnalyzer().analyze(tmp_path).model_dump()
+
+            # Render pages once, reused by both passes below. Both are
+            # best-effort: a detector/render problem must never cost the
+            # user their transcription, so failures only add a warning.
+            try:
+                pages = pdf_to_page_images(tmp_path, dpi=Config.RENDER_DPI)
+            except Exception:
+                logger.exception("page rendering failed for %s", analysis_id)
+                pages = []
+                result.setdefault("warnings", []).append(
+                    "Could not render the original pages for preview."
+                )
+
+            if pages:
+                try:
+                    _store_page_snapshots(conn, analysis_id, pages)
+                except Exception:
+                    logger.exception("storing page snapshots failed for %s", analysis_id)
+                    result.setdefault("warnings", []).append(
+                        "Could not save the original pages for preview."
+                    )
+
+                try:
+                    diagrams = detect_diagrams(pages)
+                    if diagrams:
+                        _store_diagrams(conn, analysis_id, diagrams)
+                        result.setdefault("warnings", []).append(
+                            f"{len(diagrams)} hand-drawn diagram(s) detected and attached."
+                        )
+                except Exception:
+                    logger.exception("diagram detection failed for %s", analysis_id)
+                    result.setdefault("warnings", []).append(
+                        "Diagram detection could not run on this file."
+                    )
+
             _succeed(conn, analysis_id, result)
             logger.info(
                 "analysis %s succeeded: %d medication(s), confidence %.2f",

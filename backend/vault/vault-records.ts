@@ -6,6 +6,8 @@ import {
   getAnalysisByVaultRecordId,
   getAnalysisWithDataForUploader,
   linkAnalysisToVaultRecord,
+  listDiagramsForVaultRecord,
+  listPageSnapshotsForVaultRecord,
 } from "~backend/prescriptions/analysis";
 import { analyzerAvailable, runAnalysisJob } from "~backend/prescriptions/job-runner";
 import {
@@ -55,6 +57,19 @@ export interface VaccineDetailsData {
   nextDueDate: string | null;
 }
 
+export interface VaultRecordDiagramDTO {
+  id: string;
+  pageIndex: number;
+  confidence: number;
+  width: number;
+  height: number;
+}
+
+export interface VaultRecordPageSnapshotDTO {
+  id: string;
+  pageIndex: number;
+}
+
 export interface VaultRecordDTO {
   id: string;
   recordType: VaultRecordType;
@@ -77,11 +92,16 @@ export interface VaultRecordDTO {
   createdAt: string;
   /** Oldest-first. Empty until the patient has saved at least once. */
   edits: VaultRecordEditSummary[];
+  /** Whole rendered pages of the uploaded file — how the patient sees what they uploaded. */
+  pageSnapshots: VaultRecordPageSnapshotDTO[];
+  /** Hand-drawn diagrams detected on the uploaded file, if any. */
+  diagrams: VaultRecordDiagramDTO[];
 }
 
 function toDTO(
   row: typeof vaultRecords.$inferSelect,
-  edits: VaultRecordEditSummary[] = []
+  edits: VaultRecordEditSummary[] = [],
+  media: { pageSnapshots?: VaultRecordPageSnapshotDTO[]; diagrams?: VaultRecordDiagramDTO[] } = {}
 ): VaultRecordDTO {
   return {
     id: row.id,
@@ -104,6 +124,8 @@ function toDTO(
     originalFilename: row.originalFilename,
     createdAt: row.createdAt.toISOString(),
     edits,
+    pageSnapshots: media.pageSnapshots ?? [],
+    diagrams: media.diagrams ?? [],
   };
 }
 
@@ -383,13 +405,23 @@ export async function getVaultRecord(id: string, patientId: string): Promise<Vau
     .where(and(eq(vaultRecords.id, id), eq(vaultRecords.patientId, patientId)));
   if (!row) return null;
 
+  // Fetched once up front and threaded through every branch below — both
+  // queries only return rows once the linked analysis has succeeded, so a
+  // still-processing record simply gets empty arrays, no extra branching
+  // needed to special-case that.
+  const [pageSnapshots, diagrams] = await Promise.all([
+    listPageSnapshotsForVaultRecord(id, patientId),
+    listDiagramsForVaultRecord(id, patientId),
+  ]);
+  const media = { pageSnapshots, diagrams };
+
   if (row.extractionStatus !== "processing" || row.patientConfirmed) {
-    return toDTO(row, await listVaultRecordEdits(id));
+    return toDTO(row, await listVaultRecordEdits(id), media);
   }
 
   const analysis = await getAnalysisByVaultRecordId(row.id);
   if (!analysis || (analysis.status !== "succeeded" && analysis.status !== "failed")) {
-    return toDTO(row); // still queued/processing — caller keeps polling, no edits possible yet
+    return toDTO(row, [], media); // still queued/processing — caller keeps polling, no edits possible yet
   }
 
   if (analysis.status === "failed") {
@@ -398,7 +430,7 @@ export async function getVaultRecord(id: string, patientId: string): Promise<Vau
       .set({ extractionStatus: "failed", updatedAt: new Date() })
       .where(and(eq(vaultRecords.id, row.id), eq(vaultRecords.patientConfirmed, false)))
       .returning();
-    return toDTO(updated ?? row);
+    return toDTO(updated ?? row, [], media);
   }
 
   const mapped = analyzedPrescriptionToRecordFields(analysis.result as AnalyzedPrescriptionLike);
@@ -418,7 +450,7 @@ export async function getVaultRecord(id: string, patientId: string): Promise<Vau
     })
     .where(and(eq(vaultRecords.id, row.id), eq(vaultRecords.patientConfirmed, false)))
     .returning();
-  return toDTO(updated ?? row);
+  return toDTO(updated ?? row, [], media);
 }
 
 /** Confirmed Tier 2 records only — unreviewed uploads never surface here. */
