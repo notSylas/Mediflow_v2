@@ -4,7 +4,10 @@ import {
   appointments,
   consultNotes,
   doctorProfiles,
+  prescriptionAnalyses,
+  prescriptionDiagrams,
   prescriptionMedicines,
+  prescriptionPageSnapshots,
   prescriptions,
   user,
   vaultRecords,
@@ -60,6 +63,19 @@ export interface BundleConsultNote {
   plan: string | null;
 }
 
+export interface BundlePageSnapshot {
+  pageIndex: number;
+  mimeType: string;
+  dataBase64: string;
+}
+
+export interface BundleDiagram {
+  pageIndex: number;
+  confidence: number;
+  mimeType: string;
+  dataBase64: string;
+}
+
 export interface BundleAddedRecord {
   recordType: string;
   date: string | null;
@@ -78,6 +94,15 @@ export interface BundleAddedRecord {
   // surfaced so a receiving doctor knows whether this is as-read or
   // human-corrected (see vault_record_edits).
   wasEdited: boolean;
+  // Rendered pages / detected drawings from the record's original upload, if
+  // the Prescription Analyzer ran on it. Embedded here (base64, inside the
+  // already-encrypted bundle) rather than fetched separately — this is the
+  // only way a redeeming doctor, who has no session, can see them at all.
+  // Existing shares created before this field existed simply lack it; older
+  // encrypted bundles decrypt to objects missing these keys, so callers must
+  // treat them as optional, not assume they're always present.
+  pageSnapshots: BundlePageSnapshot[];
+  diagrams: BundleDiagram[];
 }
 
 export interface VaultBundle {
@@ -176,6 +201,49 @@ async function assembleBundle(
 
   const editedIds = await vaultRecordIdsWithEdits(addedRows.map((r) => r.id));
 
+  const addedIds = addedRows.map((r) => r.id);
+  const [diagramRows, snapshotRows] = addedIds.length
+    ? await Promise.all([
+        db
+          .select({
+            vaultRecordId: prescriptionAnalyses.vaultRecordId,
+            pageIndex: prescriptionDiagrams.pageIndex,
+            confidence: prescriptionDiagrams.confidence,
+            mimeType: prescriptionDiagrams.mimeType,
+            data: prescriptionDiagrams.data,
+          })
+          .from(prescriptionDiagrams)
+          .innerJoin(
+            prescriptionAnalyses,
+            eq(prescriptionAnalyses.id, prescriptionDiagrams.analysisId)
+          )
+          .where(
+            and(
+              inArray(prescriptionAnalyses.vaultRecordId, addedIds),
+              eq(prescriptionAnalyses.status, "succeeded")
+            )
+          ),
+        db
+          .select({
+            vaultRecordId: prescriptionAnalyses.vaultRecordId,
+            pageIndex: prescriptionPageSnapshots.pageIndex,
+            mimeType: prescriptionPageSnapshots.mimeType,
+            data: prescriptionPageSnapshots.data,
+          })
+          .from(prescriptionPageSnapshots)
+          .innerJoin(
+            prescriptionAnalyses,
+            eq(prescriptionAnalyses.id, prescriptionPageSnapshots.analysisId)
+          )
+          .where(
+            and(
+              inArray(prescriptionAnalyses.vaultRecordId, addedIds),
+              eq(prescriptionAnalyses.status, "succeeded")
+            )
+          ),
+      ])
+    : [[], []];
+
   return {
     addedRecords: addedRows.map((r) => ({
       recordType: r.recordType,
@@ -192,6 +260,21 @@ async function assembleBundle(
       admissionDate: r.admissionDate,
       vaccineDetails: (r.vaccineDetails as VaccineDetailsData | null) ?? null,
       wasEdited: editedIds.has(r.id),
+      pageSnapshots: snapshotRows
+        .filter((s) => s.vaultRecordId === r.id)
+        .map((s) => ({
+          pageIndex: s.pageIndex,
+          mimeType: s.mimeType,
+          dataBase64: s.data.toString("base64"),
+        })),
+      diagrams: diagramRows
+        .filter((d) => d.vaultRecordId === r.id)
+        .map((d) => ({
+          pageIndex: d.pageIndex,
+          confidence: d.confidence,
+          mimeType: d.mimeType,
+          dataBase64: d.data.toString("base64"),
+        })),
     })),
     prescriptions: rxRows.map((r) => ({
       id: r.id,
