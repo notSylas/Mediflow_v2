@@ -17,6 +17,7 @@
     "check:env": "tsx scripts/check-production-env.ts",
     "check:env:strict": "tsx scripts/check-production-env.ts --strict",
     "promote-doctor": "tsx scripts/promote-doctor.ts",
+    "promote-admin": "tsx scripts/promote-admin.ts",
     "seed:medicines": "tsx --env-file=.env scripts/seed-medicines.ts",
     "seed:medicines:real": "tsx --env-file=.env scripts/import-medicines-dataset.ts",
     "seed:medicines:refresh": "tsx --env-file=.env scripts/import-medicines-dataset.ts --refresh",

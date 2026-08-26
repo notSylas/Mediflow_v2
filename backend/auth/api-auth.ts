@@ -40,3 +40,24 @@ export async function requireDoctorSession(
 
   return session.user;
 }
+
+/**
+ * Resolves the session for an API route and enforces that the caller is
+ * an admin. Returns a `Response` to short-circuit with on failure. There is
+ * no self-service path to this role — see scripts/promote-admin.ts.
+ */
+export async function requireAdminSession(
+  headers: Headers
+): Promise<Session["user"] | Response> {
+  const session = await auth.api.getSession({ headers });
+
+  if (!session) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  if (session.user.role !== "admin") {
+    return Response.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  return session.user;
+}
