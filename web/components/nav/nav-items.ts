@@ -1,4 +1,5 @@
 import {
+  BadgeCheck,
   CalendarDays,
   CalendarPlus,
   CalendarRange,
@@ -12,6 +13,7 @@ import {
   Pill,
   ScanText,
   Settings,
+  ShieldCheck,
   UserPen,
   Users,
   type LucideIcon,
@@ -43,8 +45,10 @@ export const NAV_ITEMS: Record<string, NavItem[]> = {
     { href: "/doctor/refill-requests", label: "Refills", icon: Pill },
     { href: "/doctor/patients", label: "Patients", icon: Users },
     { href: "/doctor/care", label: "Care members", icon: HandHeart },
+    { href: "/doctor/verification", label: "Verification", icon: BadgeCheck },
     { href: "/doctor/settings", label: "Availability", icon: Settings },
   ],
+  admin: [{ href: "/admin", label: "Verification queue", icon: ShieldCheck }],
 };
 
 /** Matches NavLinks' rule: exact for section roots, prefix for subpages. */

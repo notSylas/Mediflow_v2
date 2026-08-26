@@ -13,8 +13,9 @@ export function Sidebar({ user }: { user: Session["user"] }) {
   const pathname = usePathname() ?? "";
   const items = NAV_ITEMS[user.role] ?? [];
   const settingsHref =
-    user.role === "doctor" ? "/doctor/settings" : "/patient/settings";
-  const portalLabel = user.role === "doctor" ? "Clinic console" : "Patient portal";
+    user.role === "doctor" ? "/doctor/settings" : user.role === "admin" ? "/admin" : "/patient/settings";
+  const portalLabel =
+    user.role === "doctor" ? "Clinic console" : user.role === "admin" ? "Admin console" : "Patient portal";
 
   return (
     <aside className="sticky top-0 hidden h-screen w-72 shrink-0 flex-col border-r border-border/60 bg-card/80 shadow-2xl shadow-slate-950/5 backdrop-blur-xl lg:flex">
