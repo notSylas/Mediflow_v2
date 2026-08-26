@@ -9,6 +9,7 @@ import {
   Loader2,
   Minus,
   Moon,
+  PenLine,
   Sun,
   Sunrise,
   Sunset,
@@ -18,12 +19,26 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { TONES } from "@/lib/tones";
 import type {
   AnalyzedMedication,
   AnalyzedPrescription,
 } from "~backend/prescriptions/analysis";
 
 type Status = "queued" | "processing" | "succeeded" | "failed";
+
+interface Diagram {
+  id: string;
+  pageIndex: number;
+  confidence: number;
+  width: number;
+  height: number;
+}
+
+interface PageSnapshot {
+  id: string;
+  pageIndex: number;
+}
 
 interface Analysis {
   id: string;
@@ -32,6 +47,8 @@ interface Analysis {
   overallConfidence: number | null;
   result: AnalyzedPrescription | null;
   error: string | null;
+  diagrams?: Diagram[];
+  pageSnapshots?: PageSnapshot[];
 }
 
 // Mirrors MAX_ANALYSIS_BYTES — Cloud Run's request-body ceiling.
@@ -253,6 +270,8 @@ export function PrescriptionAnalyzer() {
           result={analysis.result}
           filename={analysis.filename}
           analysisId={analysis.id}
+          diagrams={analysis.diagrams ?? []}
+          pageSnapshots={analysis.pageSnapshots ?? []}
           onReset={() => setAnalysis(null)}
         />
       )}
@@ -464,11 +483,15 @@ function AnalysisResult({
   result,
   filename,
   analysisId,
+  diagrams,
+  pageSnapshots,
   onReset,
 }: {
   result: AnalyzedPrescription;
   filename: string;
   analysisId: string;
+  diagrams: Diagram[];
+  pageSnapshots: PageSnapshot[];
   onReset: () => void;
 }) {
   const router = useRouter();
@@ -556,6 +579,71 @@ function AnalysisResult({
             <li key={w}>• {w}</li>
           ))}
         </ul>
+      )}
+
+      {pageSnapshots.length > 0 && (
+        <section className="space-y-2">
+          <div className="flex items-center gap-2">
+            <span className={cn("flex h-8 w-8 items-center justify-center rounded-lg", TONES.blue.chip)}>
+              <FileText className="h-4 w-4" />
+            </span>
+            <h3 className="text-sm font-semibold text-foreground">
+              Original page{pageSnapshots.length > 1 ? "s" : ""}
+            </h3>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {pageSnapshots.map((p) => (
+              <figure key={p.id} className={cn("overflow-hidden rounded-xl p-3", TONES.blue.tile)}>
+                {/* Plain <img>: an authenticated, one-off byte stream, not a
+                    static asset next/image can optimise. */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={`/api/v1/prescription-page-snapshots/${p.id}`}
+                  alt={`Page ${p.pageIndex + 1} of the original prescription`}
+                  className="w-full rounded-lg bg-white object-contain"
+                  loading="lazy"
+                />
+                <figcaption className="mt-2 text-xs text-foreground/60">
+                  Page {p.pageIndex + 1}
+                </figcaption>
+              </figure>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {diagrams.length > 0 && (
+        <section className="space-y-2">
+          <div className="flex items-center gap-2">
+            <span className={cn("flex h-8 w-8 items-center justify-center rounded-lg", TONES.violet.chip)}>
+              <PenLine className="h-4 w-4" />
+            </span>
+            <h3 className="text-sm font-semibold text-foreground">
+              Doctor&apos;s drawing{diagrams.length > 1 ? "s" : ""}
+            </h3>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {diagrams.map((d) => (
+              <figure key={d.id} className={cn("overflow-hidden rounded-xl p-3", TONES.violet.tile)}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={`/api/v1/prescription-diagrams/${d.id}`}
+                  alt={`Hand-drawn diagram from page ${d.pageIndex + 1} of the prescription`}
+                  className="w-full rounded-lg bg-white object-contain"
+                  loading="lazy"
+                />
+                <figcaption className="mt-2 flex items-center justify-between text-xs text-foreground/60">
+                  <span>Page {d.pageIndex + 1}</span>
+                  <span className="font-mono tabular-nums">{d.confidence}% match</span>
+                </figcaption>
+              </figure>
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Detected automatically and cropped from the original — check it against
+            the source before relying on it.
+          </p>
+        </section>
       )}
 
       {/* Per-time view. The cards below already answer "when do I take THIS
