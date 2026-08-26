@@ -80,6 +80,8 @@
     { "method": "POST",   "path": "/api/v1/prescription-analyses" },
     { "method": "GET",    "path": "/api/v1/prescription-analyses/:id" },
     { "method": "POST",   "path": "/api/v1/prescription-analyses/:id/push-to-vault" },
+    { "method": "GET",    "path": "/api/v1/prescription-diagrams/:id" },
+    { "method": "GET",    "path": "/api/v1/prescription-page-snapshots/:id" },
     { "method": "GET",    "path": "/api/v1/realtime/token" },
     { "method": "POST",   "path": "/api/v1/vault/redeem" },
     { "method": "POST",   "path": "/api/webhooks/razorpay" }
