@@ -19,7 +19,13 @@ ENV PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1
 
 COPY prescription-analyzer/requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
+# CPU-only torch first: the default CUDA wheels are ~2.5 GB and a Cloud Run Job
+# has no GPU. Then swap OpenCV for the headless build — ultralytics pulls the
+# GUI flavour, which needs libxcb/libGL that a slim image does not carry.
+RUN pip install --no-cache-dir --index-url https://download.pytorch.org/whl/cpu torch torchvision \
+ && pip install --no-cache-dir -r requirements.txt \
+ && pip uninstall -y opencv-python 2>/dev/null; \
+    pip install --no-cache-dir opencv-python-headless
 
 # Only the pipeline itself — not the venv, the local FastAPI server, or the
 # sample PDF (see .dockerignore). dev_worker.py rides along too (it's the
@@ -29,10 +35,13 @@ COPY prescription-analyzer/config.py ./
 COPY prescription-analyzer/job.py ./
 COPY prescription-analyzer/dev_worker.py ./
 COPY prescription-analyzer/prescription_analyzer ./prescription_analyzer
+# Hand-drawn diagram detector weights (~39 MB, YOLO11 single-class).
+COPY prescription-analyzer/models ./models
 
 # Cloud Run Jobs run as root by default; drop to an unprivileged user since
 # this container handles patient documents.
 RUN useradd --create-home --uid 1001 analyzer && chown -R analyzer:analyzer /app
+ENV YOLO_CONFIG_DIR=/tmp/Ultralytics
 USER analyzer
 
 ENTRYPOINT ["python", "job.py"]
