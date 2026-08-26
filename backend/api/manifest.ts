@@ -1,6 +1,13 @@
 import { BACKEND_ROUTES, type BackendRoute } from "./routes";
 import type { ApiHandler } from "./http";
 import {
+  approveDoctorVerification,
+  downloadVerificationDocument,
+  getDoctorVerification,
+  listPendingVerifications,
+  rejectDoctorVerification,
+} from "./admin-doctor-verification";
+import {
   cancelAppointment,
   createAppointment,
   getAppointment,
@@ -18,6 +25,10 @@ import {
 } from "./consult";
 import { sendDueReminders } from "./cron";
 import { registerAsDoctor } from "./doctor-signup";
+import {
+  submitVerification,
+  uploadVerificationDocument,
+} from "./doctor-verification";
 import {
   createAvailabilityOverride,
   createAvailabilityRule,
@@ -116,6 +127,11 @@ import {
  * The keys must match `routes.json` exactly — see the check below.
  */
 const HANDLERS: Record<string, ApiHandler> = {
+  "GET /api/admin/doctor-verification": listPendingVerifications,
+  "GET /api/admin/doctor-verification/:doctorId": getDoctorVerification,
+  "POST /api/admin/doctor-verification/:doctorId/approve": approveDoctorVerification,
+  "POST /api/admin/doctor-verification/:doctorId/reject": rejectDoctorVerification,
+  "GET /api/admin/verification-documents/:documentId": downloadVerificationDocument,
   "GET /api/appointments": listAppointments,
   "POST /api/appointments": createAppointment,
   "GET /api/appointments/:id": getAppointment,
@@ -142,6 +158,8 @@ const HANDLERS: Record<string, ApiHandler> = {
   "PATCH /api/doctor/profile": updateDoctorProfile,
   "POST /api/doctor/register": registerAsDoctor,
   "POST /api/doctor/signature": uploadDoctorSignature,
+  "POST /api/doctor/verification/documents": uploadVerificationDocument,
+  "POST /api/doctor/verification/submit": submitVerification,
   "GET /api/medicines": searchMedicines,
   "GET /api/patient/profile": readPatientProfile,
   "PUT /api/patient/profile": updatePatientProfile,
