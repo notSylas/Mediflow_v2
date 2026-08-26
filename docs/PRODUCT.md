@@ -57,9 +57,9 @@ PHASE 0 — LAUNCH (single doctor)          [gate: nothing — do this now]
         │  gate: ~5 real paid bookings
         ▼
 PHASE 1 — MARKETPLACE FOUNDATIONS (Wave A) [no AI]
-  Multi-doctor data model · doctor self-signup + RMP verification (layered manual)
+  Multi-doctor data model · doctor self-signup + RMP verification (layered manual) ✅ built 2026-08-26
   · specialty taxonomy as data · system-of-medicine filter · manual doctor search
-  · public profiles · ratings/reviews · admin/ops console + audit logs
+  · public profiles · ratings/reviews · admin/ops console (verification queue only) + audit logs
   Payouts: invite-only doctors settled manually; Razorpay Route deferred to 2nd paying doctor
         │  gate: marketplace working + demand proven
         ▼
