@@ -50,7 +50,7 @@ export function AcceptTermsGate() {
           Before you continue
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          We've updated our policies. Please review and accept them to keep using
+          We&apos;ve updated our policies. Please review and accept them to keep using
           MediFlow.
         </p>
 
