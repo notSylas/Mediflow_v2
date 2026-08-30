@@ -7,6 +7,7 @@ import {
   upsertVerificationDocument,
 } from "~backend/people/doctor-verification";
 import { getOrCreateDoctorProfile } from "~backend/people/doctor";
+import { verifyFileContentType } from "~backend/core/file-validation";
 import type { ApiHandler } from "./http";
 
 const DOC_KINDS = ["identity", "registration", "hpr"] as const;
@@ -88,8 +89,16 @@ export const uploadVerificationDocument: ApiHandler = async (request) => {
     return Response.json({ error: "File is too large (max 5 MB)" }, { status: 400 });
   }
 
-  const profile = await getOrCreateDoctorProfile(access.id);
   const buffer = Buffer.from(await file.arrayBuffer());
+
+  if (!(await verifyFileContentType(buffer, ALLOWED_VERIFICATION_DOC_TYPES))) {
+    return Response.json(
+      { error: "File content doesn't match a supported PDF, PNG, or JPG" },
+      { status: 400 }
+    );
+  }
+
+  const profile = await getOrCreateDoctorProfile(access.id);
 
   await upsertVerificationDocument(profile.id, kind as (typeof DOC_KINDS)[number], {
     buffer,

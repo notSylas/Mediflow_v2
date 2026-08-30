@@ -12,6 +12,7 @@ import {
 } from "~backend/prescriptions/analysis";
 import { runAnalysisJob } from "~backend/prescriptions/job-runner";
 import { createVaultRecordFromAnalysis } from "~backend/vault/vault-records";
+import { verifyFileContentType } from "~backend/core/file-validation";
 import type { ApiHandler } from "../http";
 
 /**
@@ -41,11 +42,20 @@ export const uploadAnalysis: ApiHandler = async (request) => {
     return Response.json({ error: "File is too large (max 5 MB)" }, { status: 400 });
   }
 
+  const buffer = Buffer.from(await file.arrayBuffer());
+
+  if (!(await verifyFileContentType(buffer, ALLOWED_ANALYSIS_TYPES))) {
+    return Response.json(
+      { error: "File content doesn't match a supported PDF or photo format" },
+      { status: 400 }
+    );
+  }
+
   const analysis = await createAnalysis({
     uploaderId: access.id,
     filename: file.name,
     mimeType: file.type,
-    data: Buffer.from(await file.arrayBuffer()),
+    data: buffer,
   });
 
   // Fire-and-forget by design: jobs.run returns as soon as the execution is

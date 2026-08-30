@@ -16,6 +16,7 @@ import {
 import { getActiveSubscriberIds } from "~backend/care/care-subscription";
 import { getOrCreateDoctorProfile } from "~backend/people/doctor";
 import { ALLOWED_REPORT_TYPES, MAX_REPORT_SIZE_BYTES } from "~backend/consult/reports";
+import { verifyFileContentType } from "~backend/core/file-validation";
 import type { ApiHandler } from "../http";
 
 const sendSchema = z.object({
@@ -166,6 +167,14 @@ export const uploadAttachment: ApiHandler = async (request, { params }) => {
   }
 
   const buffer = Buffer.from(await file.arrayBuffer());
+
+  if (!(await verifyFileContentType(buffer, ALLOWED_REPORT_TYPES))) {
+    return Response.json(
+      { error: "File content doesn't match a supported PDF, JPG, or PNG" },
+      { status: 400 }
+    );
+  }
+
   const [created] = await db
     .insert(chatAttachments)
     .values({
