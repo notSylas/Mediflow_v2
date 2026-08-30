@@ -1,4 +1,4 @@
-import { ageFromDob } from "~backend/people/patient-constants";
+import { ageFromDob, isAdultDob } from "~backend/people/patient-constants";
 import { patientEditableName } from "~backend/people/patient-identity";
 
 export type BookingProfileUser = {
@@ -21,7 +21,11 @@ export function getBookingProfileMissing(
     missing.push("Full name");
   }
 
-  if (!profile?.dateOfBirth || ageFromDob(profile.dateOfBirth) === null) {
+  if (
+    !profile?.dateOfBirth ||
+    ageFromDob(profile.dateOfBirth) === null ||
+    !isAdultDob(profile.dateOfBirth)
+  ) {
     missing.push("Valid date of birth");
   }
 
