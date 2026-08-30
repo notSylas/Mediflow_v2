@@ -7,7 +7,17 @@ import { getSessionCookie } from "better-auth/cookies";
 // "/vault/view" is Vault Share's public redeem page (Rules.md #11's second
 // named no-session exception) — a receiving doctor has no MediFlow account,
 // access is gated by the share code itself, not a login.
-const PUBLIC_PATHS = ["/", "/login", "/doctor/login", "/terms", "/privacy", "/vault/view"];
+const PUBLIC_PATHS = [
+  "/",
+  "/login",
+  "/doctor/login",
+  "/terms",
+  "/privacy",
+  "/refund-cancellation",
+  "/contact",
+  "/pricing",
+  "/vault/view",
+];
 
 export default function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
