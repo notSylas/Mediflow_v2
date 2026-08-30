@@ -38,6 +38,10 @@ const prescriptionSchema = z.object({
   medicines: z.array(medicineSchema).max(30),
 });
 
+const issuePrescriptionSchema = z.object({
+  scheduleAttestation: z.literal(true),
+});
+
 /** PUT /api/appointments/:id/consult-note — upserts the SOAP note. */
 export const saveConsultNote: ApiHandler = async (request, { params }) => {
   const access = await requireDoctorSession(request.headers);
@@ -163,6 +167,14 @@ export const issuePrescription: ApiHandler = async (request, { params }) => {
     return Response.json({ error: "Not found" }, { status: 404 });
   }
 
+  const parsed = issuePrescriptionSchema.safeParse(await request.json().catch(() => null));
+  if (!parsed.success) {
+    return Response.json(
+      { error: "Confirm the drug-schedule attestation before issuing." },
+      { status: 400 }
+    );
+  }
+
   const prescription = await getPrescriptionWithMedicines(params.id);
 
   if (!prescription) {
@@ -182,7 +194,12 @@ export const issuePrescription: ApiHandler = async (request, { params }) => {
 
   const [issued] = await db
     .update(prescriptions)
-    .set({ status: "issued", issuedAt: new Date(), updatedAt: new Date() })
+    .set({
+      status: "issued",
+      issuedAt: new Date(),
+      scheduleAttestedAt: new Date(),
+      updatedAt: new Date(),
+    })
     .where(eq(prescriptions.id, prescription.id))
     .returning();
 

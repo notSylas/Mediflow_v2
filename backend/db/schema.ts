@@ -335,6 +335,13 @@ export const prescriptions = pgTable("prescriptions", {
   status: prescriptionStatus("status").notNull().default("draft"),
   validUntil: date("valid_until"),
   issuedAt: timestamp("issued_at", { withTimezone: true }),
+  // Doctor's required attestation at issue time that no medicine on this
+  // prescription is a Schedule X / narcotic / psychotropic substance
+  // restricted from being prescribed via teleconsultation (Telemedicine
+  // Practice Guidelines 2020) — there's no automated drug-schedule list in
+  // this app (see docs/qa/ProductionReadinessBacklog.md item A2), so this
+  // is the honest control until real regulatory data is sourced.
+  scheduleAttestedAt: timestamp("schedule_attested_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
