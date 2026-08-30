@@ -32,6 +32,14 @@ export const user = pgTable("user", {
   image: text("image"),
   role: text("role").notNull().default("patient"),
   phone: text("phone"),
+  // Platform-wide Terms + Privacy acceptance (distinct from the
+  // telemedicine-specific consent captured per appointment, and from
+  // vault_doctor_consents) — one fact per account, gates access to the
+  // authenticated app in web/app/(app)/layout.tsx. See
+  // backend/auth/terms-consent.ts for the current version string.
+  termsAcceptedVersion: text("terms_accepted_version"),
+  termsAcceptedAt: timestamp("terms_accepted_at", { withTimezone: true }),
+  termsAcceptedSource: text("terms_accepted_source"), // web | ios | android
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
