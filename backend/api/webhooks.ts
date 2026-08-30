@@ -65,5 +65,19 @@ export const razorpayWebhook: ApiHandler = async (request) => {
     }
   }
 
+  // Authoritative confirmation that a refund actually moved — the direct
+  // call in cancelAppointment (backend/api/appointments.ts) is best-effort,
+  // same convention as payment.captured above.
+  if (event.event === "refund.processed") {
+    const paymentId: string | undefined = event.payload?.refund?.entity?.payment_id;
+    if (paymentId) {
+      await db
+        .update(payments)
+        .set({ status: "refunded", updatedAt: new Date() })
+        .where(eq(payments.paymentId, paymentId));
+      logger.info({ paymentId }, "payment refunded via razorpay webhook");
+    }
+  }
+
   return Response.json({ received: true });
 };
