@@ -1,6 +1,9 @@
 import { getCanonicalDoctorProfile } from "~backend/people/doctor";
 
 export const metadata = { title: "Pricing — MediFlow" };
+// Live pricing, not baked into the build — also sidesteps prerendering this
+// page at build time, when no real database is reachable (e.g. CI).
+export const dynamic = "force-dynamic";
 
 export default async function PricingPage() {
   const doctor = await getCanonicalDoctorProfile();
