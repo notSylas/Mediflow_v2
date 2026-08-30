@@ -18,14 +18,23 @@ export async function sendEmail(opts: {
   html: string;
 }): Promise<void> {
   if (!isEmailConfigured()) {
-    logger.info({ to: opts.to, subject: opts.subject }, "email (console fallback)");
-    // Plain-text dump so OTPs etc. are readable during local dev.
-    console.log(
-      `\n──── email ────\nTo: ${opts.to}\nSubject: ${opts.subject}\n${opts.html
-        .replace(/<[^>]+>/g, " ")
-        .replace(/\s+/g, " ")
-        .trim()}\n───────────────\n`
-    );
+    // No subject/body here — the subject line carries the OTP for sign-in
+    // emails (see backend/auth/auth.ts), and the body can carry patient
+    // PHI. This branch fires whenever RESEND_API_KEY is unset — true in
+    // dev, but also true if it's ever misconfigured in production — so the
+    // structured log line must stay safe regardless of environment.
+    logger.info({ to: opts.to }, "email (console fallback)");
+    // Full readable dump (including the OTP/body) is dev-only, gated on
+    // NODE_ENV directly rather than "Resend is unconfigured", so a prod
+    // misconfiguration can't silently start printing OTPs/PHI to stdout.
+    if (process.env.NODE_ENV !== "production") {
+      console.log(
+        `\n──── email ────\nTo: ${opts.to}\nSubject: ${opts.subject}\n${opts.html
+          .replace(/<[^>]+>/g, " ")
+          .replace(/\s+/g, " ")
+          .trim()}\n───────────────\n`
+      );
+    }
     return;
   }
 
