@@ -1,8 +1,10 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "~backend/auth/auth";
+import { hasAcceptedCurrentTerms } from "~backend/auth/terms-consent";
 import { cn } from "@/lib/utils";
 import { AmbientBackground } from "@/components/effects/AmbientBackground";
+import { AcceptTermsGate } from "@/components/auth/AcceptTermsGate";
 import { Sidebar } from "@/components/nav/Sidebar";
 import { MobileTopBar } from "@/components/nav/MobileTopBar";
 import { NextConsultBanner } from "@/components/doctor/NextConsultBanner";
@@ -16,6 +18,10 @@ export default async function AppLayout({
   if (!session) redirect("/login");
 
   const user = session.user;
+
+  if (!(await hasAcceptedCurrentTerms(user.id))) {
+    return <AcceptTermsGate />;
+  }
 
   return (
     <div

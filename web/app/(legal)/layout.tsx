@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { HeartPulse } from "lucide-react";
+import { SiteFooter } from "@/components/common/SiteFooter";
 
 export default function LegalLayout({
   children,
@@ -24,13 +25,7 @@ export default function LegalLayout({
           {children}
         </article>
       </main>
-      <footer className="border-t bg-card">
-        <div className="mx-auto max-w-3xl px-4 py-6 text-sm text-muted-foreground sm:px-6">
-          <Link href="/terms" className="hover:underline">Terms</Link>
-          <span className="px-2">·</span>
-          <Link href="/privacy" className="hover:underline">Privacy</Link>
-        </div>
-      </footer>
+      <SiteFooter variant="minimal" />
     </div>
   );
 }

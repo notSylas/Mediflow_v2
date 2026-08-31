@@ -37,6 +37,17 @@ describe("booking profile readiness", () => {
     ).toEqual(["Valid date of birth"]);
   });
 
+  it("rejects a DOB under the minimum age", () => {
+    const underage = new Date();
+    underage.setFullYear(underage.getFullYear() - 17);
+    expect(
+      getBookingProfileMissing(
+        { name: "Asha Mehta", email: "asha@example.com" },
+        { dateOfBirth: underage.toISOString().slice(0, 10), gender: "female" }
+      )
+    ).toEqual(["Valid date of birth"]);
+  });
+
   it("reports all missing booking identity fields", () => {
     expect(
       getBookingProfileMissing({ name: "", email: "asha@example.com" }, null)

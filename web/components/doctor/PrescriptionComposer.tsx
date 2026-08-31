@@ -17,6 +17,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
@@ -116,6 +117,7 @@ export function PrescriptionComposer({
   );
   const [state, setState] = useState<"idle" | "saving" | "saved" | "issuing">("idle");
   const [error, setError] = useState<string | null>(null);
+  const [scheduleAttested, setScheduleAttested] = useState(false);
 
   const updateMedicine = (key: number, patch: Partial<MedicineDraft>) => {
     setMedicines((prev) => prev.map((m) => (m.key === key ? { ...m, ...patch } : m)));
@@ -174,6 +176,8 @@ export function PrescriptionComposer({
     try {
       const res = await fetch(`/api/appointments/${appointmentId}/prescription/issue`, {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ scheduleAttestation: true }),
       });
       if (!res.ok) {
         const body = await res.json();
@@ -420,9 +424,26 @@ export function PrescriptionComposer({
                   {medicines.filter((m) => m.name.trim()).length}
                 </p>
               </div>
+              <label className="flex items-start gap-3 rounded-lg border bg-muted/20 p-3 text-sm">
+                <Checkbox
+                  checked={scheduleAttested}
+                  onCheckedChange={(value) => setScheduleAttested(value === true)}
+                  className="mt-0.5"
+                />
+                <span className="text-muted-foreground">
+                  I confirm this prescription does not include any Schedule X,
+                  narcotic, or psychotropic substance restricted from being
+                  prescribed via teleconsultation (Telemedicine Practice
+                  Guidelines 2020).
+                </span>
+              </label>
               <AlertDialogFooter>
-                <AlertDialogCancel>Keep as draft</AlertDialogCancel>
-                <AlertDialogAction onClick={issue}>Issue prescription</AlertDialogAction>
+                <AlertDialogCancel onClick={() => setScheduleAttested(false)}>
+                  Keep as draft
+                </AlertDialogCancel>
+                <AlertDialogAction onClick={issue} disabled={!scheduleAttested}>
+                  Issue prescription
+                </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>

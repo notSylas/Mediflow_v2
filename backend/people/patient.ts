@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "~backend/db";
 import { patientProfiles, user as userTable } from "~backend/db/schema";
-import { BLOOD_GROUPS, GENDERS } from "~backend/people/patient-constants";
+import { BLOOD_GROUPS, GENDERS, isAdultDob, MIN_PATIENT_AGE } from "~backend/people/patient-constants";
 
 // Re-export the client-safe helpers so server modules can import everything
 // from one place.
@@ -11,11 +11,19 @@ export {
   BLOOD_GROUPS,
   genderLabel,
   ageFromDob,
+  isAdultDob,
+  MIN_PATIENT_AGE,
   isProfileMeaningful,
 } from "~backend/people/patient-constants";
 
 export const patientProfileSchema = z.object({
-  dateOfBirth: z.string().date().nullish(),
+  dateOfBirth: z
+    .string()
+    .date()
+    .nullish()
+    .refine((dob) => !dob || isAdultDob(dob), {
+      message: `You must be at least ${MIN_PATIENT_AGE} years old to use MediFlow.`,
+    }),
   gender: z.enum(GENDERS).nullish(),
   bloodGroup: z.enum(BLOOD_GROUPS).nullish(),
   allergies: z.string().trim().max(2000).nullish(),

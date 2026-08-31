@@ -43,6 +43,43 @@ const BACKEND_ROUTE_PATHS: string[] = [
   ),
 ];
 
+// Third-party origins the app actually talks to — kept in one place so the
+// CSP doesn't silently drift from what's really loaded. Razorpay Checkout
+// (payments), LiveKit Cloud (video, wildcard subdomain per project), and
+// Sentry (error/perf ingest, only relevant when SENTRY_DSN is set).
+const CONTENT_SECURITY_POLICY = [
+  "default-src 'self'",
+  // 'unsafe-eval' is dev-only — Next/React's dev-mode debugging tools need
+  // it (HMR, stack reconstruction), never used in a production build.
+  `script-src 'self' 'unsafe-inline' ${
+    process.env.NODE_ENV === "production" ? "" : "'unsafe-eval' "
+  }https://checkout.razorpay.com`,
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob: https://*.razorpay.com",
+  "font-src 'self' data:",
+  "connect-src 'self' https://api.razorpay.com https://checkout.razorpay.com https://lumberjack.razorpay.com wss://*.livekit.cloud https://*.livekit.cloud https://*.sentry.io https://*.ingest.sentry.io",
+  "frame-src https://checkout.razorpay.com https://api.razorpay.com",
+  "media-src 'self' blob:",
+  "worker-src 'self' blob:",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'none'",
+].join("; ");
+
+const SECURITY_HEADERS = [
+  { key: "Content-Security-Policy", value: CONTENT_SECURITY_POLICY },
+  {
+    key: "Strict-Transport-Security",
+    value: "max-age=63072000; includeSubDomains; preload",
+  },
+  { key: "X-Content-Type-Options", value: "nosniff" },
+  { key: "X-Frame-Options", value: "DENY" },
+  { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+  // Video consults need camera/mic for the app itself, nothing else.
+  { key: "Permissions-Policy", value: "camera=(self), microphone=(self), geolocation=()" },
+];
+
 const nextConfig: NextConfig = {
   // Container deploys (Cloud Run) run the traced standalone bundle rather than
   // `next start` over a full node_modules. Harmless locally — `npm run build`
@@ -64,6 +101,10 @@ const nextConfig: NextConfig = {
    * and no CORS or SameSite=None configuration is needed. Client code keeps
    * calling relative `/api/...` URLs and never learns the backend moved.
    */
+  async headers() {
+    return [{ source: "/:path*", headers: SECURITY_HEADERS }];
+  },
+
   async rewrites() {
     if (!BACKEND_ORIGIN) return [];
 

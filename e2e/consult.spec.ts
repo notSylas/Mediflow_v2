@@ -58,8 +58,12 @@ test("consultation, prescription, and returning-patient history", async ({ page 
   await page.getByLabel("Medicine 1 duration in days").fill("3");
   await page.getByLabel("Advice").fill("Warm fluids. Rest your voice.");
 
-  // Issue is confirmed in a dialog before locking.
+  // Issue is confirmed in a dialog before locking. The drug-schedule
+  // attestation checkbox must be checked first — it's what enables the
+  // otherwise-disabled confirm button (docs/qa/ProductionReadinessBacklog.md
+  // item A2 — no automated Schedule X list, so the doctor attests instead).
   await page.getByRole("button", { name: /issue prescription/i }).click();
+  await page.getByRole("alertdialog").getByRole("checkbox").check();
   await page
     .getByRole("alertdialog")
     .getByRole("button", { name: /issue prescription/i })
