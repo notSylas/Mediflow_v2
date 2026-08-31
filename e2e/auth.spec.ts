@@ -28,6 +28,11 @@ test("login, land on patient home, then logout", async ({ page }) => {
   await page.getByRole("button", { name: /verify & sign in/i }).click();
 
   await expect(page).toHaveURL(/\/patient/);
+  // The authenticated shell blocks on Terms/Privacy acceptance for a fresh
+  // account — accept it to reach the actual patient home this test checks.
+  await page.getByRole("checkbox").check();
+  await page.getByRole("button", { name: /agree & continue/i }).click();
+
   // The sidebar shows the email in both the name line and the sub-line.
   await expect(page.getByText(email).first()).toBeVisible();
   await expect(page.getByText("patient", { exact: false }).first()).toBeVisible();
