@@ -138,9 +138,6 @@ export const auth = betterAuth({
       // doctor_profiles and every other relation reference user.id, never the
       // email string, so a change never breaks appointments/profile linkage.
       changeEmail: { enabled: true },
-      // Codes are single-use and short-lived (5 min, plugin default) but
-      // there's no reason to keep them recoverable in plaintext at rest.
-      storeOTP: "hashed",
       async sendVerificationOTP({ email, otp, type }) {
         const isChangeEmail = type === "change-email";
         await sendEmail({
