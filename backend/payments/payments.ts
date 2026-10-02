@@ -112,3 +112,16 @@ export async function confirmAppointmentPayment(
 
   return appointment;
 }
+
+/**
+ * Issues a Razorpay refund for a captured payment. Callers must not let a
+ * refund failure block the action that triggered it (e.g. a cancellation) —
+ * log loudly and let it be triaged/retried manually rather than leaving the
+ * appointment stuck. The webhook (`refund.processed`, see
+ * backend/api/webhooks.ts) is the authoritative confirmation that the money
+ * actually moved; this call is best-effort, same convention as
+ * payment.captured.
+ */
+export async function refundPayment(paymentId: string, amountInPaise: number) {
+  return getRazorpayClient().payments.refund(paymentId, { amount: amountInPaise });
+}

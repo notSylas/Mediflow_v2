@@ -25,6 +25,15 @@ export function ageFromDob(dob: string | null): number | null {
   return age >= 0 && age < 130 ? age : null;
 }
 
+// MediFlow doesn't support minor/guardian accounts (no parental-consent flow
+// exists) — a date of birth must clear this bar wherever one is accepted.
+export const MIN_PATIENT_AGE = 18;
+
+export function isAdultDob(dob: string | null): boolean {
+  const age = ageFromDob(dob);
+  return age !== null && age >= MIN_PATIENT_AGE;
+}
+
 /** Whether the patient has filled enough of their profile to be useful. */
 export function isProfileMeaningful(
   profile: { dateOfBirth: string | null; gender: string | null } | null

@@ -1,5 +1,6 @@
 import { BACKEND_ROUTES, type BackendRoute } from "./routes";
 import type { ApiHandler } from "./http";
+import { acceptTerms } from "./account";
 import {
   approveDoctorVerification,
   downloadVerificationDocument,
@@ -127,6 +128,7 @@ import {
  * The keys must match `routes.json` exactly — see the check below.
  */
 const HANDLERS: Record<string, ApiHandler> = {
+  "POST /api/account/accept-terms": acceptTerms,
   "GET /api/admin/doctor-verification": listPendingVerifications,
   "GET /api/admin/doctor-verification/:doctorId": getDoctorVerification,
   "POST /api/admin/doctor-verification/:doctorId/approve": approveDoctorVerification,

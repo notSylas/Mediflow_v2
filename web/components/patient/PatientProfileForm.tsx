@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { BLOOD_GROUPS, GENDERS } from "~backend/people/patient-constants";
+import { BLOOD_GROUPS, GENDERS, isAdultDob, MIN_PATIENT_AGE } from "~backend/people/patient-constants";
 
 const GENDER_LABELS: Record<string, string> = {
   female: "Female",
@@ -51,6 +51,10 @@ export function PatientProfileForm({ initial }: { initial: PatientProfileValues 
     }
     if (!v.dateOfBirth) {
       toast.error("Date of birth is required before booking.");
+      return;
+    }
+    if (!isAdultDob(v.dateOfBirth)) {
+      toast.error(`You must be at least ${MIN_PATIENT_AGE} years old to use MediFlow.`);
       return;
     }
     if (!v.gender) {

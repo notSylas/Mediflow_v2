@@ -2,6 +2,7 @@ import { desc, eq } from "drizzle-orm";
 import type { Page } from "@playwright/test";
 import { db } from "~backend/db";
 import { user, verification } from "~backend/db/schema";
+import { TERMS_VERSION } from "~backend/auth/terms-consent";
 
 /**
  * The one doctor every spec shares. `getDoctorProfile()` returns the first
@@ -23,6 +24,18 @@ export async function signIn(page: Page, email: string): Promise<void> {
   await page.getByLabel("Verification code").fill(otp);
   await page.getByRole("button", { name: /verify & sign in/i }).click();
   await page.waitForURL(/\/(patient|doctor)/);
+
+  // The authenticated shell (web/app/(app)/layout.tsx) blocks on Terms/
+  // Privacy acceptance for any account that hasn't accepted the current
+  // version — true for every fresh e2e user, since the DB is truncated per
+  // run. Written directly, same as setUserRole below bypasses the (nonexistent)
+  // role-switching UI — this is test setup, not the flow under test. The
+  // page already rendered the gate on login, so reload to pick it up.
+  await db
+    .update(user)
+    .set({ termsAcceptedVersion: TERMS_VERSION, termsAcceptedAt: new Date() })
+    .where(eq(user.email, email));
+  await page.reload();
 }
 
 /**
@@ -93,7 +106,16 @@ export async function signInDoctorWithAvailability(page: Page): Promise<void> {
  */
 export async function bookFirstAvailableSlot(
   page: Page,
-  symptoms: string
+  symptoms: string,
+  options?: {
+    /**
+     * The shared doctor's availability spans the whole day, so the very
+     * first slot is always within the app's 2-hour cancellation window —
+     * pass this for specs that need to cancel afterwards (booking.spec.ts),
+     * so they get the last slot of the day instead, comfortably outside it.
+     */
+    farEnough?: boolean;
+  }
 ): Promise<string> {
   await completePatientProfile(page);
   await page.goto("/patient/book");
@@ -103,7 +125,8 @@ export async function bookFirstAvailableSlot(
   await page.getByRole("button", { name: /continue to pick a time/i }).click();
 
   await page.getByText("Choose a time").waitFor();
-  await page.getByRole("button", { name: /^\d{1,2}:\d{2} (AM|PM)$/ }).first().click();
+  const slotButtons = page.getByRole("button", { name: /^\d{1,2}:\d{2} (AM|PM)$/ });
+  await (options?.farEnough ? slotButtons.last() : slotButtons.first()).click();
 
   await page.waitForURL(/\/patient\/book\?appointment=/);
   const appointmentId = new URL(page.url()).searchParams.get("appointment");

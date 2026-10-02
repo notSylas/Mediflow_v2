@@ -14,7 +14,9 @@ test("patient books a slot, confirms payment, and cancels it", async ({ page }) 
   await signIn(page, patientEmail);
   await expect(page).toHaveURL(/\/patient/);
 
-  await bookFirstAvailableSlot(page, "Annual checkup, no major concerns.");
+  await bookFirstAvailableSlot(page, "Annual checkup, no major concerns.", {
+    farEnough: true,
+  });
 
   // Appointments list shows it as confirmed, with a Cancel option.
   await page.getByRole("link", { name: /view my appointments/i }).click();

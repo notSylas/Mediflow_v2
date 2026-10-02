@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { auth } from "~backend/auth/auth";
 import { db } from "~backend/db";
+import { SiteFooter } from "@/components/common/SiteFooter";
 import { doctorProfiles, user } from "~backend/db/schema";
 import { cn } from "@/lib/utils";
 import { TONES } from "@/lib/tones";
@@ -395,19 +396,7 @@ export default async function HomePage() {
         </section>
       </main>
 
-      <footer className="border-t bg-card">
-        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-2 px-4 py-6 text-sm text-muted-foreground sm:flex-row sm:px-6">
-          <span className="flex items-center gap-2">
-            <HeartPulse className="h-4 w-4 text-primary" />
-            MediFlow
-          </span>
-          <div className="flex items-center gap-4">
-            <Link href="/terms" className="hover:text-foreground">Terms</Link>
-            <Link href="/privacy" className="hover:text-foreground">Privacy</Link>
-            <span>© {new Date().getFullYear()} MediFlow</span>
-          </div>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }

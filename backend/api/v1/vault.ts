@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { z } from "zod";
 import { requireSession } from "~backend/auth/api-auth";
 import { ALLOWED_REPORT_TYPES, MAX_REPORT_SIZE_BYTES } from "~backend/consult/reports";
+import { verifyFileContentType } from "~backend/core/file-validation";
 import { vaultEncryptionAvailable } from "~backend/vault/vault-crypto";
 import {
   getVaultDoctorConsent,
@@ -167,6 +168,14 @@ export const createRecord: ApiHandler = async (request) => {
   }
 
   const buffer = Buffer.from(await file.arrayBuffer());
+
+  if (!(await verifyFileContentType(buffer, ALLOWED_REPORT_TYPES))) {
+    return Response.json(
+      { error: "File content doesn't match a supported PDF, JPG, or PNG" },
+      { status: 400 }
+    );
+  }
+
   const record = await createVaultRecord(access.id, {
     buffer,
     filename: file.name,

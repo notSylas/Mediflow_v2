@@ -1,4 +1,5 @@
 import { Hono, type Context } from "hono";
+import { secureHeaders } from "hono/secure-headers";
 import { auth } from "~backend/auth/auth";
 import type { ApiHandler } from "~backend/api/http";
 import { API_ROUTES } from "~backend/api/manifest";
@@ -12,6 +13,11 @@ const mount = (handler: ApiHandler) => (c: Context) =>
   handler(c.req.raw, { params: c.req.param() });
 
 const app = new Hono();
+
+// API-only server (no HTML rendered here — the web app proxies to it
+// same-origin), so this covers the header layer without a CSP; the web
+// app's next.config.ts headers() carries the real CSP for rendered pages.
+app.use("*", secureHeaders({ xFrameOptions: "DENY" }));
 
 // better-auth's core handler is already a plain
 // (request: Request) => Promise<Response> — no Next.js-specific adapter

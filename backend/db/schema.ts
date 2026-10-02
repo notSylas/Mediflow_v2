@@ -32,6 +32,14 @@ export const user = pgTable("user", {
   image: text("image"),
   role: text("role").notNull().default("patient"),
   phone: text("phone"),
+  // Platform-wide Terms + Privacy acceptance (distinct from the
+  // telemedicine-specific consent captured per appointment, and from
+  // vault_doctor_consents) — one fact per account, gates access to the
+  // authenticated app in web/app/(app)/layout.tsx. See
+  // backend/auth/terms-consent.ts for the current version string.
+  termsAcceptedVersion: text("terms_accepted_version"),
+  termsAcceptedAt: timestamp("terms_accepted_at", { withTimezone: true }),
+  termsAcceptedSource: text("terms_accepted_source"), // web | ios | android
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
@@ -327,6 +335,13 @@ export const prescriptions = pgTable("prescriptions", {
   status: prescriptionStatus("status").notNull().default("draft"),
   validUntil: date("valid_until"),
   issuedAt: timestamp("issued_at", { withTimezone: true }),
+  // Doctor's required attestation at issue time that no medicine on this
+  // prescription is a Schedule X / narcotic / psychotropic substance
+  // restricted from being prescribed via teleconsultation (Telemedicine
+  // Practice Guidelines 2020) — there's no automated drug-schedule list in
+  // this app (see docs/qa/ProductionReadinessBacklog.md item A2), so this
+  // is the honest control until real regulatory data is sourced.
+  scheduleAttestedAt: timestamp("schedule_attested_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });

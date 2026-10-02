@@ -26,8 +26,10 @@ import {
   confirmAppointmentPayment,
   getPaymentProvider,
   getRazorpayClient,
+  refundPayment,
   verifyCheckoutSignature,
 } from "~backend/payments/payments";
+import { logger } from "~backend/core/logger";
 import type { ApiHandler } from "./http";
 
 const createAppointmentSchema = z.object({
@@ -351,6 +353,34 @@ export const cancelAppointment: ApiHandler = async (request, { params }) => {
     .set({ status: "cancelled" })
     .where(eq(appointments.id, params.id))
     .returning();
+
+  // Refund only the unambiguous case this pass handles: a paid appointment
+  // cancelled outside the window canCancelAppointment already enforces
+  // (getting here at all means we're past that gate). Late-cancel-with-no-
+  // refund and doctor-initiated-cancel semantics are a separate, deferred
+  // product decision — see docs/qa/ProductionReadinessBacklog.md item A8.
+  // Best-effort: a refund failure must never undo the cancellation itself.
+  const [payment] = await db
+    .select()
+    .from(payments)
+    .where(eq(payments.appointmentId, params.id));
+
+  if (payment?.status === "paid") {
+    try {
+      if (getPaymentProvider() === "razorpay" && payment.paymentId) {
+        await refundPayment(payment.paymentId, payment.amountInPaise);
+      }
+      await db
+        .update(payments)
+        .set({ status: "refunded", updatedAt: new Date() })
+        .where(eq(payments.id, payment.id));
+    } catch (error) {
+      logger.error(
+        { error, appointmentId: params.id, paymentId: payment.id },
+        "refund failed on cancellation — needs manual follow-up"
+      );
+    }
+  }
 
   return Response.json(updated);
 };
