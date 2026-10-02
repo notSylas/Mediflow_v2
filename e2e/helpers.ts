@@ -106,7 +106,16 @@ export async function signInDoctorWithAvailability(page: Page): Promise<void> {
  */
 export async function bookFirstAvailableSlot(
   page: Page,
-  symptoms: string
+  symptoms: string,
+  options?: {
+    /**
+     * The shared doctor's availability spans the whole day, so the very
+     * first slot is always within the app's 2-hour cancellation window —
+     * pass this for specs that need to cancel afterwards (booking.spec.ts),
+     * so they get the last slot of the day instead, comfortably outside it.
+     */
+    farEnough?: boolean;
+  }
 ): Promise<string> {
   await completePatientProfile(page);
   await page.goto("/patient/book");
@@ -116,7 +125,8 @@ export async function bookFirstAvailableSlot(
   await page.getByRole("button", { name: /continue to pick a time/i }).click();
 
   await page.getByText("Choose a time").waitFor();
-  await page.getByRole("button", { name: /^\d{1,2}:\d{2} (AM|PM)$/ }).first().click();
+  const slotButtons = page.getByRole("button", { name: /^\d{1,2}:\d{2} (AM|PM)$/ });
+  await (options?.farEnough ? slotButtons.last() : slotButtons.first()).click();
 
   await page.waitForURL(/\/patient\/book\?appointment=/);
   const appointmentId = new URL(page.url()).searchParams.get("appointment");
